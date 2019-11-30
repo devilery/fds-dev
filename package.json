@@ -6,7 +6,9 @@
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
   "dependencies": {
+    "express": "^4.17.1",
     "firebase": "^7.5.0",
-    "firebase-admin": "^8.8.0"
+    "firebase-admin": "^8.8.0",
+    "morgan": "^1.9.1"
   }
 }
