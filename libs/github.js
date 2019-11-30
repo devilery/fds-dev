@@ -2,8 +2,17 @@ function processGithubPullRequest(pullRequestEvent) {
   const action = pullRequestEvent.action
   const sender = pullRequestEvent.sender
   const repo = pullRequestEvent.repository
+  const githubPullRequest = pullRequestEvent.pull_request
 
-  const user_id = findUserIdByGithubId(sender)
+  const userId = findUserIdByGithubId(sender)
+  const pullRequestData = {
+    id: githubPullRequest.id,
+    from: 'github',
+    number: githubPullRequest.number,
+    websiteUrl: githubPullRequest.html_url,
+    title: githubPullRequest.title
+  }
+
 
   switch (action) {
     case 'open':
