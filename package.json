@@ -5,7 +5,5 @@
   "repository": "git@github.com:LeZuse/fds-dev.git",
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
-  "dependencies": {
-    "express": "^4.17.1"
-  }
+  "dependencies": {}
 }
