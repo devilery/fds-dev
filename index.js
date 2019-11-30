@@ -3,6 +3,8 @@ require('dotenv').config()
 const port = process.env.PORT || 3000
 const morgan = require('morgan')
 
+const githubWebhook = require('./api/github-webhook')
+
 var express = require('express')
 var app = express()
 app.use(express.json())
@@ -26,3 +28,5 @@ app.get('/get', (req, res, next) => {
 app.post('/post', function(request, response) {
   response.send(request.body)
 })
+
+app.post('/api/github-webhook', githubWebhook)

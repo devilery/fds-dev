@@ -1,3 +1,6 @@
+const { emmit } = require('./libs/event')
+
+
 function processGithubPullRequest(pullRequestEvent) {
   const action = pullRequestEvent.action
   const sender = pullRequestEvent.sender
@@ -7,15 +10,16 @@ function processGithubPullRequest(pullRequestEvent) {
   const pullRequestData = {
     id: githubPullRequest.id,
     from: 'github',
-    number: githubPullRequest.number,
-    websiteUrl: githubPullRequest.html_url,
+    pr_number: githubPullRequest.number,
+    website_url: githubPullRequest.html_url,
     title: githubPullRequest.title,
-    userId
+    user_id: userId
   }
 
 
   switch (action) {
     case 'open':
+      emmit('pr.open', pullRequestData)
       break;
     case 'closed':
       break;
