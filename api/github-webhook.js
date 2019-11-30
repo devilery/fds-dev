@@ -1,6 +1,6 @@
 module.exports = async (req, res) => {
   const { body } = req
-  const eventName = req.get('X-GitHub-Event')
+  const eventName = req.headers('X-GitHub-Event')
   
   switch (eventName) {
     case 'pull_request':
