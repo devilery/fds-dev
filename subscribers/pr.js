@@ -1,4 +1,4 @@
-{ sendMessage } = require('../libs/slack.js');
+const { sendMessage } = require('../libs/slack.js');
 
 async function opened(data) {
 	sendMessage(
@@ -18,7 +18,7 @@ async function opened(data) {
 					"type": "section",
 					"text": {
 						"type": "mrkdwn",
-						"text": "*Monitoring pull-request <https://google.com| make-9roads-great-again> * \n_*ID*: 34185122_"
+						"text": "*Monitoring pull-request <https://google.com| " + data['title'] + "> * \n_*ID*: " + data['pr_number']
 					}
 				},
 				{
