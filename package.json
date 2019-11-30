@@ -5,6 +5,9 @@
   "repository": "git@github.com:LeZuse/fds-dev.git",
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
+  "scripts": {
+  	"start": "node index.js"
+  },
   "dependencies": {
     "express": "^4.17.1",
     "firebase": "^7.5.0",
