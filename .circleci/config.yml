@@ -8,11 +8,12 @@ jobs:
 
     steps:
       - run: |
+          # Cannot use scripts/ci_webhook.sh yet (before checkout)
           ci_webhook() {
             echo Sending webhook ...
             curl -X POST "https://fds-dev.now.sh/api/event-webhook" \
               -H "Content-Type: application/json" \
-              -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}" #  pipeline.finished
+              -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}"
           }
 
           ci_webhook pipeline.started
@@ -50,5 +51,9 @@ jobs:
           command: echo e2e test run
 
       - run:
-          when: always
-          command: ci_webhook pipeline.finished
+          when: on_success
+          command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"success\""
+
+      - run:
+          when: on_fail
+          command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
