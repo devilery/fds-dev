@@ -1,0 +1,13 @@
+{
+  "version": 2,
+  "alias": ["fds-dev.now.sh"],
+  "env": {
+    "RANDOM_ENV": "value"
+  },
+  "functions": {
+    "functions.js": {
+      "memory": 3008,
+      "maxDuration": 10
+    }
+  }
+}
