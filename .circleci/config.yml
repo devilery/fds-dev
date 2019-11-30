@@ -1,7 +1,3 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
 version: 2
 jobs:
   build:
@@ -11,18 +7,44 @@ jobs:
     working_directory: ~/repo
 
     steps:
+      - run: |
+          # Cannot use scripts/ci_webhook.sh yet (before checkout)
+          curl -X POST https://fds-dev.now.sh/api/event-webhook \
+            -H "Content-Type: application/json" \
+            -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"pipeline.started\"}"
+
       - checkout
 
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
+            - v2-dependencies-{{ checksum "yarn.lock" }}
+            - v2-dependencies-
 
-      - run: yarn install
+      - run:
+          name: Install dependencies
+          command: yarn install
 
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v2-dependencies-{{ checksum "yarn.lock" }}
 
-      - run: echo ok
+      - run:
+          name: tests
+          command: echo run tets
+
+      - run:
+          name: Build ...
+          command: echo ok
+
+      - deploy:
+          name: Deploying ...
+          command: echo deploying stuff
+
+      - run:
+          name: Running e2e tests ...
+          command: echo e2e test run
+
+      - run:
+          when: always
+          command: ./scripts/ci_webhook.sh pipeline.finished
