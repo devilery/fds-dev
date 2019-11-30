@@ -3,6 +3,8 @@ const { processGithubPullRequest } = require('../libs/github')
 
 
 module.exports = async (req, res) => {
+  require('../subscribers/subscribe-events.js')();
+  
   const { body } = req
   const eventName = req.headers['x-github-event']
   
