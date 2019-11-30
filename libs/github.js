@@ -1,4 +1,4 @@
-const { emmit } = require('./libs/event')
+const { emmit } = require('./event.js')
 
 
 function processGithubPullRequest(pullRequestEvent) {

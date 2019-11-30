@@ -25,6 +25,6 @@ app.get('/get', (req, res, next) => {
   })
 })
 
-
 app.post('/api/slack-oauth-webhook', require('./api/slack-oauth-webhook.js'));
-app.post('/api/github-webhook', require('./api/github-webhook'))
+app.post('/api/github-webhook', require('./api/github-webhook.js'));
+app.post('/api/event-webhook', require('./api/event-webhook.js'));
