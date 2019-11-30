@@ -2,7 +2,7 @@
 
 URL=https://fds-dev.now.sh/api/event-webhook
 
-send() {
+ci_webhook() {
 	echo Sending webhook ...
 	# Send all CIRCLE* env vars
 	curl -X POST "$URL" \
@@ -10,4 +10,4 @@ send() {
 	  -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}" #  pipeline.finished
 }
 
-[ ! -z "$1" ] && send "$1"
+[ ! -z "$1" ] && ci_webhook "$1"
