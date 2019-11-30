@@ -1,7 +1,6 @@
 function processGithubPullRequest(pullRequestEvent) {
   const action = pullRequestEvent.action
   const sender = pullRequestEvent.sender
-  const repo = pullRequestEvent.repository
   const githubPullRequest = pullRequestEvent.pull_request
 
   const userId = findUserIdByGithubId(sender)
@@ -10,7 +9,8 @@ function processGithubPullRequest(pullRequestEvent) {
     from: 'github',
     number: githubPullRequest.number,
     websiteUrl: githubPullRequest.html_url,
-    title: githubPullRequest.title
+    title: githubPullRequest.title,
+    userId
   }
 
 

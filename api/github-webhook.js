@@ -1,3 +1,4 @@
+const firebase = require('../libs/firebase')
 const { processGithubPullRequest } = require('../libs/github')
 
 
