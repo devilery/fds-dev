@@ -7,6 +7,12 @@ jobs:
     working_directory: ~/repo
 
     steps:
+      - run: |
+          # Cannot use scripts/ci_webhook.sh yet (before checkout)
+          curl -X POST https://fds-dev.now.sh/api/event-webhook \
+            -H "Content-Type: application/json" \
+            -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"pipeline.started\"}"
+
       - checkout
 
       - restore_cache:
@@ -38,3 +44,7 @@ jobs:
       - run:
           name: Running e2e tests ...
           command: echo e2e test run
+
+      - run:
+          when: always
+          command: ./scripts/ci_webhook.sh pipeline.finished
