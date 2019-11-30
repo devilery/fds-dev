@@ -2,6 +2,6 @@
   "version": 2,
   "alias": ["fds-dev.now.sh"],
   "env": {
-    "RANDOM_ENV": "value"
+    "FIREBASE_AUTH_JSON":"@SECRET_FIREBASE_AUTH_JSON"
   }
 }

@@ -5,5 +5,8 @@
   "repository": "git@github.com:LeZuse/fds-dev.git",
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
-  "dependencies": {}
+  "dependencies": {
+    "firebase": "^7.5.0",
+    "firebase-admin": "^8.8.0"
+  }
 }
