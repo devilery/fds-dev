@@ -1,6 +1,6 @@
 #!/bin/sh
 
-URL=https://fds-dev.now.sh/api/event-webhook
+URL=https://fds-dev.herokuapp.com/api/event-webhook
 
 ci_webhook() {
 	# $1 = event type; $2 = any extra JSON string
