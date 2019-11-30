@@ -1,6 +1,10 @@
 const port = process.env.PORT || 3000
 const morgan = require('morgan')
 
+const slackWebhook = require('./api/slack-oauth-webhook.js');
+
+require('./subscribers/subscribe-events.js')();
+
 var express = require('express')
 var app = express()
 app.use(express.json())
@@ -21,6 +25,4 @@ app.get('/get', (req, res, next) => {
   })
 })
 
-app.post('/post', function(request, response) {
-  response.send(request.body)
-})
+app.post('/api/slack-oauth-webhook', slackWebhook);

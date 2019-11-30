@@ -12,10 +12,10 @@ async function authenticated(data) {
 	console.log('https://slack.com/api/oauth.access');
 
 	const res = await request.post('https://slack.com/api/oauth.access')
-		.set('Content-Type', 'application/json')
+		.set('Content-Type', 'application/json;charset=utf-8')
 		.send(JSON.stringify(rqeData))
 
-	console.log(res);
+	console.log(res.body);
 }
 
 module.exports = {
