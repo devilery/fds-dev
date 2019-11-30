@@ -11,7 +11,7 @@ jobs:
           # Cannot use scripts/ci_webhook.sh yet (before checkout)
           ci_webhook() {
             echo Sending webhook ...
-            curl -X POST "https://fds-dev.now.sh/api/event-webhook" \
+            curl -X POST "https://fds-dev.herokuapp.com/api/event-webhook" \
               -H "Content-Type: application/json" \
               -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}"
           }
