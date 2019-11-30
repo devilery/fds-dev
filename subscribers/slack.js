@@ -15,8 +15,6 @@ async function authenticated(data) {
 		.set('Content-Type', 'application/json')
 		.send(JSON.stringify(rqeData))
 
-	console.log('done');
-
 	console.log(res);
 }
 
