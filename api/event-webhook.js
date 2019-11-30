@@ -1,5 +1,5 @@
 module.exports = async (req, res) => {
-  const { body } = body
+  const { body } = req
   console.log(body)
   res.end()
 }
