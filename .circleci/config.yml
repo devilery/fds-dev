@@ -1,11 +1,14 @@
 version: 2
+
+defaults: &defaults
+  docker:
+    - image: circleci/node:10
+
+  working_directory: ~/repo
+
 jobs:
-  build:
-    docker:
-      - image: circleci/node:10
-
-    working_directory: ~/repo
-
+  track_start:
+    <<: *defaults
     steps:
       - run: |
           # Cannot use scripts/ci_webhook.sh yet (before checkout)
@@ -18,6 +21,9 @@ jobs:
 
           ci_webhook pipeline.started
 
+  build:
+    <<: *defaults
+    steps:
       - checkout
 
       - restore_cache:
@@ -42,6 +48,9 @@ jobs:
           name: Build ...
           command: echo ok
 
+  deploy:
+    <<: *defaults
+    steps:
       - deploy:
           name: Deploying ...
           command: echo deploying stuff
@@ -50,6 +59,9 @@ jobs:
           name: Running e2e tests ...
           command: echo e2e test run
 
+  track_end:
+    <<: *defaults
+    steps:
       - run:
           when: on_success
           command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"success\""
@@ -57,3 +69,23 @@ jobs:
       - run:
           when: on_fail
           command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
+
+workflows:
+  version: 2
+
+  pipeline:
+    jobs:
+      - track_start
+      - build:
+          requires:
+            - track_start
+      - deploy_approval:
+          type: approval
+          requires:
+            - build
+      - deploy:
+          requires:
+            - deploy_approval
+      - track_end:
+          requires:
+            - deploy
