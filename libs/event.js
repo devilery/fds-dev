@@ -1,29 +1,20 @@
-const events = [];
+const events = {};
 
 function subscribe(eventName, callback) {
-	const index = events.indexOf(eventName);
-	if (index > 0) {
-		event = events[index];
-	} else {
-		event = {
-			'name': eventName,
-			'callbacks': []
-		}
+	let callbacks = events[eventName];
+	if (callbacks === undefined) {
+		events[eventName] = [callback];
 	}
 };
 
 async function emmit(eventName, data) {
-	const index = events.indexOf(eventName);
-	if (index > 0) {
-		event = events[index];
-	} else {
-		event = {
-			'callbacks': []
-		}
+	let callbacks = events[eventName];
+	if (callbacks === undefined) {
+		callbacks = []
 	}
 
-	event.callbacks.forEach(callback => {
-		callback(data)
+	callbacks.forEach(callback => {
+		callback(data);
 	});
 };
 

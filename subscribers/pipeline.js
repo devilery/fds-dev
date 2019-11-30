@@ -1,9 +1,9 @@
-async started(data) {
+async function started(data) {
 	console.log('started');
 	console.log(data);
 }
 
-async finished(data) {
+async function finished(data) {
 	console.log('finished');
 	console.log(data);
 }
