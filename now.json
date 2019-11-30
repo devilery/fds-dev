@@ -3,5 +3,18 @@
   "alias": ["fds-dev.now.sh"],
   "env": {
     "FIREBASE_AUTH_JSON":"@FIREBASE_AUTH_JSON"
-  }
+  },
+  "builds": [{
+      "src": "index.js",
+      "use": "@now/node-server"
+  }],
+  "routes": [{
+      "headers": {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+          "Access-Control-Allow-Headers": "X-Requested-With, Content-Type, Accept"
+      },
+      "src": "/",
+      "dest": "/index.js"
+  }]
 }
