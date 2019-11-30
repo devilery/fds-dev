@@ -1,7 +1,7 @@
+require('dotenv').config()
+
 const port = process.env.PORT || 3000
 const morgan = require('morgan')
-
-const slackWebhook = require('./api/slack-oauth-webhook.js');
 
 require('./subscribers/subscribe-events.js')();
 
@@ -25,4 +25,6 @@ app.get('/get', (req, res, next) => {
   })
 })
 
-app.post('/api/slack-oauth-webhook', slackWebhook);
+
+app.post('/api/slack-oauth-webhook', require('./api/slack-oauth-webhook.js'));
+app.post('/api/github-webhook', require('./api/github-webhook'))
