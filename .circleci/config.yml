@@ -1,7 +1,3 @@
-# Javascript Node CircleCI 2.0 configuration file
-#
-# Check https://circleci.com/docs/2.0/language-javascript/ for more details
-#
 version: 2
 jobs:
   build:
@@ -15,14 +11,30 @@ jobs:
 
       - restore_cache:
           keys:
-            - v1-dependencies-{{ checksum "package.json" }}
-            - v1-dependencies-
+            - v2-dependencies-{{ checksum "yarn.lock" }}
+            - v2-dependencies-
 
-      - run: yarn install
+      - run:
+          name: Install dependencies
+          command: yarn install
 
       - save_cache:
           paths:
             - node_modules
-          key: v1-dependencies-{{ checksum "package.json" }}
+          key: v2-dependencies-{{ checksum "yarn.lock" }}
 
-      - run: echo ok
+      - run:
+          name: tests
+          command: echo run tets
+
+      - run:
+          name: Build ...
+          command: echo ok
+
+      - deploy:
+          name: Deploying ...
+          command: echo deploying stuff
+
+      - run:
+          name: Running e2e tests ...
+          command: echo e2e test run
