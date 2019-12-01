@@ -8,12 +8,16 @@ const authenticated = async function(data) {
 	const userInfo = await slack.getUserInfo(tokens.userAccessToken)
 
 
+	let team_created = false
+	let user_created = false
+
 	const team = await firestore.collection('teams').doc(teamInfo.id).get()
 	if (!team.exist) {
-		await firestore.collection('teams').doc(teamInfo.id).set(data)
-		const team = createTeam(teamInfo);
+		await team.set(teamInfo)
+		team_created = true
 	}
 
+	const user = await firestore.collection('users').doc(userInfo.id).get()
 	if (!userExist(userInfo.email)) {
 		const user = createUser(userInfo);
 		user.slackImChannelId = slack.openIm(user.slackId).channelId
