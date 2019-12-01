@@ -26,7 +26,7 @@ async function sendPrOpenedMessage(data, channel, accessToken) {
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": `*Monitoring pull-request <https://google.com| ${data['title']}> * \n_*ID*: ${data['pr_number']}`
+					"text": `*Monitoring PR <${data.website_url}| #${data.pr_number} ${data.title}>`
 				}
 			},
 			{
