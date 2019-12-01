@@ -17,8 +17,9 @@ function processGithubPullRequest(pullRequestEvent) {
   }
 
 
+  console.log(action)
   switch (action) {
-    case 'open':
+    case 'opened':
       emmit('pr.opened', pullRequestData)
       break;
     case 'closed':
