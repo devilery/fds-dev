@@ -35,6 +35,7 @@ async function processCommitStatus(statusEvent) {
   for (let pull of pullRequests) {
     let statusData = {
       status: statusEvent.state,
+      type: 'standard',
       from: 'github',
       id: statusEvent.id,
       commit_sha: statusEvent.sha,
@@ -47,7 +48,6 @@ async function processCommitStatus(statusEvent) {
     }
 
     emmit('pr.check.update', statusData)
-    console.log('EMIT STATUS')
   }
 }
 
