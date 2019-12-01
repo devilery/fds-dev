@@ -5,5 +5,7 @@ const app = admin.initializeApp({
   databaseURL: "https://fds-dev-260620.firebaseio.com"
 });
 
-module.exports = app
+const firestore = app.firestore()
 
+
+module.exports = { firestore }
