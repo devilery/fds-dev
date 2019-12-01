@@ -1,4 +1,4 @@
-const { sendPrOpenedMessage } = require('../libs/slack-message.js');
+const { sendPrOpenedMessage } = require('../libs/slack-messages');
 const { createOrUpdatePr } = require('../libs/pr');
 
 const opened = async function(data) {
