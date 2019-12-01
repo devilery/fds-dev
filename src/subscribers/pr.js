@@ -5,12 +5,14 @@ const { jobDetails } = require('../libs/circleci');
 
 const opened = async function(data) {
 	const pr = await createOrUpdatePr(data)
-	pr.set({slackThreadId: sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')})
+	threadId = await sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-WGooFwX4QJfUtr3CwwTDvMKW')
+	pr.update({ slackThreadId: threadId })
 };
 
 const commitCheckUpdate = async function (check) {
 	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
-	let prRef = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
+	let pr = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
+	pr = pr.data()
 
 	if (check.context && check.context.includes('ci/circleci')) {
 		circleCiData = await jobDetails({jobUrl: check.target_url})
@@ -40,15 +42,16 @@ const commitCheckUpdate = async function (check) {
 
 	let update_msg_data = {
 		checks,
-		pr: prRef.data()
+		pr: pr
 	}
 
-	updateMainMessage(update_msg_data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+	updateMainMessage(update_msg_data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-WGooFwX4QJfUtr3CwwTDvMKW')
 
+	console.log(pr)
 	if (check.status === 'success') {
-		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-WGooFwX4QJfUtr3CwwTDvMKW', pr.slackThreadId)
 	} else if (check.status === 'failure' || heck.status === 'error') {
-		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-WGooFwX4QJfUtr3CwwTDvMKW', pr.slackThreadId)
 	}
 }
 

@@ -75,7 +75,7 @@ async function findAndUpdatePRsById(GHPullRequests) {
 
 async function createOrUpdateCommit(commit, pullRequests = []) {
   let commitRef = await firestore.collection('commits').doc(commit.sha)
-  commitRef.set(commit)
+  commitRef.set(commit, { merge: true })
 
   for (let pull of pullRequests) {
     await firestore.collection('pull_requests').doc(pull.id.toString()).collection('commits').doc(commit.sha).set({

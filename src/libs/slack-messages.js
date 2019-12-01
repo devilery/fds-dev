@@ -30,7 +30,7 @@ let baseBlock = (data) => [{
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*Monitoring pull-request <https://google.com| ${data['title']}> * \n_*ID*_: ${data['pr_number']}`
+			"text": `*Monitoring pull-request <${data.website_url}| ${data['title']}> * \n_*ID*_: ${data['pr_number']}`
 		}
 	},
 	{
@@ -87,19 +87,21 @@ let footerBlock = (data) => [{
 
 
 async function sendPrOpenedMessage(data, channel, token) {
-	let blocks = [baseBlock(data), footerBlock(data)]
+	let blocks = [baseBlock(data)]
 
 	data = {
 		"channel": channel,
+		"text": "Pull Request opened",
 		"blocks": blocks.flat()
 	}
 
-	return await sendMessage(data, token).body.message.ts
+	let res = await sendMessage(data, token)
+	return res.body.message.ts
 };
 
 
 async function updateMainMessage(data, channel, token) {
-	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks), footerBlock(data.pr)]
+	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks)]
 
 	data = {
 		"blocks": blocks.flat()
@@ -109,7 +111,7 @@ async function updateMainMessage(data, channel, token) {
 }
 
 
-async function sendCheckSuccess(data, channel, token) {
+async function sendCheckSuccess(data, channel, token, ts) {
 	let sucessText = `✅ *The <${data.target_url}|${data.name}> was successful!*`;
 
 	if (data.type === 'ci-circleci') {
@@ -117,6 +119,8 @@ async function sendCheckSuccess(data, channel, token) {
 	}
 
 	data = {
+		"thread_ts": ts,
+		"channel": channel,
 		"blocks": [
 			{
 				"type": "context",
@@ -132,15 +136,6 @@ async function sendCheckSuccess(data, channel, token) {
 				"text": {
 					"type": "mrkdwn",
 					"text": sucessText
-				},
-				"accessory": {
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Assign review",
-						"emoji": true
-					},
-					"value": "click_me_123"
 				}
 			}
 		]
@@ -150,7 +145,7 @@ async function sendCheckSuccess(data, channel, token) {
 }
 
 
-async function sendCheckError(data, channel, token) {
+async function sendCheckError(data, channel, token, ts) {
 
 	let errorText = `⛔️ *There was an error with the <${data.target_url}|${data.name}>.*`;
 
@@ -159,6 +154,8 @@ async function sendCheckError(data, channel, token) {
 	}
 
 	data = {
+		"thread_ts": ts,
+		"channel": channel,
 		"blocks": [
 			{
 				"type": "context",

@@ -1,7 +1,9 @@
 const { firestore } = require('../libs/firebase');
 
 async function createOrUpdatePr(pullRequest) {
-  return firestore.collection('pull_requests').doc(pullRequest.id.toString()).set(pullRequest)
+  const pr = await firestore.collection('pull_requests').doc(pullRequest.id.toString())
+  await pr.set(pullRequest, { merge: true })
+  return pr
 }
 
 async function isHeadCommitCheck(sha, pullRequestId) {
