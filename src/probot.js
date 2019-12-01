@@ -1,3 +1,5 @@
+// require('dotenv').config();
+
 const { fdsApp } = require('./index')
 /**
  * This is the main entrypoint to your Probot app

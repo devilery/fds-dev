@@ -19,8 +19,9 @@
     "morgan": "^1.9.1",
     "nodemon": "^2.0.1",
     "probot": "^9.6.6",
-    "superagent": "^5.1.1",
-    "smee-client": "^1.1.0"
+    "request": "^2.88.0",
+    "smee-client": "^1.1.0",
+    "superagent": "^5.1.1"
   },
   "nodemonConfig": {
     "exec": "yarn start",
