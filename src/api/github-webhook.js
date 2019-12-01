@@ -1,8 +1,9 @@
+const router = require('express').Router();
 const firebase = require('../libs/firebase')
 const { processGithubPullRequest } = require('../libs/github')
 
 
-module.exports = async (req, res) => {  
+router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
   
@@ -15,4 +16,7 @@ module.exports = async (req, res) => {
       break;
   }
   res.status(200).end()
-}
+});
+
+
+module.exports = router;

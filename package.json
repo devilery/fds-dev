@@ -6,7 +6,7 @@
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
   "scripts": {
-    "start": "node index.js"
+    "start": "node src/index.js"
   },
   "dependencies": {
     "dotenv": "^8.2.0",

@@ -1,7 +1,7 @@
 const request = require('superagent');
 
 
-async function authenticated(data) {
+const authenticated = async function(data) {
 
 	const rqeData = {
 		'client_id': '7093049764.854725724224',
@@ -17,7 +17,6 @@ async function authenticated(data) {
 
 	console.log(res.body);
 }
+authenticated.eventType = 'slack.user.authenticated';
 
-module.exports = {
-	'authenticated': authenticated,
-}
+module.exports = [authenticated];

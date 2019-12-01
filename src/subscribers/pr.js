@@ -1,6 +1,6 @@
 const { sendMessage } = require('../libs/slack.js');
 
-async function opened(data) {
+const opened = async function(data) {
 	sendMessage(
 		{
 			"channel": "DQWPDJ6JD",
@@ -88,7 +88,6 @@ async function opened(data) {
 		}
 	)
 }
+opened.eventType = 'pr.opened';
 
-module.exports = {
-	'opened': opened
-}
+module.exports = [opened];
