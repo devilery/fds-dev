@@ -34,7 +34,7 @@ async function getUserInfo(accessToken, userToken) {
 
 
 async function openImChannel(accessToken, userToken) {
-	const res = await axios.get('https://slack.com/api/im.open', {params: {'user': userToken},headers: {'Authorization': `Bearer ${accessToken}`}})
+	const res = await axios.get('https://slack.com/api/im.open', {params: {'user': userToken}, headers: {'Authorization': `Bearer ${accessToken}`}})
 	const data = res.data
 	return data.channel.id
 }
@@ -49,5 +49,12 @@ async function sendMessage(data, accessToken) {
 	console.log(res.body)
 	return res
 }
+
+async function updateMessage(channel, ts, data, accessToken) {
+	data.channel
+	data.ts = ts
+	return await axios.post('https://slack.com/api/chat.update', {data: data, headers: {'Authorization': `Bearer ${accessToken}`}})
+}
+
 
 module.exports = { getAuthInfo, getTeamInfo, getUserInfo, openImChannel, sendMessage }

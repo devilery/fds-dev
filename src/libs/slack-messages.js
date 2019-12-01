@@ -100,14 +100,13 @@ async function sendPrOpenedMessage(data, channel, token) {
 };
 
 
-async function updateMainMessage(data, channel, token) {
-	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks)]
 
+async function updatePrOpenedMessage(data, channel, token) {
+	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks)]
 	data = {
 		"blocks": blocks.flat()
 	}
-
-	return sendMessage(data, channel, token)
+	return updateMessage(data, channel, token)
 }
 
 
@@ -189,4 +188,4 @@ async function sendCheckError(data, channel, token, ts) {
 };
 
 
-module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSuccess, sendCheckError, updateMainMessage }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSuccess, sendCheckError, updatePrOpenedMessage }
