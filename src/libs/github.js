@@ -52,7 +52,8 @@ async function processCommitStatus(statusEvent) {
 }
 
 async function findUserIdByGithubId(githubEventUser) {
-  return 'RANDOM_ID' + Math.random().toString()
+  let user = await firebase.collection('users').doc(githubEventUser.id.toString()).get()
+  return user.data().id
 }
 
 async function findAndUpdatePRsById(GHPullRequests) {
