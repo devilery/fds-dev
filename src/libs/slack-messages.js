@@ -1,15 +1,15 @@
 const { sendMessage } = require('./slack-api.js')
 
-async function sendWelcomeMessage(channel, token) {
+async function sendWelcomeMessage(channel, accessToken) {
 	data = {
 		'channel': channel,
 		'text': 'Ahoj'
 	}
 
-	return sendMessage(data, token)
+	return sendMessage(data, accessToken)
 };
 
-async function sendPrOpenedMessage(data, channel, token) {
+async function sendPrOpenedMessage(data, channel, accessToken) {
 	data = {
 		"channel": channel,
 		"blocks": [
@@ -95,8 +95,8 @@ async function sendPrOpenedMessage(data, channel, token) {
 		]
 	}
 
-	return sendMessage(data, token)
+	return sendMessage(data, accessToken)
 };
 
 
-module.exports = { sendMessage, sendPrOpenedMessage }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage }

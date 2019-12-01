@@ -1,34 +1,32 @@
-const firebase = require('../libs/firebase');
+const firebase = require('../libs/firebase')
 const slack = require('../libs/slack-api.js')
-const { firestore } = require('../libs/firebase');
+const { firestore } = require('../libs/firebase')
+const { emmit } = require('../libs/event.js')
+
 
 const authenticated = async function(data) {
-	const tokens = await slack.getTokens(data.code, data.redirect_uri)
-	const teamInfo = await slack.getTeamInfo(tokens.userAccessToken)
-	const userInfo = await slack.getUserInfo(tokens.userAccessToken)
+	const authInfo = await slack.getAuthInfo(data.code, data.redirect_uri)
+	const teamInfo = await slack.getTeamInfo(authInfo.userAccessToken)
+	const userInfo = await slack.getUserInfo(authInfo.userAccessToken, authInfo.userId)
 
-	let teamCreated = false
-	let userCreated = false
-
-	const team = await firestore.collection('teams').doc(teamInfo.id).get()
+	const teamRef = await firestore.collection('teams').doc(teamInfo.id)
+	const team = teamRef.get()
 	if (!team.exist) {
-		await team.set(teamInfo)
-		teamCreated = true
+		teamInfo.botAccessToken = authInfo.botAccessToken
+
+		await teamRef.set(teamInfo)
+		emmit('team.created', teamInfo)
 	}
 
-	const user = await firestore.collection('users').doc(userInfo.id).get()
+	const userRef = await firestore.collection('users').doc(userInfo.id)
+	const user = await userRef.get()
 	if (!user.exist) {
-		userInfo.slackImChannelId = slack.openIm(user.slackId).channelId
-		await user.set(userInfo)
-		userCreated = true
+		userInfo.team = teamRef
+		userInfo.slackImChannelId = await slack.openImChannel(authInfo.botAccessToken, user.id)
+
+		await userRef.set(userInfo)
+		emmit('user.created', userInfo)
 	}
-
-	if (team.githubConnected) {
-
-	}
-
-	if userCreated
-		slack.sendWelcomeMessage(user.slackImChannelId)
 
 }
 authenticated.eventType = 'slack.user.authenticated'

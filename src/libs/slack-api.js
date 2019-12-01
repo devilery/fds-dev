@@ -3,7 +3,7 @@ const axios = require('axios')
 const request = require('superagent')
 
 
-async function getTokens(code, redirectUri) {
+async function getAuthInfo(code, redirectUri) {
 	const rqeData = {
 		'client_id': process.env.SLACK_CLIENT_ID,
 		'client_secret': process.env.SLACK_CLIENT_SECRET,
@@ -14,33 +14,39 @@ async function getTokens(code, redirectUri) {
 		rqeData.redirect_uri = data.redirect_uri
 
 	const res = await axios.get('https://slack.com/api/oauth.access', {params: rqeData})
-	return { userAccessToken: res.access_token, botAccessToken: res.bot.bot_access_token}
+	const data = res.data
+	return { userId: data.user_id, userAccessToken: data.access_token, botAccessToken: data.bot.bot_access_token}
 }
 
 
 async function getTeamInfo(accessToken) {
 	const res = await axios.get('https://slack.com/api/team.info', {headers: {'Authorization': `Bearer ${accessToken}`}})
-	return { id: res.team.id, name: res.team.name}
+	const data = res.data
+	return { id: data.team.id, name: data.team.name}
 }
 
 
-async function getUserInfo(accessToken) {
-	const res = await axios.get('https://slack.com/api/identity.email', {headers: {'Authorization': `Bearer ${accessToken}`}})
-	return { id: res.user.id, email: res.user.email, name: res.user.name }
+async function getUserInfo(accessToken, userToken) {
+	const res = await axios.get('https://slack.com/api/users.info', {params: {'user': userToken}, headers: {'Authorization': `Bearer ${accessToken}`}})
+	const data = res.data
+	return { id: data.user.id, name: data.user.real_name }
 }
 
 
-async function openIm(data, userToken) {
-	const res = await axios.get('https://slack.com/api/users.profile.get', {params: {'user': userToken},headers: {'Authorization': `Bearer ${accessToken}`}})
-	return { channelId: channel.id }
+async function openImChannel(accessToken, userToken) {
+	const res = await axios.get('https://slack.com/api/im.open', {params: {'user': userToken},headers: {'Authorization': `Bearer ${accessToken}`}})
+	const data = res.data
+	return data.channel.id
 }
 
 
-async function sendMessage(data, token) {
-	return request.post('https://slack.com/api/chat.postMessage')
+async function sendMessage(data, accessToken) {
+	console.log(data)
+	const res = await request.post('https://slack.com/api/chat.postMessage')
 		.set('Content-Type', 'application/json;charset=utf-8')
-		.set('Authorization', `Bearer ${token}`)
+		.set('Authorization', `Bearer ${accessToken}`)
 		.send(JSON.stringify(data))
+	console.log(res.body)
 }
 
-module.exports = { getTokens, getTeamInfo, getUserInfo, sendMessage }
+module.exports = { getAuthInfo, getTeamInfo, getUserInfo, openImChannel, sendMessage }
