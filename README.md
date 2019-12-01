@@ -2,14 +2,13 @@
 Feature delivery streamlining
 
 ## Install
-- `yarn` # download deps
-- `npm install -g now`
-- authenticate with your zeit.co account
-- `now switch fds-dev` # switch to our team
+- `yarn install` # download deps
+
+## Development
+- `yarn dev` # nodemon reload on *.js changes
 
 ## Deploy
-### Publish your preview deploy
-- `now`
-
-### To prod, so that everyone can see it
-- `now --prod`
+- `git push origin master` # heroku picks up any changes and deploys
+### Manual deploy
+- `heroku git:remote -a fds-dev` # add heroku remote
+- `git push heroku master`
