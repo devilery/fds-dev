@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "main": "index.js",
   "repository": "git@github.com:LeZuse/fds-dev.git",
+  "homepage": "https://github.com/feature-delivery/fds-dev",
   "author": "Tomas Ruzicka <me@tomasr.com>",
   "license": "MIT",
   "scripts": {
