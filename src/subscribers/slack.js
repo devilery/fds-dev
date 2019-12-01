@@ -7,28 +7,28 @@ const authenticated = async function(data) {
 	const teamInfo = await slack.getTeamInfo(tokens.userAccessToken)
 	const userInfo = await slack.getUserInfo(tokens.userAccessToken)
 
-
-	let team_created = false
-	let user_created = false
+	let teamCreated = false
+	let userCreated = false
 
 	const team = await firestore.collection('teams').doc(teamInfo.id).get()
 	if (!team.exist) {
 		await team.set(teamInfo)
-		team_created = true
+		teamCreated = true
 	}
 
 	const user = await firestore.collection('users').doc(userInfo.id).get()
-	if (!userExist(userInfo.email)) {
-		const user = createUser(userInfo);
-		user.slackImChannelId = slack.openIm(user.slackId).channelId
-		user.save()
-
-		slack.sendWelcomeMessage(user.slackImChannelId)
+	if (!user.exist) {
+		userInfo.slackImChannelId = slack.openIm(user.slackId).channelId
+		await user.set(userInfo)
+		userCreated = true
 	}
 
 	if (team.githubConnected) {
 
 	}
+
+	if userCreated
+		slack.sendWelcomeMessage(user.slackImChannelId)
 
 }
 authenticated.eventType = 'slack.user.authenticated'

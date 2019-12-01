@@ -29,10 +29,12 @@ async function getUserInfo(accessToken) {
 	return { id: res.user.id, email: res.user.email, name: res.user.name }
 }
 
+
 async function openIm(data, userToken) {
 	const res = await axios.get('https://slack.com/api/users.profile.get', {params: {'user': userToken},headers: {'Authorization': `Bearer ${accessToken}`}})
 	return { channelId: channel.id }
 }
+
 
 async function sendMessage(data, token) {
 	return request.post('https://slack.com/api/chat.postMessage')
