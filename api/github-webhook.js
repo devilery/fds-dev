@@ -1,5 +1,5 @@
 const firebase = require('../libs/firebase')
-const { processGithubPullRequest } = require('../libs/github')
+const { processGithubPullRequest, processCommitStatus } = require('../libs/github')
 
 
 module.exports = async (req, res) => {  
@@ -9,6 +9,9 @@ module.exports = async (req, res) => {
   switch (eventName) {
     case 'pull_request':
       processGithubPullRequest(body)
+      break;
+    case 'status':
+      processCommitStatus(body)
       break;
     default:
       console.log('untracked event')
