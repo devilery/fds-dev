@@ -1,7 +1,7 @@
 async function sendMessage(data, token) {
 	return request.post('https://slack.com/api/chat.postMessage')
 		.set('Content-Type', 'application/json;charset=utf-8')
-		.set('Authorization', `Bearer ${token}`);
+		.set('Authorization', `Bearer ${token}`)
 		.send(JSON.stringify(reqData));
 }
 
