@@ -1,8 +1,14 @@
+const request = require('superagent');
+
 async function sendMessage(data, token) {
-	return request.post('https://slack.com/api/chat.postMessage')
+	const res = await request.post('https://slack.com/api/chat.postMessage')
 		.set('Content-Type', 'application/json;charset=utf-8')
 		.set('Authorization', `Bearer ${token}`)
-		.send(JSON.stringify(reqData));
+		.send(JSON.stringify(data));
+
+		console.log(res.body);
+
+		return res;
 }
 
 async function sendPrOpenedMessage(data, channel, token) {
