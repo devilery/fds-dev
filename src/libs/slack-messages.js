@@ -190,4 +190,4 @@ async function sendCheckError(data, channel, token) {
 }
 
 
-module.exports = { sendMessage, sendPrOpenedMessage }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSucess, sendCheckError }
