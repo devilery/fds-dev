@@ -13,11 +13,10 @@ function processGithubPullRequest(pullRequestEvent) {
     pr_number: githubPullRequest.number,
     website_url: githubPullRequest.html_url,
     title: githubPullRequest.title,
-    user_id: userId
+    user_id: userId,
+    raw_data: pullRequestEvent
   }
 
-
-  console.log(action)
   switch (action) {
     case 'opened':
       emmit('pr.opened', pullRequestData)
@@ -31,10 +30,17 @@ function processGithubPullRequest(pullRequestEvent) {
   }
 }
 
+function processCommitStatus(statusEvent) {
+  const action = pullRequestEvent.action
+  const sender = pullRequestEvent.sender
+  const githubCommitStatus = pullRequestEvent.status
+}
+
 function findUserIdByGithubId(githubEventUser) {
   return 'RANDOM_ID' + Math.random().toString()
 }
 
 module.exports = {
-  processGithubPullRequest
+  processGithubPullRequest,
+  processCommitStatus
 }
