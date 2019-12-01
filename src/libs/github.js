@@ -1,31 +1,15 @@
-const { emmit } = require('./event.js');
+const { emmit } = require('./event');
+const firebase = require('./firebase')
 const { getPullRequestsForCommit } = require('./github-api');
 
 
-function processGithubPullRequest(pullRequestEvent) {
+async function processGithubPullRequest(pullRequestEvent) {
   const action = pullRequestEvent.action
   const sender = pullRequestEvent.sender
-  const githubPullRequest = pullRequestEvent.pull_request
+  
 
-  const userId = findUserIdByGithubId(sender)
-  const pullRequestData = {
-    id: githubPullRequest.id,
-    from: 'github',
-    pr_number: githubPullRequest.number,
-    website_url: githubPullRequest.html_url,
-    title: githubPullRequest.title,
-    user_id: userId,
-    repository: {
-      id: pullRequestEvent.repository.id,
-      name: pullRequestEvent.repository.name,
-      owner: {
-        id: pullRequestEvent.repository.owner.id,
-        login: pullRequestEvent.repository.owner.login
-      },
-      raw_data: pullRequestEvent.repository
-    },
-    raw_data: pullRequestEvent
-  }
+  const userId = await findUserIdByGithubId(sender)
+  const pullRequestData = transformPRevent(pullRequestEvent)
 
   switch (action) {
     case 'opened':
@@ -34,6 +18,7 @@ function processGithubPullRequest(pullRequestEvent) {
     case 'closed':
       break;
     case 'reopened':
+      emmit('pr.opened', pullRequestData)
       break;
     default:
       break;
@@ -43,28 +28,35 @@ function processGithubPullRequest(pullRequestEvent) {
 async function processCommitStatus(statusEvent) {
   const githubCommitStatus = statusEvent.status
 
-  let commitPullRequests = await getPullRequestsForCommit(githubCommitStatus.repository.owner.login, githubCommitStatus.repository.name, githubCommitStatus.sha);
-  let pullRequests = await findPullRequestsById(commitPullRequests.map((item) => item.id))
-  await createCommit(githubCommitStatus.commit)
+  let commitPullRequests = await getPullRequestsForCommit(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha);
+  let pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  await createCommit(statusEvent.commit)
 
   for (let pull of pullRequests) {
 
+    let gitPullRaw = commitPullRequests.find(item => item.id === pull.id)
+    let isHeadCommit = gitPullRaw.head.sha === statusEvent.sha
+
+    console.log(isHeadCommit)
+    if (!isHeadCommit) {
+      return
+    }
+
     let statusData = {
-      status: githubCommitStatus.status,
+      status: statusEvent.status,
       from: 'github',
-      id: githubCommitStatus.id,
-      commit_sha: githubCommitStatus.sha,
-      name: githubCommitStatus.name,
-      target_url: githubCommitStatus.target_url,
-      context: githubCommitStatus.context,
-      description: githubCommitStatus.description,
+      id: statusEvent.id,
+      commit_sha: statusEvent.sha,
+      name: statusEvent.name,
+      target_url: statusEvent.target_url,
+      context: statusEvent.context,
+      description: statusEvent.description,
       pull_request_id: pull.id,
       raw_data: statusEvent
     }
 
-    emmit('pr.commit-status-update', statusData)
+    emmit('pr.head-commit-status-update', statusData)
     console.log('EMIT STATUS')
-    console.log(statusData)
   }
 }
 
@@ -72,10 +64,13 @@ async function findUserIdByGithubId(githubEventUser) {
   return 'RANDOM_ID' + Math.random().toString()
 }
 
-async function findPullRequestsById(ids) {
-  let snapshot = await firebase.database().collection('pull_requests').where('id', 'in', ids).get()
+async function findAndUpdatePRsById(GHPullRequests) {
+  let snapshot = await firebase.firestore().collection('pull_requests').where('id', 'in', GHPullRequests.map(item => item.id)).get()
+
+
   pullsArray = []
   snapshot.forEach(doc => {
+    console.log(doc)
     pullsArray.push(doc.data())
   });
 
@@ -83,7 +78,30 @@ async function findPullRequestsById(ids) {
 }
 
 async function createCommit(commit) {
-  await firebase.database().collection('commits').doc(commit.sha).set(commit)
+  await firebase.firestore().collection('commits').doc(commit.sha).set(commit)
+}
+
+function transformPRevent(githubPullRequest) {
+  const pull = pullRequestEvent.pull_request
+  return {
+    id: pull.id,
+    from: 'github',
+    pr_number: pull.number,
+    website_url: pull.html_url,
+    title: pull.title,
+    user_id: userId,
+    head_sha: pullRequestEvent.head.sha,
+    repository: {
+      id: githubPullRequest.repository.id,
+      name: githubPullRequest.repository.name,
+      owner: {
+        id: githubPullRequest.repository.owner.id,
+        login: githubPullRequest.repository.owner.login
+      },
+      raw_data: githubPullRequest.repository
+    },
+    raw_data: githubPullRequest
+  }
 }
 
 module.exports = {
