@@ -50,6 +50,7 @@ async function sendMessage(data, accessToken) {
 	return res
 }
 
+
 async function updateMessage(channel, ts, data, accessToken) {
 	data.channel
 	data.ts = ts
