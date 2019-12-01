@@ -1,5 +1,6 @@
 const { sendPrOpenedMessage } = require('../libs/slack-message.js');
 const firebase = require('../libs/firebase');
+const { sendPrOpenedMessage } = require('../libs/slack-messages.js');
 
 const opened = async function(data) {
 	await firebase.firestore().collection('pull_requests').doc(data.id.toString()).set(data)
