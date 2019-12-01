@@ -40,15 +40,16 @@ function processGithubPullRequest(pullRequestEvent) {
   }
 }
 
-function processCommitStatus(statusEvent) {
+async function processCommitStatus(statusEvent) {
   const githubCommitStatus = statusEvent.status
 
   let commitPullRequests = await getPullRequestsForCommit(githubCommitStatus.repository.owner.login, githubCommitStatus.repository.name, githubCommitStatus.sha);
   let pullRequests = await findPullRequestsById(commitPullRequests.map((item) => item.id))
+  await createCommit(githubCommitStatus.commit)
 
   for (let pull of pullRequests) {
 
-    let StatusData = {
+    let statusData = {
       status: githubCommitStatus.status,
       from: 'github',
       id: githubCommitStatus.id,
@@ -61,7 +62,9 @@ function processCommitStatus(statusEvent) {
       raw_data: statusEvent
     }
 
-    emmit('pr.commit-status-update', StatusData)
+    emmit('pr.commit-status-update', statusData)
+    console.log('EMIT STATUS')
+    console.log(statusData)
   }
 }
 
@@ -80,7 +83,7 @@ async function findPullRequestsById(ids) {
 }
 
 async function createCommit(commit) {
-  await firebase.database().collection('commits')
+  await firebase.database().collection('commits').doc(commit.sha).set(commit)
 }
 
 module.exports = {
