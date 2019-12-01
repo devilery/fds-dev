@@ -10,7 +10,7 @@ async function processGithubPullRequest(pullRequestEvent) {
   
 
   const userId = await findUserIdByGithubId(sender)
-  const pullRequestData = transformPRevent(pullRequestEvent)
+  const pullRequestData = transformPRevent(pullRequestEvent.pull_request, userId)
 
   switch (action) {
     case 'opened':
@@ -27,21 +27,14 @@ async function processGithubPullRequest(pullRequestEvent) {
 }
 
 async function processCommitStatus(statusEvent) {
-  const githubCommitStatus = statusEvent.status
 
   let commitPullRequests = await getPullRequestsForCommit(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha);
   let pullRequests = await findAndUpdatePRsById(commitPullRequests)
-  await createCommit(statusEvent.commit)
+  await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   for (let pull of pullRequests) {
-    let isHeadCommit = pull.head_sha === statusEvent.sha
-
-    if (!isHeadCommit) {
-      return
-    }
-
     let statusData = {
-      status: statusEvent.status,
+      status: statusEvent.state,
       from: 'github',
       id: statusEvent.id,
       commit_sha: statusEvent.sha,
@@ -53,7 +46,7 @@ async function processCommitStatus(statusEvent) {
       raw_data: statusEvent
     }
 
-    emmit('pr.head-commit-status-update', statusData)
+    emmit('pr.check.update', statusData)
     console.log('EMIT STATUS')
   }
 }
@@ -64,7 +57,7 @@ async function findUserIdByGithubId(githubEventUser) {
 
 async function findAndUpdatePRsById(GHPullRequests) {
   for (let GHpr of GHPullRequests) {
-    let pr = await firestore.collection('pull_requests').doc(GHpr.id).get()
+    let pr = await firestore.collection('pull_requests').doc(GHpr.id.toString()).get()
     if (pr.exists) {
       await createOrUpdatePr(transformPRevent(GHpr))
     }
@@ -80,32 +73,44 @@ async function findAndUpdatePRsById(GHPullRequests) {
   return pullsArray
 }
 
-async function createCommit(commit) {
-  await firestore.collection('commits').doc(commit.sha).set(commit)
-}
+async function createOrUpdateCommit(commit, pullRequests = []) {
+  let commitRef = await firestore.collection('commits').doc(commit.sha)
+  commitRef.set(commit)
 
-function transformPRevent(githubPullRequest) {
-  const pull = pullRequestEvent.pull_request
-  return {
-    id: pull.id,
-    from: 'github',
-    pr_number: pull.number,
-    website_url: pull.html_url,
-    title: pull.title,
-    user_id: userId,
-    head_sha: pullRequestEvent.head.sha,
-    repository: {
-      id: githubPullRequest.repository.id,
-      name: githubPullRequest.repository.name,
-      owner: {
-        id: githubPullRequest.repository.owner.id,
-        login: githubPullRequest.repository.owner.login
-      },
-      raw_data: githubPullRequest.repository
-    },
-    raw_data: githubPullRequest
+  for (let pull of pullRequests) {
+    await firestore.collection('pull_requests').doc(pull.id.toString()).collection('commits').doc(commit.sha).set({
+      commit_ref: commitRef
+    })
   }
 }
+
+function transformPRevent(pull_request, userId) {
+  let data = {
+    id: pull_request.id,
+    from: 'github',
+    pr_number: pull_request.number,
+    website_url: pull_request.html_url,
+    title: pull_request.title,
+    head_sha: pull_request.head.sha,
+    repository: {
+      id: pull_request.head.repo.id,
+      name: pull_request.head.repo.name,
+      owner: {
+        id: pull_request.head.repo.owner.id,
+        login: pull_request.head.repo.owner.login
+      },
+      raw_data: pull_request.head.repo
+    },
+    raw_data: pull_request
+  }
+
+  if (userId) {
+    Object.assign(data, { user_id: userId })
+  }
+
+  return data
+}
+
 
 module.exports = {
   processGithubPullRequest,
