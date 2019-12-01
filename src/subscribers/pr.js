@@ -1,5 +1,5 @@
 const { firestore } = require('../libs/firebase')
-const { sendPrOpenedMessage } = require('../libs/slack-messages');
+const { sendPrOpenedMessage, updateMainMessage, sendCheckSuccess, sendCheckError } = require('../libs/slack-messages');
 const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
 const { jobDetails } = require('../libs/circleci');
 
@@ -9,7 +9,8 @@ const opened = async function(data) {
 };
 
 const commitCheckUpdate = async function (check) {
-	let commitRef = firestore.collection('commits').doc(check.commit_sha)
+	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
+	let prRef = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
 
 	if (check.context && check.context.includes('ci/circleci')) {
 		circleCiData = await jobDetails({jobUrl: check.target_url})
@@ -36,6 +37,19 @@ const commitCheckUpdate = async function (check) {
 	allChecks.forEach((ref) => {
 		checks.push(ref.data())
 	})
+
+	let update_msg_data = {
+		checks,
+		pr: prRef.data()
+	}
+
+	updateMainMessage(update_msg_data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+
+	if (check.status === 'success') {
+		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+	} else if (check.status === 'failure' || heck.status === 'error') {
+		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')
+	}
 }
 
 opened.eventType = 'pr.opened';

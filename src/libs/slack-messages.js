@@ -21,61 +21,42 @@ let baseBlock = (data) => [{
 	}
 ]
 
-let checkProgressBlock = (data) => [
-	{
-	"type": "context",
-	"elements": [
+let checkProgressBlock = (data) => {
+	
+	return [
 		{
-			"type": "mrkdwn",
-			"text": "*CI build in progress*"
-		}
-	]
-	},
-	{
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "⏳ Estimated build time: *13mins* \n⚠️ <https://google.com| CI build> needs your attention. Check the thread bellow ⬇️.\n"
+		"type": "context",
+		"elements": [
+			{
+				"type": "mrkdwn",
+				"text": "*Pull request checks*"
+			}
+		]
 		},
-		"accessory": {
-			"type": "overflow",
-			"options": [
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Stop the pipe-line run",
-						"emoji": true
-					},
-					"value": "value-0"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Re-run the estimation",
-						"emoji": true
-					},
-					"value": "value-1"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Option 3",
-						"emoji": true
-					},
-					"value": "value-2"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Option 4",
-						"emoji": true
-					},
-					"value": "value-3"
+		data.map(item => {
+			let checkName = item.type === 'ci-circleci' ? item.context : item.name;
+			
+
+			let text = `⏳Check <${item.target_url}|${checkName}> in progress...` + item.type === 'ci-circleci' ? ` (EST. time: ${item.ci_data.estimate_ms / 1000} seconds)` : '';
+
+			if (item.status === 'success') {
+				text = `✅*<${item.target_url}|${checkName}> check is complete!*`
+			}
+
+			if (item.status === 'failure' || item.status === 'error') {
+				text = `⛔️*There was an error with <${data.target_url}|${checkName}>.* check`
+			}
+
+			return {
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": text
 				}
-			]
-		}
-	}
-]
+			}
+		})
+	].flat()
+}
 
 let footerBlock = (data) => [{
 	"type": "section",
@@ -96,23 +77,31 @@ async function sendWelcomeMessage(channel, token) {
 };
 
 async function sendPrOpenedMessage(data, channel, token) {
+	let blocks = [baseBlock(data), footerBlock(data)]
+
 	data = {
 		"channel": channel,
-		"blocks": [
-			baseBlock(data),
-			checkProgressBlock(data),
-			footerBlock
-		]
+		"blocks": blocks.flat()
 	}
 
 	return sendMessage(data, token)
 };
 
-async function sendCheckSucess(data, channel, token) {
-	let sucessText = `✅ *The <${data.target_url}|check> was successful!*`;
+async function updateMainMessage(data, channel, token) {
+	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks), footerBlock(data.pr)]
+
+	data = {
+		"blocks": blocks.flat()
+	}
+
+	return sendMessage(data, channel, token)
+}
+
+async function sendCheckSuccess(data, channel, token) {
+	let sucessText = `✅ *The <${data.target_url}|${data.name}> was successful!*`;
 
 	if (data.type === 'ci-circleci') {
-		sucessText = `✅ *The <${data.target_url}|pipeline run> was successful!*`;
+		sucessText = `✅ *The <${data.target_url}|${data.context}> pipeline run was successful!*`;
 	}
 
 	data = {
@@ -190,4 +179,4 @@ async function sendCheckError(data, channel, token) {
 }
 
 
-module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSucess, sendCheckError }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSuccess, sendCheckError, updateMainMessage }
