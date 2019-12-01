@@ -13,39 +13,39 @@
 # The list of events the GitHub App subscribes to.
 # Uncomment the event names below to enable them.
 default_events:
-# - check_run
-# - check_suite
-# - commit_comment
-# - create
-# - delete
-# - deployment
-# - deployment_status
-# - fork
-# - gollum
-# - issue_comment
+- check_run
+- check_suite
+- commit_comment
+- create
+- delete
+- deployment
+- deployment_status
+- fork
+- gollum
+- issue_comment
 - issues
-# - label
-# - milestone
-# - member
-# - membership
-# - org_block
-# - organization
-# - page_build
-# - project
-# - project_card
-# - project_column
-# - public
-# - pull_request
-# - pull_request_review
-# - pull_request_review_comment
-# - push
-# - release
-# - repository
-# - repository_import
-# - status
-# - team
-# - team_add
-# - watch
+- label
+- milestone
+- member
+- membership
+- org_block
+- organization
+- page_build
+- project
+- project_card
+- project_column
+- public
+- pull_request
+- pull_request_review
+- pull_request_review_comment
+- push
+- release
+- repository
+- repository_import
+- status
+- team
+- team_add
+- watch
 
 # The set of permissions needed by the GitHub App. The format of the object uses
 # the permission name for the key (for example, issues) and the access type for
@@ -54,19 +54,19 @@ default_events:
 default_permissions:
   # Repository creation, deletion, settings, teams, and collaborators.
   # https://developer.github.com/v3/apps/permissions/#permission-on-administration
-  # administration: read
+  administration: write
 
   # Checks on code.
   # https://developer.github.com/v3/apps/permissions/#permission-on-checks
-  # checks: read
+  checks: write
 
   # Repository contents, commits, branches, downloads, releases, and merges.
   # https://developer.github.com/v3/apps/permissions/#permission-on-contents
-  # contents: read
+  contents: write
 
   # Deployments and deployment statuses.
   # https://developer.github.com/v3/apps/permissions/#permission-on-deployments
-  # deployments: read
+  deployments: write
 
   # Issues and related comments, assignees, labels, and milestones.
   # https://developer.github.com/v3/apps/permissions/#permission-on-issues
@@ -74,55 +74,55 @@ default_permissions:
 
   # Search repositories, list collaborators, and access repository metadata.
   # https://developer.github.com/v3/apps/permissions/#metadata-permissions
-  metadata: read
+  metadata: write
 
   # Retrieve Pages statuses, configuration, and builds, as well as create new builds.
   # https://developer.github.com/v3/apps/permissions/#permission-on-pages
-  # pages: read
+  pages: write
 
   # Pull requests and related comments, assignees, labels, milestones, and merges.
   # https://developer.github.com/v3/apps/permissions/#permission-on-pull-requests
-  # pull_requests: read
+  pull_requests: write
 
   # Manage the post-receive hooks for a repository.
   # https://developer.github.com/v3/apps/permissions/#permission-on-repository-hooks
-  # repository_hooks: read
+  repository_hooks: write
 
   # Manage repository projects, columns, and cards.
   # https://developer.github.com/v3/apps/permissions/#permission-on-repository-projects
-  # repository_projects: read
+  repository_projects: write
 
   # Retrieve security vulnerability alerts.
   # https://developer.github.com/v4/object/repositoryvulnerabilityalert/
-  # vulnerability_alerts: read
+  vulnerability_alerts: read
 
   # Commit statuses.
   # https://developer.github.com/v3/apps/permissions/#permission-on-statuses
-  # statuses: read
+  statuses: write
 
   # Organization members and teams.
   # https://developer.github.com/v3/apps/permissions/#permission-on-members
-  # members: read
+  members: write
 
   # View and manage users blocked by the organization.
   # https://developer.github.com/v3/apps/permissions/#permission-on-organization-user-blocking
-  # organization_user_blocking: read
+  organization_user_blocking: write
 
   # Manage organization projects, columns, and cards.
   # https://developer.github.com/v3/apps/permissions/#permission-on-organization-projects
-  # organization_projects: read
+  organization_projects: write
 
   # Manage team discussions and related comments.
   # https://developer.github.com/v3/apps/permissions/#permission-on-team-discussions
-  # team_discussions: read
+  team_discussions: write
 
   # Manage the post-receive hooks for an organization.
   # https://developer.github.com/v3/apps/permissions/#permission-on-organization-hooks
-  # organization_hooks: read
+  organization_hooks: write
 
   # Get notified of, and update, content references.
   # https://developer.github.com/v3/apps/permissions/
-  # organization_administration: read
+  organization_administration: write
 
 
 # The name of the GitHub App. Defaults to the name specified in package.json
