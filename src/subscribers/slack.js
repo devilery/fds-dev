@@ -5,7 +5,7 @@ const { emmit } = require('../libs/event.js')
 
 
 const authenticated = async function(data) {
-	const authInfo = await slack.getAuthInfo(data.code, data.redirect_uri)
+	const authInfo = await slack.getAuthInfo(data.code)
 	const teamInfo = await slack.getTeamInfo(authInfo.userAccessToken)
 	const userInfo = await slack.getUserInfo(authInfo.userAccessToken, authInfo.userId)
 

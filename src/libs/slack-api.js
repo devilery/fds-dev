@@ -7,11 +7,9 @@ async function getAuthInfo(code, redirectUri) {
 	const rqeData = {
 		'client_id': process.env.SLACK_CLIENT_ID,
 		'client_secret': process.env.SLACK_CLIENT_SECRET,
+		'redirect_uri': process.env.SLACK_OAUTH_REDIRECT_URI,
 		'code': code,
 	}
-
-	if (redirectUri != undefined)
-		rqeData.redirect_uri = data.redirect_uri
 
 	const res = await axios.get('https://slack.com/api/oauth.access', {params: rqeData})
 	const data = res.data
