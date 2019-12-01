@@ -1,5 +1,5 @@
 const { emmit } = require('./event');
-const firebase = require('./firebase')
+const { firestore } = require('./firebase')
 const { getPullRequestsForCommit } = require('./github-api');
 const { createOrUpdatePr } = require('./pr');
 
@@ -34,11 +34,8 @@ async function processCommitStatus(statusEvent) {
   await createCommit(statusEvent.commit)
 
   for (let pull of pullRequests) {
+    let isHeadCommit = pull.head_sha === statusEvent.sha
 
-    let gitPullRaw = commitPullRequests.find(item => item.id === pull.id)
-    let isHeadCommit = gitPullRaw.head.sha === statusEvent.sha
-
-    console.log(isHeadCommit)
     if (!isHeadCommit) {
       return
     }
@@ -67,13 +64,13 @@ async function findUserIdByGithubId(githubEventUser) {
 
 async function findAndUpdatePRsById(GHPullRequests) {
   for (let GHpr of GHPullRequests) {
-    let exists = await firebase.firestore().collection('pull_requests').doc(GHpr.id).get().exists
-    if (exists) {
+    let pr = await firestore.collection('pull_requests').doc(GHpr.id).get()
+    if (pr.exists) {
       await createOrUpdatePr(transformPRevent(GHpr))
     }
   }
 
-  let snapshot = await firebase.firestore().collection('pull_requests').where('id', 'in', GHPullRequests.map(item => item.id)).get()
+  let snapshot = await firestore.collection('pull_requests').where('id', 'in', GHPullRequests.map(item => item.id)).get()
 
   pullsArray = []
   snapshot.forEach(doc => {
@@ -84,7 +81,7 @@ async function findAndUpdatePRsById(GHPullRequests) {
 }
 
 async function createCommit(commit) {
-  await firebase.firestore().collection('commits').doc(commit.sha).set(commit)
+  await firestore.collection('commits').doc(commit.sha).set(commit)
 }
 
 function transformPRevent(githubPullRequest) {
