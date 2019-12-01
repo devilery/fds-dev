@@ -40,11 +40,13 @@ function fdsApp(app) {
         githubConnected: true
       })
 
+      let privateKey = JSON.parse(process.env.PRIVATE_KEY)
+
       const jwtToken = jwt.sign({
         exp: Math.floor(Date.now() / 1000) + (5 * 60),
         iat: Math.floor(Date.now() / 1000),
         iss: process.env.APP_ID
-      }, process.env.PRIVATE_KEY, { algorithm: 'RS256' });
+      }, privateKey.key, { algorithm: 'RS256' });
 
       let res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
       let data = res.data
