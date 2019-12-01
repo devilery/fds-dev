@@ -1,5 +1,23 @@
 const { sendMessage } = require('./slack-api.js')
 
+async function sendWelcomeMessage(githubConnected, authLink, channel, accessToken) {
+	if (githubConnected){
+		var text = `Welcome, please connect your Github account using this <${authLink}|link>.`
+	} else {
+		var text = `Welcome, please install our Github app to your organization using this <${authLink}|link>. Please ping the GH organization admin if need as admin right are required to do this action.`
+	}
+
+	data = {
+		'channel': channel,
+		'text': text
+	}
+
+	return sendMessage(data, token)
+};
+
+const { sendMessage } = require('./slack-api.js')
+
+
 let baseBlock = (data) => [{
 	"type": "context",
 	"elements": [
@@ -20,6 +38,7 @@ let baseBlock = (data) => [{
 		"type": "divider"
 	}
 ]
+
 
 let checkProgressBlock = (data) => {
 	
@@ -67,14 +86,6 @@ let footerBlock = (data) => [{
 }]
 
 
-async function sendWelcomeMessage(channel, token) {
-	data = {
-		'channel': channel,
-		'text': 'Ahoj'
-	}
-
-	return sendMessage(data, token)
-};
 
 async function sendPrOpenedMessage(data, channel, token) {
 	let blocks = [baseBlock(data), footerBlock(data)]
@@ -84,8 +95,9 @@ async function sendPrOpenedMessage(data, channel, token) {
 		"blocks": blocks.flat()
 	}
 
-	return sendMessage(data, token)
+	return await sendMessage(data, token).body.message.ts
 };
+
 
 async function updateMainMessage(data, channel, token) {
 	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks), footerBlock(data.pr)]
@@ -96,6 +108,7 @@ async function updateMainMessage(data, channel, token) {
 
 	return sendMessage(data, channel, token)
 }
+
 
 async function sendCheckSuccess(data, channel, token) {
 	let sucessText = `✅ *The <${data.target_url}|${data.name}> was successful!*`;
@@ -137,6 +150,7 @@ async function sendCheckSuccess(data, channel, token) {
 	return sendMessage(data, token)
 }
 
+
 async function sendCheckError(data, channel, token) {
 
 	let errorText = `⛔️ *There was an error with the <${data.target_url}|${data.name}>.*`;
@@ -176,7 +190,7 @@ async function sendCheckError(data, channel, token) {
 	}
 
 	return sendMessage(data, token)
-}
+};
 
 
 module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSuccess, sendCheckError, updateMainMessage }

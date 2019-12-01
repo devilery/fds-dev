@@ -9,9 +9,10 @@ teamCreated.eventType = 'team.created'
 
 
 const userCreated = async function(user) {
-	const team = await user.team.get()
+	let team = await user.team.get()
+	team = team.data() 
 	if (!team.githubConnected) {
-		sendWelcomeMessage(user.slackImChannelId, team.data().botAccessToken)
+		sendWelcomeMessage(team.githubConnected, 'https://google.com/', user.slackImChannelId, team.botAccessToken)
 	}
 }
 userCreated.eventType = 'user.created'

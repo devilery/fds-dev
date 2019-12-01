@@ -47,6 +47,7 @@ async function sendMessage(data, accessToken) {
 		.set('Authorization', `Bearer ${accessToken}`)
 		.send(JSON.stringify(data))
 	console.log(res.body)
+	return res
 }
 
 module.exports = { getAuthInfo, getTeamInfo, getUserInfo, openImChannel, sendMessage }

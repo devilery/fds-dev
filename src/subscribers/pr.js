@@ -4,8 +4,8 @@ const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
 const { jobDetails } = require('../libs/circleci');
 
 const opened = async function(data) {
-	createOrUpdatePr(data)
-	sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0');
+	const pr = await createOrUpdatePr(data)
+	pr.set({slackThreadId: sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-RYkL6mlxEm5qXbozVHeGrjr0')})
 };
 
 const commitCheckUpdate = async function (check) {
