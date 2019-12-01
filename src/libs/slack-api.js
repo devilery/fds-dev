@@ -15,6 +15,7 @@ async function getAuthInfo(code, redirectUri) {
 
 	const res = await axios.get('https://slack.com/api/oauth.access', {params: rqeData})
 	const data = res.data
+	console.log(data)
 	return { userId: data.user_id, userAccessToken: data.access_token, botAccessToken: data.bot.bot_access_token}
 }
 

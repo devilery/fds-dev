@@ -13,7 +13,7 @@ async function sendWelcomeMessage(githubConnected, authLink, channel, accessToke
 		'text': text
 	}
 
-	return sendMessage(data, token)
+	return sendMessage(data, accessToken)
 };
 
 
