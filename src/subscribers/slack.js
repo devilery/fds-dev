@@ -11,7 +11,7 @@ const authenticated = async function(data) {
 
 	const teamRef = await firestore.collection('teams').doc(teamInfo.id)
 	const team = teamRef.get()
-	if (!team.exist) {
+	if (!team.exists) {
 		teamInfo.botAccessToken = authInfo.botAccessToken
 
 		await teamRef.set(teamInfo)
@@ -20,7 +20,7 @@ const authenticated = async function(data) {
 
 	const userRef = await firestore.collection('users').doc(userInfo.id)
 	const user = await userRef.get()
-	if (!user.exist) {
+	if (!user.exists) {
 		userInfo.team = teamRef
 		userInfo.slackImChannelId = await slack.openImChannel(authInfo.botAccessToken, user.id)
 
