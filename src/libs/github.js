@@ -54,7 +54,7 @@ async function processCommitStatus(statusEvent) {
 }
 
 async function findUserIdByGithubId(ghUserEvent) {
-  let ghUser = await firebase.collection('gh_user').doc(ghUserEvent.id.toString()).get()
+  let ghUser = await firestore.collection('gh_user').doc(ghUserEvent.id.toString()).get()
   let user = ghUser.data().user_ref
   return user.data().id
 }
