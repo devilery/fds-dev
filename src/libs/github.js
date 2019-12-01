@@ -41,33 +41,46 @@ function processGithubPullRequest(pullRequestEvent) {
 }
 
 function processCommitStatus(statusEvent) {
-  const action = pullRequestEvent.action
-  const sender = pullRequestEvent.sender
-  const githubCommitStatus = pullRequestEvent.status
-
-  const StatusData = {
-    status: githubCommitStatus.status,
-    from: 'github',
-    id: githubCommitStatus.id,
-    commit_sha: githubCommitStatus.sha,
-    name: githubCommitStatus.name,
-    target_url: githubCommitStatus.target_url,
-    context: githubCommitStatus.context,
-    description: githubCommitStatus.description,
-    raw_data: pullRequestEvent
-  }
+  const githubCommitStatus = statusEvent.status
 
   let commitPullRequests = await getPullRequestsForCommit(githubCommitStatus.repository.owner.login, githubCommitStatus.repository.name, githubCommitStatus.sha);
+  let pullRequests = await findPullRequestsById(commitPullRequests.map((item) => item.id))
 
-  
+  for (let pull of pullRequests) {
+
+    let StatusData = {
+      status: githubCommitStatus.status,
+      from: 'github',
+      id: githubCommitStatus.id,
+      commit_sha: githubCommitStatus.sha,
+      name: githubCommitStatus.name,
+      target_url: githubCommitStatus.target_url,
+      context: githubCommitStatus.context,
+      description: githubCommitStatus.description,
+      pull_request_id: pull.id,
+      raw_data: statusEvent
+    }
+
+    emmit('pr.commit-status-update', StatusData)
+  }
 }
 
 async function findUserIdByGithubId(githubEventUser) {
   return 'RANDOM_ID' + Math.random().toString()
 }
 
-async function findPullRequestsById(repo, ids) {
-  
+async function findPullRequestsById(ids) {
+  let snapshot = await firebase.database().collection('pull_requests').where('id', 'in', ids).get()
+  pullsArray = []
+  snapshot.forEach(doc => {
+    pullsArray.push(doc.data())
+  });
+
+  return pullsArray
+}
+
+async function createCommit(commit) {
+  await firebase.database().collection('commits')
 }
 
 module.exports = {
