@@ -1,5 +1,6 @@
 const { sendMessage } = require('./slack-api.js')
 
+
 async function sendWelcomeMessage(githubConnected, authLink, channel, accessToken) {
 	if (githubConnected){
 		var text = `Welcome, please connect your Github account using this <${authLink}|link>.`
@@ -14,8 +15,6 @@ async function sendWelcomeMessage(githubConnected, authLink, channel, accessToke
 
 	return sendMessage(data, token)
 };
-
-const { sendMessage } = require('./slack-api.js')
 
 
 let baseBlock = (data) => [{
