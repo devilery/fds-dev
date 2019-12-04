@@ -9,7 +9,7 @@ const opened = async function(data) {
 	const user = await firestore.collection('users').doc(prGet.data().user_id).get()
 	const team = await user.data().team.get()
 	threadId = await sendPrOpenedMessage(data, user.data().slack_im_channel_id, team.data().slack_bot_access_token)
-	pr.update({ slackThreadId: threadId })
+	pr.update({ slack_thread_id: threadId })
 };
 opened.eventType = 'pr.opened';
 
@@ -55,7 +55,7 @@ const commitCheckUpdate = async function (check) {
 	updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 
 	if (check.status === 'success') {
-		sendCheckSuccess(check, user.data().slack_im_channel_id, team.data().slack_bot_access_token, pr.slack_thread_id)
+		sendCheckSuccess(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 	} else if (check.status === 'failure' || check.status === 'error') {
 		sendCheckError(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 	}
