@@ -112,7 +112,7 @@ async function updatePrOpenedMessage(data, channel, ts, token) {
 }
 
 
-async function sendCheckSuccess(data, channel, token, ts) {
+async function sendCheckSuccess(data, channel, ts, token) {
 	let sucessText = `✅ *The <${data.target_url}|${data.name}> was successful!*`;
 
 	if (data.type === 'ci-circleci') {

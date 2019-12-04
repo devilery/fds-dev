@@ -21,20 +21,23 @@ async function getAuthInfo(code, redirectUri) {
 async function getTeamInfo(accessToken) {
 	const res = await axios.get('https://slack.com/api/team.info', {headers: {'Authorization': `Bearer ${accessToken}`}})
 	const data = res.data
+	console.log(data)
 	return { id: data.team.id, name: data.team.name}
 }
 
 
-async function getUserInfo(accessToken, userToken) {
-	const res = await axios.get('https://slack.com/api/users.info', {params: {'user': userToken}, headers: {'Authorization': `Bearer ${accessToken}`}})
+async function getUserInfo(userId, accessToken) {
+	const res = await axios.get('https://slack.com/api/users.info', {params: {'user': userId}, headers: {'Authorization': `Bearer ${accessToken}`}})
 	const data = res.data
+	console.log(data)
 	return { id: data.user.id, name: data.user.real_name }
 }
 
 
-async function openImChannel(accessToken, userToken) {
-	const res = await axios.get('https://slack.com/api/im.open', {params: {'user': userToken}, headers: {'Authorization': `Bearer ${accessToken}`}})
+async function openImChannel(userId, accessToken) {
+	const res = await axios.get('https://slack.com/api/im.open', {params: {'user': userId}, headers: {'Authorization': `Bearer ${accessToken}`}})
 	const data = res.data
+	console.log(data)
 	return data.channel.id
 }
 
@@ -45,12 +48,12 @@ async function sendMessage(data, accessToken) {
 		.set('Content-Type', 'application/json;charset=utf-8')
 		.set('Authorization', `Bearer ${accessToken}`)
 		.send(JSON.stringify(data))
-	console.log(res.body)
+	console.log(res)
 	return res
 }
 
 
-async function updateMessage(channel, ts, data, accessToken) {
+async function updateMessage(data, channel, ts, accessToken) {
 	data.channel = channel
 	data.ts = ts
 	console.log(data)

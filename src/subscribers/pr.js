@@ -5,7 +5,10 @@ const { jobDetails } = require('../libs/circleci');
 
 const opened = async function(data) {
 	const pr = await createOrUpdatePr(data)
-	threadId = await sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO')
+	const prGet = await pr.get()
+	const user = await firestore.collection('users').doc(prGet.data().user_id).get()
+	const team = await user.data().team.get()
+	threadId = await sendPrOpenedMessage(data, user.data().slack_im_channel_id, team.data().slack_bot_access_token)
 	pr.update({ slackThreadId: threadId })
 };
 opened.eventType = 'pr.opened';
@@ -13,6 +16,7 @@ opened.eventType = 'pr.opened';
 const commitCheckUpdate = async function (check) {
 	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
 	let pr = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
+	const user = await firestore.collection('users').doc(pr.data().user_id).get()
 	pr = pr.data()
 
 	if (check.context && check.context.includes('ci/circleci')) {
@@ -46,12 +50,14 @@ const commitCheckUpdate = async function (check) {
 		pr: pr
 	}
 
-	updatePrOpenedMessage(update_msg_data, 'CR4LW3GRW', pr.slackThreadId, 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO')
+	let team = await user.data().team.get()
+
+	updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 
 	if (check.status === 'success') {
-		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO', pr.slackThreadId)
+		sendCheckSuccess(check, user.data().slack_im_channel_id, team.data().slack_bot_access_token, pr.slack_thread_id)
 	} else if (check.status === 'failure' || check.status === 'error') {
-		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO', pr.slackThreadId)
+		sendCheckError(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 	}
 }
 commitCheckUpdate.eventType = 'pr.check.update'

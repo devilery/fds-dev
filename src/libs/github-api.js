@@ -29,6 +29,7 @@ async function getPullRequestsForCommit(owner, repo, commit_sha, token) {
 
 async function createInstallationToken(installation_id) {
   let privateKey = JSON.parse(process.env.PRIVATE_KEY)
+  console.log(privateKey)
 
   const jwtToken = jwt.sign({
     exp: Math.floor(Date.now() / 1000) + (5 * 60),
@@ -36,8 +37,16 @@ async function createInstallationToken(installation_id) {
     iss: process.env.APP_ID
   }, privateKey.key, { algorithm: 'RS256' });
 
-  let res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+  console.log(jwtToken)
+
+  try {
+    var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+  } catch(e) {
+    console.log(e)
+  }
+
   let data = res.data
+  console.log(res)
 
   return data
 }
