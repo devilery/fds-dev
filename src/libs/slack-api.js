@@ -54,7 +54,7 @@ async function updateMessage(channel, ts, data, accessToken) {
 	data.channel = channel
 	data.ts = ts
 	console.log(data)
-	let res = await axios.post('https://slack.com/api/chat.update', { data: data, headers: { 'Authorization': `Bearer ${accessToken}` } })
+	let res = await axios.post('https://slack.com/api/chat.update', data, { headers: { 'Authorization': `Bearer ${accessToken}` } })
 	console.log(res)
 	return res
 }

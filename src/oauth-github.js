@@ -51,7 +51,7 @@ module.exports = function (opts) {
       user_ref: appUser
     })
 
-    resp.end('Thanks, close the tab')
+    resp.end('Thanks, close the tab and create a new PR :)')
   }
 
   emitter.login = login
