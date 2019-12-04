@@ -8,25 +8,16 @@ const fs = require('fs');
 const express = require('express');
 const morgan = require('morgan');
 const axios = require('axios');
-const { createEventAdapter } = require('@slack/events-api');
 
 const githubOAuth = require('./oauth-github')
 
 const { createInstallationToken } = require('./libs/github-api')
 const { subscribe, emmit } = require('./libs/event.js');
 const { firestore } = require('./libs/firebase');
-const { honeycomb } = require('./libs/honeycomb') ;
+const { honeycomb } = require('./libs/honeycomb');
+const { handleCommands } = require('./libs/slack-commands')
+const { eventMiddleware } = require('./libs/slack-events')
 
-if (!process.env.SLACK_SIGNING_SECRET) {
-  throw 'Missing SLACK_SIGNING_SECRET. Slack webhooks wont work.'
-}
-
-const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET);
-
-
-slackEvents.on('message', (event) => {
-  console.log(`Received a message event: user ${event.user} in channel ${event.channel} says ${event.text}`);
-});
 
 const app = express();
 
@@ -39,15 +30,22 @@ let ghOAuth = githubOAuth({
   scope: 'user' // optional, default scope is set to user
 })
 
-app.use(slackEvents.requestListener())
-
-app.use(express.json());
 app.use(morgan('dev'));
 
-app.post('/slack/events', async (req, res) => {
-  res.end();
+app.use('/slack/events', eventMiddleware())
+
+app.use(express.json());
+
+app.use('/slack/commands', express.urlencoded())
+app.post('/slack/commands', async (req, res) => {
+  console.log('lool', req.headers, req.body);
+  handleCommands(req, res)
 })
 
+app.post('/slack/events', async (req, res) => {
+  console.log('WTFFFF');
+  res.end();
+})
 
 app.get('/github/setup', async (req, res) => {
   let query = url.parse(req.url, true).query
