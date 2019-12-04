@@ -5,7 +5,7 @@ const { jobDetails } = require('../libs/circleci');
 
 const opened = async function(data) {
 	const pr = await createOrUpdatePr(data)
-	threadId = await sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3')
+	threadId = await sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO')
 	pr.update({ slackThreadId: threadId })
 };
 opened.eventType = 'pr.opened';
@@ -46,12 +46,12 @@ const commitCheckUpdate = async function (check) {
 		pr: pr
 	}
 
-	updatePrOpenedMessage(update_msg_data, 'CR4LW3GRW', pr.slackThreadId, 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3')
+	updatePrOpenedMessage(update_msg_data, 'CR4LW3GRW', pr.slackThreadId, 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO')
 
 	if (check.status === 'success') {
-		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3', pr.slackThreadId)
+		sendCheckSuccess(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO', pr.slackThreadId)
 	} else if (check.status === 'failure' || check.status === 'error') {
-		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3', pr.slackThreadId)
+		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-7bzbHJ8LK8UQLAwUjCmmyeOO', pr.slackThreadId)
 	}
 }
 commitCheckUpdate.eventType = 'pr.check.update'
