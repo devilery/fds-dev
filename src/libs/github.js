@@ -36,6 +36,7 @@ async function processCommitStatus(statusEvent) {
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   for (let pull of pullRequests) {
+    console.log(statusEvent)
     let statusData = {
       status: statusEvent.state,
       type: 'standard',

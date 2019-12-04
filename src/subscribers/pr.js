@@ -2,6 +2,7 @@ const { firestore } = require('../libs/firebase')
 const { sendPrOpenedMessage, updateMainMessage, sendCheckSuccess, sendCheckError, updatePrOpenedMessage } = require('../libs/slack-messages');
 const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
 const { jobDetails } = require('../libs/circleci');
+var Base64 = require('js-base64').Base64;
 
 const opened = async function(data) {
 	const pr = await createOrUpdatePr(data)
@@ -31,7 +32,7 @@ const commitCheckUpdate = async function (check) {
 		})
 	}
 
-	commitRef.collection('checks').doc(check.id.toString()).set(check)
+	commitRef.collection('checks').doc(Base64.encode(check.context)).set(check)
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
 	if (!isHeadCommit) {

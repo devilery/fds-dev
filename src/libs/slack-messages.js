@@ -17,29 +17,18 @@ async function sendWelcomeMessage(githubConnected, authLink, channel, accessToke
 };
 
 
-let baseBlock = (data) => [{
-	"type": "context",
-	"elements": [
-		{
-			"type": "mrkdwn",
-			"text": "*Pull request*"
-		}
-	]
-},
+let baseBlock = (data) => [
 	{
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*Monitoring pull-request <${data.website_url}| ${data['title']}> * \n_*ID*_: ${data['pr_number']}`
+			"text": `*PR*: #${data.pr_number} | <${data.website_url}| ${data['title']}>`
 		}
-	},
-	{
-		"type": "divider"
 	}
 ]
 
 
-let checkProgressBlock = (data) => {
+let checkProgressBlock = (checks) => {
 	
 	return [
 		{
@@ -51,11 +40,11 @@ let checkProgressBlock = (data) => {
 			}
 		]
 		},
-		data.map(item => {
-			let checkName = item.type === 'ci-circleci' ? item.context : item.name;
+		checks.map(item => {
+			let checkName = item.context;
 			
 
-			let text = `⏳Check <${item.target_url}|${checkName}> in progress...` + item.type === 'ci-circleci' ? ` (EST. time: ${item.ci_data.estimate_ms / 1000} seconds)` : '';
+			let text = `⏳Check <${item.target_url}|${checkName}> in progress...`;
 
 			if (item.status === 'success') {
 				text = `✅*<${item.target_url}|${checkName}> check is complete!*`
@@ -102,22 +91,18 @@ async function sendPrOpenedMessage(data, channel, token) {
 
 
 async function updatePrOpenedMessage(data, channel, ts, token) {
-	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks)]
-	data = {
+	let checks = checkProgressBlock(data.checks.filter(item => item.status === 'pending'))
+	let blocks = [baseBlock(data.pr), checks]
+	let dataMsg = {
 		"blocks": blocks.flat(),
 		"text": "sadasd"
 	}
 
-	return updateMessage(data, channel, ts, token)
+	return updateMessage(dataMsg, channel, ts, token)
 }
 
 
 async function sendCheckSuccess(data, channel, ts, token) {
-	let sucessText = `✅ *The <${data.target_url}|${data.name}> was successful!*`;
-
-	if (data.type === 'ci-circleci') {
-		sucessText = `✅ *The <${data.target_url}|${data.context}> pipeline run was successful!*`;
-	}
 
 	data = {
 		"thread_ts": ts,
@@ -128,16 +113,9 @@ async function sendCheckSuccess(data, channel, ts, token) {
 				"elements": [
 					{
 						"type": "mrkdwn",
-						"text": "🖐 *Status update*"
+						"text": `✅ *The <${data.target_url}|${data.context}> was successful!*`
 					}
 				]
-			},
-			{
-				"type": "section",
-				"text": {
-					"type": "mrkdwn",
-					"text": sucessText
-				}
 			}
 		]
 	}
@@ -148,39 +126,17 @@ async function sendCheckSuccess(data, channel, ts, token) {
 
 async function sendCheckError(data, channel, token, ts) {
 
-	let errorText = `⛔️ *There was an error with the <${data.target_url}|${data.name}>.*`;
-
-	if (data.type === 'ci-circleci') {
-		errorText = `⛔️ *There was an error with the <${data.target_url}|${data.context}> pipeline run.*`;
-	}
+	let errorText = `⛔️ *There was an error with the <${data.target_url}|${data.context}>.*`;
 
 	data = {
 		"thread_ts": ts,
 		"channel": channel,
 		"blocks": [
 			{
-				"type": "context",
-				"elements": [
-					{
-						"type": "mrkdwn",
-						"text": "🖐 *Status update*"
-					}
-				]
-			},
-			{
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
 					"text": errorText
-				},
-				"accessory": {
-					"type": "button",
-					"text": {
-						"type": "plain_text",
-						"text": "Re-run pipeline",
-						"emoji": true
-					},
-					"value": "click_me_123"
 				}
 			}
 		]
