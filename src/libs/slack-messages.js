@@ -108,7 +108,6 @@ async function updatePrOpenedMessage(data, channel, ts, token) {
 		"text": "sadasd"
 	}
 
-
 	return updateMessage(data, channel, ts, token)
 }
 

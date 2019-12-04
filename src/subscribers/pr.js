@@ -8,6 +8,7 @@ const opened = async function(data) {
 	threadId = await sendPrOpenedMessage(data, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3')
 	pr.update({ slackThreadId: threadId })
 };
+opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check) {
 	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
@@ -53,8 +54,6 @@ const commitCheckUpdate = async function (check) {
 		sendCheckError(check, 'CR4LW3GRW', 'xoxb-7093049764-856934218934-rXcTgJrUyxbi8kYYOQLI4Eo3', pr.slackThreadId)
 	}
 }
-
-opened.eventType = 'pr.opened';
 commitCheckUpdate.eventType = 'pr.check.update'
 
 module.exports = [opened, commitCheckUpdate];
