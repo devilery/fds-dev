@@ -16,13 +16,12 @@ async function sendWelcomeMessage(githubConnected, authLink, channel, accessToke
 	return sendMessage(data, accessToken)
 };
 
-
 let baseBlock = (data) => [
 	{
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*PR*: #${data.pr_number} | <${data.website_url}| ${data['title']}>`
+			"text": `🧐 *PR*: #${data.pr_number} | <${data.website_url}| ${data['title']}>`
 		}
 	}
 ]
