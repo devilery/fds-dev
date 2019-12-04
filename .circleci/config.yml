@@ -43,6 +43,17 @@ jobs:
     steps:
       - buildevents/watch_build_and_finish
 
+  test:
+    docker:
+      - image: circleci/node:10
+
+    working_directory: ~/repo
+
+    steps:
+      - buildevents/with_job_span:
+          steps:
+            - run: sleep 5 && echo all okay
+
   build:
     docker:
       - image: circleci/node:10
@@ -110,9 +121,12 @@ workflows:
       - watch:
           requires:
             - setup
-      - build:
+      - test:
           requires:
             - setup
+      - build:
+          requires:
+            - test
       - devilery-orb/send_token
       - devilery-orb/send_finished:
           requires:
