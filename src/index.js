@@ -1,5 +1,11 @@
 require('dotenv').config();
 
+const Sentry = require('@sentry/node');
+
+if (process.env.SENTRY_URL) {
+  Sentry.init({ dsn: process.env.SENTRY_URL });
+}
+
 const url = require('url')
 const port = process.env.PORT || 3000;
 
@@ -20,6 +26,9 @@ const { eventMiddleware } = require('./libs/slack-events')
 
 
 const app = express();
+
+// The request handler must be the first middleware on the app
+app.use(Sentry.Handlers.requestHandler());
 
 let ghOAuth = githubOAuth({
   githubClient: process.env.GITHUB_APP_PUBLIC_KEY,
@@ -119,6 +128,20 @@ fs.readdirSync(subscribersPath)
   		subscribe(subscriber.eventType,  subscriber);
   	});
   });
+
+app.get('/debug-sentry', function mainHandler(req, res) {
+  throw new Error('My first Sentry error!');
+});
+
+// The error handler must be before any other error middleware and after all controllers
+app.use(Sentry.Handlers.errorHandler());
+
+app.use(function onError(err, req, res, next) {
+  // The error id is attached to `res.sentry` to be returned
+  // and optionally displayed to the user for support.
+  res.statusCode = 500;
+  res.end(res.sentry + "\n");
+});
 
 app.listen(port, err => {
   if (err) throw err
