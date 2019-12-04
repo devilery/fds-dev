@@ -51,10 +51,13 @@ async function sendMessage(data, accessToken) {
 
 
 async function updateMessage(channel, ts, data, accessToken) {
-	data.channel
+	data.channel = channel
 	data.ts = ts
-	return await axios.post('https://slack.com/api/chat.update', {data: data, headers: {'Authorization': `Bearer ${accessToken}`}})
+	console.log(data)
+	let res = await axios.post('https://slack.com/api/chat.update', { data: data, headers: { 'Authorization': `Bearer ${accessToken}` } })
+	console.log(res)
+	return res
 }
 
 
-module.exports = { getAuthInfo, getTeamInfo, getUserInfo, openImChannel, sendMessage }
+module.exports = { getAuthInfo, getTeamInfo, getUserInfo, openImChannel, sendMessage, updateMessage }

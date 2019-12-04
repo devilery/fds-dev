@@ -4,12 +4,12 @@ const url = require('url')
 const path = require('path');
 const fs = require('fs');
 const githubOAuth = require('./oauth-github')
+const { createInstallationToken } = require('./libs/github-api')
 const morgan = require('morgan');
 const express = require('express');
 const { subscribe } = require('./libs/event.js');
 const { firestore } = require('./libs/firebase');
 const axios = require('axios');
-const jwt = require('jsonwebtoken');
 
 function fdsApp(app) {
   // const app = express();
@@ -34,23 +34,12 @@ function fdsApp(app) {
 
     let team = firestore.collection('teams').doc(team_id)
 
-    console.log(setup_action)
     if (setup_action === 'install') {
       await team.update({
         githubConnected: true
       })
 
-      let privateKey = JSON.parse(process.env.PRIVATE_KEY)
-
-      const jwtToken = jwt.sign({
-        exp: Math.floor(Date.now() / 1000) + (5 * 60),
-        iat: Math.floor(Date.now() / 1000),
-        iss: process.env.APP_ID
-      }, privateKey.key, { algorithm: 'RS256' });
-
-      let res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
-      let data = res.data
-
+      let data = await createInstallationToken(installation_id)
       let owner = await firestore.collection('github_owners').doc(installation_id)
 
       owner.set({
@@ -81,23 +70,6 @@ function fdsApp(app) {
 
   ghOAuth.on('error', function (err) {
     console.error('there was a login error', err)
-  })
-
-  ghOAuth.on('token', async(token, serverResponse, userId) => {
-    let user = await axios.get('https://api.github.com/user', { headers: {'Authorization': `token ${token.access_token}` } })
-    user = user.data
-
-    let appUser = firestore.collection('users').doc(userId)
-
-    firestore.collection('gh_users').doc(user.id).update({
-      github_username: user.login,
-      github_id: user.id,
-      github_access_token: token.access_token,
-      raw_github_user_data: user,
-      user_ref: appUser
-    })
-
-    serverResponse.end('Thanks close the tab')
   })
 
   const apiPath = path.join(__dirname, 'api');

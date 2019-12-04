@@ -1,6 +1,8 @@
 var request = require('request')
 var events = require('events')
 var url = require('url')
+const { firestore } = require('./libs/firebase');
+const axios = require('axios');
 
 module.exports = function (opts) {
   if (!opts.callbackURI) opts.callbackURI = '/github/callback'
@@ -23,7 +25,7 @@ module.exports = function (opts) {
     resp.end()
   }
 
-  function callback(req, resp, cb) {
+  async function callback(req, resp, cb) {
     var query = url.parse(req.url, true).query
     var code = query.code
     if (!code) return emitter.emit('error', { error: 'missing oauth code' }, resp)
@@ -32,21 +34,24 @@ module.exports = function (opts) {
       + '&client_secret=' + opts.githubSecret
       + '&code=' + code
       + '&state=' + query.state;
-  
-    request.get({ url: u, json: true }, function (err, tokenResp, body) {
-      if (err) {
-        if (cb) {
-          err.body = body
-          err.tokenResp = tokenResp
-          return cb(err)
-        }
-        return emitter.emit('error', body, err, resp, tokenResp, req, query.state)
-      }
-      if (cb) {
-        cb(null, body)
-      }
-      emitter.emit('token', body, resp, query.state, tokenResp, req)
+
+    let tokenResp = await axios.get(u, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
+    let token = tokenResp.data
+
+
+    let user = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
+    user = user.data
+    let appUser = firestore.collection('users').doc(query.state)
+
+    firestore.collection('gh_users').doc(user.id.toString()).set({
+      github_username: user.login,
+      github_id: user.id,
+      github_access_token: token.access_token,
+      raw_github_user_data: user,
+      user_ref: appUser
     })
+
+    resp.end('Thanks, close the tab')
   }
 
   emitter.login = login

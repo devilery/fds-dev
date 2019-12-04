@@ -27,10 +27,11 @@ async function processGithubPullRequest(pullRequestEvent) {
 
 async function processCommitStatus(statusEvent) {
 
-  let repoRef = firestore.collection('repos').doc(statusEvent.repository.id.toString()).get()
-  let ownerRef = repoRef.owner_ref.get()
+  let repoRef = await firestore.collection('repos').doc(statusEvent.repository.id.toString()).get()
+  repoRef = repoRef.data()
+  let ownerRef = await repoRef.app_owner_ref.get()
 
-  let commitPullRequests = await getPullRequestsForCommit(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.github_access_token);
+  let commitPullRequests = await getPullRequestsForCommit(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.data().github_access_token);
   let pullRequests = await findAndUpdatePRsById(commitPullRequests)
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
@@ -49,13 +50,15 @@ async function processCommitStatus(statusEvent) {
       raw_data: statusEvent
     }
 
+    console.log(statusData)
     emmit('pr.check.update', statusData)
   }
 }
 
 async function findUserIdByGithubId(ghUserEvent) {
-  let ghUser = await firestore.collection('gh_user').doc(ghUserEvent.id.toString()).get()
+  let ghUser = await firestore.collection('gh_users').doc(ghUserEvent.id.toString()).get()
   let user = ghUser.data().user_ref
+  user = await user.get()
   return user.data().id
 }
 
@@ -63,7 +66,7 @@ async function findAndUpdatePRsById(GHPullRequests) {
   for (let GHpr of GHPullRequests) {
     let pr = await firestore.collection('pull_requests').doc(GHpr.id.toString()).get()
     if (pr.exists) {
-      await createOrUpdatePr(transformPRevent(GHpr))
+      await createOrUpdatePr(transformPRevent(GHpr, pr.data().user_id))
     }
   }
 

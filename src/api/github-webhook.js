@@ -6,6 +6,10 @@ const { processGithubPullRequest, processCommitStatus } = require('../libs/githu
 router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
+
+  console.log('-------------------------')
+  console.log(eventName)
+  console.log('-------------------------')
   
   switch (eventName) {
     case 'pull_request':

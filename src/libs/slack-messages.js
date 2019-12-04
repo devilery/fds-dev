@@ -1,4 +1,4 @@
-const { sendMessage } = require('./slack-api.js')
+const { sendMessage, updateMessage } = require('./slack-api.js')
 
 
 async function sendWelcomeMessage(githubConnected, authLink, channel, accessToken) {
@@ -101,12 +101,15 @@ async function sendPrOpenedMessage(data, channel, token) {
 
 
 
-async function updatePrOpenedMessage(data, channel, token) {
+async function updatePrOpenedMessage(data, channel, ts, token) {
 	let blocks = [baseBlock(data.pr), checkProgressBlock(data.checks)]
 	data = {
-		"blocks": blocks.flat()
+		"blocks": blocks.flat(),
+		"text": "sadasd"
 	}
-	return updateMessage(data, channel, token)
+
+
+	return updateMessage(data, channel, ts, token)
 }
 
 
