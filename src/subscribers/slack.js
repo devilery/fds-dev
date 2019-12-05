@@ -9,16 +9,17 @@ const authenticated = async function(data) {
 	const teamInfo = await slack.getTeamInfo(authInfo.userAccessToken)
 	const userInfo = await slack.getUserInfo(authInfo.userId, authInfo.userAccessToken)
 
-	const teamRef = await firestore.collection('teams').doc(teamInfo.id)
+	const teamRef = firestore.collection('teams').doc(teamInfo.id)
 	const team = teamRef.get()
 	if (!team.exists) {
 		teamInfo.slack_bot_access_token = authInfo.botAccessToken
+		teamInfo.slack_auth_code = data.code
 
 		await teamRef.set(teamInfo)
 		emmit('team.created', teamInfo)
 	}
 
-	const userRef = await firestore.collection('users').doc(userInfo.id)
+	const userRef = firestore.collection('users').doc(userInfo.id)
 	const user = await userRef.get()
 	if (!user.exists) {
 		userInfo.team = teamRef
@@ -27,6 +28,8 @@ const authenticated = async function(data) {
 		await userRef.set(userInfo)
 		emmit('user.created', userInfo)
 	}
+
+	await userRef.update({slack_auth_code: data.code})
 
 }
 authenticated.eventType = 'slack.user.authenticated'
