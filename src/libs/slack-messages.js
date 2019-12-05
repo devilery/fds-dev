@@ -84,7 +84,7 @@ async function sendPrOpenedMessage(data, channel, token) {
 	}
 
 	let res = await sendMessage(data, token)
-	return res.body.message.ts
+	return res.data.message.ts
 };
 
 
