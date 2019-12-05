@@ -46,7 +46,7 @@ async function post(url, data, options) {
 	console.log(url)
 	console.log(data)
 	console.log(options)
-	var res = await axios.get(url, data, options)
+	var res = await axios.post(url, data, options)
 	console.log(res)
 	// if (['invalid_auth', 'not_authed'].includes(res.data.error)) {
 	// 	const teamsRefs = await firestore.collection('teams').get()
