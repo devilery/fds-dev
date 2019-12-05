@@ -1,5 +1,59 @@
 version: 2.1
+description: This is an inline jobs
+
+orbs:
+  buildevents: honeycombio/buildevents@0.2.3
+  devilery-orb:
+    executors:
+      devilery_executor:
+        docker:
+          - image: circleci/node:10
+    commands:
+      send_token_cmd:
+        steps:
+          - run: echo "We can send a token to our service now"
+    jobs:
+      send_token:
+        executor: devilery_executor
+        steps:
+          - send_token_cmd
+      send_command:
+        executor: devilery_executor
+        steps:
+          - run: echo 'command'
+      send_finished:
+        executor: devilery_executor
+        steps:
+          - run: echo 'sending end time`  '
+
+executors:
+  linuxgo:
+    working_directory: /go/src/github.com/honeycombio/buildevents
+    docker:
+      - image: circleci/golang:1.10
+
 jobs:
+  setup:
+    executor: linuxgo
+    steps:
+      - buildevents/start_trace
+
+  watch:
+    executor: linuxgo
+    steps:
+      - buildevents/watch_build_and_finish
+
+  test:
+    docker:
+      - image: circleci/node:10
+
+    working_directory: ~/repo
+
+    steps:
+      - buildevents/with_job_span:
+          steps:
+            - run: sleep 5 && echo all okay
+
   build:
     docker:
       - image: circleci/node:10
@@ -7,53 +61,73 @@ jobs:
     working_directory: ~/repo
 
     steps:
-      - run: |
-          # Cannot use scripts/ci_webhook.sh yet (before checkout)
-          ci_webhook() {
-            echo Sending webhook ...
-            curl -X POST "https://fds-dev.herokuapp.com/api/event-webhook" \
-              -H "Content-Type: application/json" \
-              -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}"
-          }
+      - buildevents/with_job_span:
+          steps:
+            - run: |
+                # Cannot use scripts/ci_webhook.sh yet (before checkout)
+                ci_webhook() {
+                  echo Sending webhook ...
+                  curl -X POST "https://fds-dev.herokuapp.com/api/event-webhook" \
+                    -H "Content-Type: application/json" \
+                    -d"{`env | grep CIRCLE | sed 's/=/":"/' | sed 's/\(.*\)/"\1",/'` \"type\":\"$1\"}"
+                }
 
-          ci_webhook pipeline.started
+                ci_webhook pipeline.started
 
-      - checkout
+            - checkout
 
-      - restore_cache:
-          keys:
-            - v2-dependencies-{{ checksum "yarn.lock" }}
-            - v2-dependencies-
+            - restore_cache:
+                keys:
+                  - v2-dependencies-{{ checksum "yarn.lock" }}
+                  - v2-dependencies-
 
-      - run:
-          name: Install dependencies
-          command: yarn install
+            - run:
+                name: Install dependencies
+                command: yarn install
 
-      - save_cache:
-          paths:
-            - node_modules
-          key: v2-dependencies-{{ checksum "yarn.lock" }}
+            - save_cache:
+                paths:
+                  - node_modules
+                key: v2-dependencies-{{ checksum "yarn.lock" }}
 
-      - run:
-          name: tests
-          command: echo run tets
+            - run:
+                name: tests
+                command: echo run tets
 
-      - run:
-          name: Build ...
-          command: echo ok
+            - run:
+                name: Build ...
+                command: echo ok
 
-      - deploy:
-          name: Deploying ...
-          command: echo deploying stuff
+            - deploy:
+                name: Deploying ...
+                command: echo deploying stuff
 
-      - run:
-          name: Running e2e tests ...
-          command: echo e2e test run
+            - run:
+                name: Running e2e tests ...
+                command: echo e2e test run
 
-      - run:
-          when: on_success
-          command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"success\""
+            - run:
+                when: on_success
+                command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"success\""
 
-      - run:
-          when: on_fail
-          command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
+            - run:
+                when: on_fail
+                command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
+
+workflows:
+  pipeline:
+    jobs:
+      - setup
+      - watch:
+          requires:
+            - setup
+      - test:
+          requires:
+            - setup
+      - build:
+          requires:
+            - test
+      - devilery-orb/send_token
+      - devilery-orb/send_finished:
+          requires:
+                - build
