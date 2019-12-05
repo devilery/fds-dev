@@ -18,8 +18,8 @@ module.exports = function (opts) {
       + '?client_id=' + opts.githubClient
       + (opts.scope ? '&scope=' + opts.scope : '')
       + '&redirect_uri=' + redirectURI
-      + '&state=' + userId
-      ;
+      + '&state=' + userId;
+
     resp.statusCode = 302
     resp.setHeader('location', u)
     resp.end()
@@ -37,7 +37,6 @@ module.exports = function (opts) {
 
     let tokenResp = await axios.get(u, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
     let token = tokenResp.data
-
 
     let user = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
     user = user.data

@@ -1,5 +1,13 @@
 version: 2.1
 jobs:
+  test:
+    docker:
+      - image: circleci/node:10
+
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - run: sleep 60 & echo "test job"
   build:
     docker:
       - image: circleci/node:10
@@ -57,3 +65,9 @@ jobs:
       - run:
           when: on_fail
           command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
+workflows:
+  version: 2
+  build_and_test:
+    jobs:
+      - build
+      - test
