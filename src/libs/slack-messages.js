@@ -3,9 +3,9 @@ const { sendMessage, updateMessage } = require('./slack-api.js')
 
 async function sendWelcomeMessage(githubConnected, authLink, channel, accessToken) {
 	if (githubConnected){
-		var text = `Welcome, please connect your Github account using this <${authLink}|link>.`
+		var text = `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!`
 	} else {
-		var text = `Welcome, please install our Github app to your organization using this <${authLink}|link>. Please ping the GH organization admin if need as admin right are required to do this action.`
+		var text = `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.`
 	}
 
 	data = {
