@@ -5,7 +5,6 @@ const CIRCLE_TOKEN = process.env.CIRCLE_TOKEN;
 
 async function retryBuild({vcs, username, project, build_num}) {
 	const url = `${CIRCLE_BASE}/${vcs}/${username}/${project}/${build_num}/retry?circle-token=${CIRCLE_TOKEN}`
-	console.log(url, vcs, username, project, build_num, CIRCLE_TOKEN);
 	let res = await axios.post(url)
 	// console.log(res);
     // let data = await res.json()
@@ -45,17 +44,13 @@ async function jobDetails({jobUrl}) {
 async function workflowDetails({workflowId}) {
 	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${CIRCLE_TOKEN}`
 	const wres = await axios.get(wurl)
-	console.log(wres.data);
 
 	const output = {};
 
 	if (wres.data) {
 		output.raw_workflow_job_data = wres;
 		wres.data.items.forEach(i => console.log(i.name, i.status))
-
 		const allOnHold = wres.data.items.filter(i => i.status == 'on_hold');
-		console.log(allOnHold);
-
 		output.jobs_on_hold = allOnHold;
 	}
 
@@ -67,7 +62,6 @@ async function getUserInfo(token) {
 	const url = `https://circleci.com/api/v1.1/me?circle-token=${token}`
 	// console.log(url);
 	const res = await axios.get(url)
-	console.log(res.data);
 
 	if (res.data) {
 		return res.data;

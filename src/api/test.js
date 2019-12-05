@@ -59,8 +59,6 @@ router.get('/', async(req, res) => {
 	// trackEvent('test_event', {test_prop:true})
 	]
 
-	console.log(output);
-
 	res.end();
 });
 

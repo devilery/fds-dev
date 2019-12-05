@@ -47,12 +47,10 @@ app.use(express.json());
 
 app.use('/slack/commands', express.urlencoded())
 app.post('/slack/commands', async (req, res) => {
-  console.log('lool', req.headers, req.body);
   handleCommands(req, res)
 })
 
 app.post('/slack/events', async (req, res) => {
-  console.log('WTFFFF');
   res.end();
 })
 
@@ -80,7 +78,6 @@ app.get('/github/setup', async (req, res) => {
     })
 
     let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` }})
-    console.log(resRepos.body)
     let repos = resRepos.data.repositories
 
     for (let repo of repos) {

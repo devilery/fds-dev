@@ -14,16 +14,12 @@ async function getAuthInfo(code, redirectUri=true) {
 
 	const res = await axios.get('https://slack.com/api/oauth.access', {params: reqData})
 	const data = res.data
-	console.log(data)
 	return { userId: data.user_id, userAccessToken: data.access_token, botAccessToken: data.bot.bot_access_token}
 }
 
 
 async function get(url, options) {
-	console.log(url)
-	console.log(options)
 	var res = await axios.get(url, options)
-	console.log(res)
 	// if (['invalid_auth', 'not_authed'].includes(res.data.error)) {
 	// 	const teamsRefs = await firestore.collection('teams').get()
 
@@ -43,11 +39,8 @@ async function get(url, options) {
 
 
 async function post(url, data, options) {
-	console.log(url)
-	console.log(data)
-	console.log(options)
+
 	var res = await axios.post(url, data, options)
-	console.log(res)
 	// if (['invalid_auth', 'not_authed'].includes(res.data.error)) {
 	// 	const teamsRefs = await firestore.collection('teams').get()
 

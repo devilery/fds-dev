@@ -1,6 +1,6 @@
 const { emmit } = require('./event');
 const { firestore } = require('./firebase')
-const { getPullRequestsForCommit } = require('./github-api');
+const { getPullRequestsForCommit, getCommitStatus } = require('./github-api');
 const { createOrUpdatePr } = require('./pr');
 
 
@@ -35,8 +35,13 @@ async function processCommitStatus(statusEvent) {
   let pullRequests = await findAndUpdatePRsById(commitPullRequests)
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
+  let statuses = await getCommitStatus(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.data().github_access_token)
+  console.log('-----------')
+  console.log(statuses.statuses.map(item => [item.context, item.state]))
+  console.log(statusEvent.state, statusEvent.context)
+  console.log('-----------')
+
   for (let pull of pullRequests) {
-    console.log(statusEvent)
     let statusData = {
       status: statusEvent.state,
       type: 'standard',
@@ -51,7 +56,6 @@ async function processCommitStatus(statusEvent) {
       raw_data: statusEvent
     }
 
-    console.log(statusData)
     emmit('pr.check.update', statusData)
   }
 }
