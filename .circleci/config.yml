@@ -81,6 +81,6 @@ workflows:
     jobs:
       - build
       - test
-      - test-wait
+      - test-wait:
           requires:
             - build
