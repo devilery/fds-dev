@@ -33,7 +33,7 @@ async function getCommitStatus(owner, repo, commit_sha, token) {
 }
 
 async function createInstallationToken(installation_id) {
-  let privateKey = JSON.parse(process.env.PRIVATE_KEY)
+  let privateKey = JSON.parse(process.env.GITHUB_PRIVATE_KEY)
 
   const jwtToken = jwt.sign({
     exp: Math.floor(Date.now() / 1000) + (5 * 60),
