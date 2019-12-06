@@ -29,28 +29,30 @@ let baseBlock = (data) => [
 
 let checkProgressBlock = (checks) => {
 	
+	let filter = checks.filter(item => item.status === 'pending')
+
+	if (checks.length === 0) {
+		return []
+	}
+
 	return [
 		{
-		"type": "context",
-		"elements": [
-			{
-				"type": "mrkdwn",
-				"text": "*Pull request checks*"
-			}
-		]
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": `*Pull request checks* (${checks.filter(item => item.status !== 'pending').length} complete out of ${checks.length})`
+				}
+			]
 		},
-		checks.map(item => {
+		filter.map(item => {
 			let checkName = item.context;
 			
 
 			let text = `⏳Check <${item.target_url}|${checkName}> in progress...`;
 
-			if (item.status === 'success') {
-				text = `✅*<${item.target_url}|${checkName}> check is complete!*`
-			}
-
-			if (item.status === 'failure' || item.status === 'error') {
-				text = `⛔️*There was an error with <${data.target_url}|${checkName}>.* check`
+			if (item.ci_data && item.ci_data.estimate_ms) {
+				text += ` ${item.ci_data.estimate_ms / 1000}s est build time`
 			}
 
 			return {
@@ -63,16 +65,6 @@ let checkProgressBlock = (checks) => {
 		})
 	].flat()
 }
-
-let footerBlock = (data) => [{
-	"type": "section",
-	"text": {
-		"type": "mrkdwn",
-		"text": "<https://google.com|Git Hub> | <https://google.com|Trello> | <https://google.com|CI >"
-	}
-}]
-
-
 
 async function sendPrOpenedMessage(data, channel, token) {
 	let blocks = [baseBlock(data)]
@@ -90,7 +82,7 @@ async function sendPrOpenedMessage(data, channel, token) {
 
 
 async function updatePrOpenedMessage(data, channel, ts, token) {
-	let checks = checkProgressBlock(data.checks.filter(item => item.status === 'pending'))
+	let checks = checkProgressBlock(data.checks)
 	let blocks = [baseBlock(data.pr), checks]
 	let dataMsg = {
 		"blocks": blocks.flat(),
@@ -100,28 +92,66 @@ async function updatePrOpenedMessage(data, channel, ts, token) {
 	return updateMessage(dataMsg, channel, ts, token)
 }
 
+async function sendCiBuildSuccess(checksData, channel, ts, token) {
 
-async function sendCheckSuccess(data, channel, ts, token) {
+	let checks = checksData.map(item => {
+		return {
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": `✅ *The <${item.target_url}|${item.context}> was successful!*`
+				}
+			]
+		}
+	})
 
 	data = {
 		"thread_ts": ts,
 		"channel": channel,
 		"blocks": [
 			{
-				"type": "context",
-				"elements": [
-					{
-						"type": "mrkdwn",
-						"text": `✅ *The <${data.target_url}|${data.context}> was successful!*`
-					}
-				]
-			}
-		]
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": "All your CI builds passed!"
+				}
+			},
+			...checks]
 	}
 
 	return sendMessage(data, token)
 }
 
+async function sendChecksSuccess(checksData, channel, ts, token) {
+	let checks = checksData.map(item => {
+		return {
+			"type": "context",
+			"elements": [
+				{
+					"type": "mrkdwn",
+					"text": `✅ *The <${item.target_url}|${item.context}> was successful!*`
+				}
+			]
+		}
+	})
+
+	data = {
+		"thread_ts": ts,
+		"channel": channel,
+		"blocks": [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": "All your Checks passed! 🎉"
+				}
+			},
+			...checks]
+	}
+
+	return sendMessage(data, token)
+}
 
 async function sendCheckError(data, channel, token, ts) {
 
@@ -145,4 +175,4 @@ async function sendCheckError(data, channel, token, ts) {
 };
 
 
-module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckSuccess, sendCheckError, updatePrOpenedMessage }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess }

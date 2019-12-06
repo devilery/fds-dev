@@ -1,14 +1,19 @@
 const { emmit } = require('./event');
 const { firestore } = require('./firebase')
-const { getPullRequestsForCommit, getCommitStatus } = require('./github-api');
+const { getPullRequestsForCommit, getCommitStatus, getCommitInfo } = require('./github-api');
 const { createOrUpdatePr } = require('./pr');
 
 
 async function processGithubPullRequest(pullRequestEvent) {
   const action = pullRequestEvent.action
   const userGH = pullRequestEvent.pull_request.user
+  let userId;
 
-  const userId = await findUserIdByGithubId(userGH)
+  try {
+    userId = await findUserIdByGithubId(userGH)
+  } catch (error) {
+    return;
+  }
   const pullRequestData = transformPRevent(pullRequestEvent.pull_request, userId)
 
   switch (action) {
@@ -36,14 +41,10 @@ async function processCommitStatus(statusEvent) {
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   let statuses = await getCommitStatus(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.data().github_access_token)
-  console.log('-----------')
-  console.log(statuses.statuses.map(item => [item.context, item.state]))
-  console.log(statusEvent.state, statusEvent.context)
-  console.log('-----------')
 
   for (let pull of pullRequests) {
     let statusData = {
-      status: statusEvent.state,
+      status: normalizeCheckState(statusEvent.state),
       type: 'standard',
       from: 'github',
       id: statusEvent.id,
@@ -54,6 +55,39 @@ async function processCommitStatus(statusEvent) {
       description: statusEvent.description,
       pull_request_id: pull.id,
       raw_data: statusEvent
+    }
+
+    emmit('pr.check.update', statusData)
+  }
+}
+
+async function processCheckRun(CheckRunEvent) {
+
+  let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
+  repoRef = repoRef.data()
+  let ownerRef = await repoRef.app_owner_ref.get()
+
+  let checkRun = CheckRunEvent.check_run
+  console.log(normalizeCheckState(checkRun.status), checkRun.status)
+
+  let commitPullRequests = await getPullRequestsForCommit(CheckRunEvent.repository.owner.login, CheckRunEvent.repository.name, checkRun.head_sha, ownerRef.data().github_access_token);
+  let pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  let commitInfo = await getCommitInfo(CheckRunEvent.repository.owner.login, CheckRunEvent.repository.name, checkRun.head_sha, ownerRef.data().github_access_token)
+
+  await createOrUpdateCommit(commitInfo, pullRequests)
+
+  for (let pull of pullRequests) {
+    let statusData = {
+      status: normalizeCheckState(checkRun.status),
+      type: 'check',
+      from: 'github',
+      id: checkRun.id,
+      commit_sha: checkRun.head_sha,
+      name: checkRun.name,
+      target_url: checkRun.details_url,
+      context: checkRun.name,
+      pull_request_id: pull.id,
+      raw_data: checkRun
     }
 
     emmit('pr.check.update', statusData)
@@ -75,11 +109,17 @@ async function findAndUpdatePRsById(GHPullRequests) {
     }
   }
 
-  let snapshot = await firestore.collection('pull_requests').where('id', 'in', GHPullRequests.map(item => item.id)).get()
+  let snapshot = await firestore.collection('pull_requests').get()
+
+  let GHPRIds = GHPullRequests.map(item => item.id)
 
   pullsArray = []
   snapshot.forEach(doc => {
-    pullsArray.push(doc.data())
+    let data = doc.data();
+
+    if (GHPRIds.includes(data.id)) {
+      pullsArray.push(doc.data())
+    }
   });
 
   return pullsArray
@@ -94,6 +134,23 @@ async function createOrUpdateCommit(commit, pullRequests = []) {
       commit_ref: commitRef
     })
   }
+}
+
+function normalizeCheckState(status) {
+  let avaibleStates = {
+    'pending': 'pending',
+    'in_progress': 'pending',
+    'success': 'success',
+    'completed': 'success',
+    'error': 'error',
+    'failure': 'failure',
+    'neutral': 'error',
+    'cancelled': 'error',
+    'timed_out': 'error',
+    'created': 'pending'
+  }
+
+  return avaibleStates[status]
 }
 
 function transformPRevent(pull_request, userId) {
@@ -126,5 +183,6 @@ function transformPRevent(pull_request, userId) {
 
 module.exports = {
   processGithubPullRequest,
-  processCommitStatus
+  processCommitStatus,
+  processCheckRun
 }

@@ -1,5 +1,5 @@
 const { firestore } = require('../libs/firebase')
-const { sendPrOpenedMessage, updateMainMessage, sendCheckSuccess, sendCheckError, updatePrOpenedMessage } = require('../libs/slack-messages');
+const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
 const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
 const { jobDetails } = require('../libs/circleci');
 var Base64 = require('js-base64').Base64;
@@ -18,17 +18,23 @@ const commitCheckUpdate = async function (check) {
 	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
 	let pr = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
 	const user = await firestore.collection('users').doc(pr.data().user_id).get()
+	let team = await user.data().team.get()
 	pr = pr.data()
 
 	if (check.context && check.context.includes('ci/circleci')) {
-		circleCiData = await jobDetails({jobUrl: check.target_url})
+		ci_data = {};
 
-		Object.assign(check, {
-			type: 'ci-circleci',
-			ci_data: {
+		if (team.circle_personal_token) {
+			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
+			ci_data = {
 				estimate_ms: circleCiData.estimate_ms,
 				jobs_on_hold: circleCiData.workflow.jobs_on_hold
 			}
+		}
+
+		Object.assign(check, {
+			type: 'ci-circleci',
+			ci_data: ci_data
 		})
 	}
 
@@ -51,15 +57,23 @@ const commitCheckUpdate = async function (check) {
 		pr: pr
 	}
 
-	let team = await user.data().team.get()
+	await updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 
-	updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+	let ciChecks = checks.filter(check => check.context.includes('ci/circleci'))
 
-	if (check.status === 'success') {
-		sendCheckSuccess(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
-	} else if (check.status === 'failure' || check.status === 'error') {
+	let allCiPassed = ciChecks.every(check => check.status === 'success');
+	let allChecksPassed = checks.every(check => check.status === 'success')
+
+	if (allChecksPassed) {
+		sendChecksSuccess(checks, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+	} else if (allCiPassed) {
+		sendCiBuildSuccess(ciChecks, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+	}
+
+	if (check.status === 'failure' || check.status === 'error') {
 		sendCheckError(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 	}
+
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 

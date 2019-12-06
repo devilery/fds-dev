@@ -14,9 +14,9 @@ async function retryBuild({vcs, username, project, build_num}) {
 
 // https://circleci.com/gh/feature-delivery/fds-dev/86?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
 // job can be in any state: pending, success, fail
-async function jobDetails({jobUrl}) {
+async function jobDetails({jobUrl, token}) {
 	// const url = `https://circleci.com/api/v1.1/project/gh/feature-delivery/fds-dev/54`
-	const url = `${CIRCLE_BASE}/${jobUrl.replace('https://circleci.com/', '')}?circle-token=${CIRCLE_TOKEN}`
+	const url = `${CIRCLE_BASE}/${jobUrl.replace('https://circleci.com/', '')}?circle-token=${token}`
 	const res = await axios.get(url)
 
 	const output = {};
@@ -34,15 +34,15 @@ async function jobDetails({jobUrl}) {
 		//   workflows: { job_name: 'track_end',     job_id: 'ba31d462-c692-45e2-afaa-0dfe4cd90c56',     workflow_id: 'e0fea775-1230-4aef-8f8b-7f2bd270bb7a',     workspace_id: 'c84f306c-2a06-4af9-bd53-c727d48ac07d',     upstream_job_ids:      [ '77cee595-ff1f-44f4-9525-d11c25f8e85d',        'eb576787-1ce1-4192-a059-edc35408abfc',        '481c6140-fee9-47fc-afbc-bbaea5e5da4f',        '9c9ad4eb-3b25-4b9c-92a9-e37adeb9ef0c' ],     upstream_concurrency_map: {},     workflow_name: 'pipeline' },
 		const wid = res.data.workflows.workflow_id;
 		//console.log(wid);
-		const wfData = await workflowDetails({workflowId: wid});
+		const wfData = await workflowDetails({workflowId: wid, token});
 		output.workflow = wfData;
 	}
 
 	return output;
 }
 
-async function workflowDetails({workflowId}) {
-	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${CIRCLE_TOKEN}`
+async function workflowDetails({ workflowId, token}) {
+	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${token}`
 	const wres = await axios.get(wurl)
 
 	const output = {};

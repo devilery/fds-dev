@@ -14,7 +14,7 @@ const refreshAuthLogic = async failedRequest => {
   let owner = owners.docs.map(doc => doc)[0]
   let acessToken = await createInstallationToken(owner.data().installation_id)
 
-  await owner.ref.update(acessToken)
+  await owner.ref.update({ github_access_token: acessToken.token, expires_at: acessToken.expires_at })
 
   failedRequest.config.headers.Authorization = `token ${acessToken.token}`
   return Promise.resolve()
@@ -28,7 +28,17 @@ async function getPullRequestsForCommit(owner, repo, commit_sha, token) {
 }
 
 async function getCommitStatus(owner, repo, commit_sha, token) {
-  let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
+  try {
+    let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
+    return res.data
+  } catch (error) {
+    console.error(error)
+    return;
+  }
+}
+
+async function getCommitInfo(owner, repo, commit_sha, token) {
+  let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}`, { headers: { 'Authorization': `token ${token}` } })
   return res.data
 }
 
@@ -54,5 +64,6 @@ async function createInstallationToken(installation_id) {
 module.exports = {
   getPullRequestsForCommit,
   createInstallationToken,
-  getCommitStatus
+  getCommitStatus,
+  getCommitInfo
 }
