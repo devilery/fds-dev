@@ -2,6 +2,7 @@ const { firestore } = require('../libs/firebase')
 const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
 const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
 const { jobDetails } = require('../libs/circleci');
+const { sleep } = require('../libs/util');
 var Base64 = require('js-base64').Base64;
 
 const opened = async function(data) {
@@ -42,6 +43,11 @@ const commitCheckUpdate = async function (check) {
 
 	let checkRef = commitRef.collection('checks').doc(Base64.encode(check.context))
 	let dbCheck = await checkRef.get()
+
+	// if changed to done then wait 5 seconds. This way other pending events can activate and entire check flow will not return done
+	if (dbCheck.data() && dbCheck.data().status === 'pending' && check.status === 'success') {
+		await sleep(7000) // wait 7 seconds for other events to start if exists
+	}
 
 	if (dbCheck.data() && dbCheck.data().status === check.status) {
 		return;

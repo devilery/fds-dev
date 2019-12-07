@@ -62,7 +62,6 @@ async function processCommitStatus(statusEvent) {
 async function processCheckRun(CheckRunEvent) {
   let checkStatus = normalizeCheckState(CheckRunEvent.check_run.status)
 
-  console.log(checkStatus, CheckRunEvent.check_run.status, CheckRunEvent.action, CheckRunEvent.check_run.name)
   let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
   repoRef = repoRef.data()
   let ownerRef = await repoRef.app_owner_ref.get()
