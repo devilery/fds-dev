@@ -7,4 +7,4 @@ import Team from './Team';
 import User from './User'
 
 
-export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User}
+export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User }
