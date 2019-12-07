@@ -111,7 +111,7 @@ ghOAuth.on('error', function (err) {
 
 const apiPath = path.join(__dirname, 'api');
 fs.readdirSync(apiPath)
-  .filter(file => { return (file.slice(-3) === '.js'); })
+  .filter(file => { return (['.js', '.ts'].includes(file.slice(-3))); })
   .forEach(file => {
     let baseRoute = `/api/${path.basename(file).split('.').slice(0, -1).join('.')}`;
     let router = require(path.join(apiPath, file));
