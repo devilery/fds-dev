@@ -1,19 +1,15 @@
+// import { strict as assert } from 'assert'
 const { emmit } = require('./event');
 const { firestore } = require('./firebase')
 const { getPullRequestsForCommit, getCommitStatus, getCommitInfo } = require('./github-api');
 const { createOrUpdatePr } = require('./pr');
-
+import { Repository, GithubOwner } from '../entity'
 
 async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
   const { user } = pullRequestEvent.pull_request;
-  let userId;
 
-  try {
-    userId = await findUserIdByGithubId(user)
-  } catch (error) {
-    return;
-  }
+  const userId = await findUserIdByGithubId(user)
   const pullRequestData = transformPRevent(pullRequestEvent.pull_request, userId)
 
   switch (action) {
@@ -30,18 +26,27 @@ async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloa
   }
 }
 
+async function getOwnerByRepositoryId(repoId: number) {
+  const repo = await Repository.findOneOrFail({where: {id: repoId.toString()}})
+  const owner = await GithubOwner.findOneOrFail({where: {id: repo.id}})
+  return owner;
+}
+
 async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
 
-  let repoRef = await firestore.collection('repos').doc(statusEvent.repository.id.toString()).get()
-  repoRef = repoRef.data()
-  let ownerRef = await repoRef.app_owner_ref.get()
+  const { repository } = statusEvent;
 
-  let commitPullRequests = await getPullRequestsForCommit(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.data().github_access_token);
-  let pullRequests = await findAndUpdatePRsById(commitPullRequests)
-  await createOrUpdateCommit(statusEvent.commit, pullRequests)
+  // const repo = await Repository.findOneOrFail({where: {id: repository.id.toString()}})
+  // assert(repo, `Could not find repo id ${repository.id.toString()}`)
+
+  const owner = await getOwnerByRepositoryId(repository.id);
+
+  const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, statusEvent.sha, owner.githubAccessToken);
+  const pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  await createOrUpdateCommit(statusEvent.commit, pullRequests as [])
 
   for (let pull of pullRequests) {
-    let statusData = {
+    const statusData = {
       status: normalizeCheckState(statusEvent.state),
       type: 'standard',
       from: 'github',
@@ -59,23 +64,23 @@ async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
   }
 }
 
-async function processCheckRun(CheckRunEvent) {
-  let checkStatus = normalizeCheckState(CheckRunEvent.check_run.status)
+async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
+  const checkStatus = normalizeCheckState(checkRunEvent.check_run.status)
 
-  let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
-  repoRef = repoRef.data()
-  let ownerRef = await repoRef.app_owner_ref.get()
+  const { repository } = checkRunEvent;
 
-  let checkRun = CheckRunEvent.check_run
+  const owner = await getOwnerByRepositoryId(repository.id);
 
-  let commitPullRequests = await getPullRequestsForCommit(CheckRunEvent.repository.owner.login, CheckRunEvent.repository.name, checkRun.head_sha, ownerRef.data().github_access_token);
-  let pullRequests = await findAndUpdatePRsById(commitPullRequests)
-  let commitInfo = await getCommitInfo(CheckRunEvent.repository.owner.login, CheckRunEvent.repository.name, checkRun.head_sha, ownerRef.data().github_access_token)
+  const checkRun = checkRunEvent.check_run
 
-  await createOrUpdateCommit(commitInfo, pullRequests)
+  const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken);
+  const pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  const commitInfo = await getCommitInfo(repository.owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
+
+  await createOrUpdateCommit(commitInfo, pullRequests as [])
 
   for (let pull of pullRequests) {
-    let statusData = {
+    const statusData = {
       status: checkStatus,
       type: 'check',
       from: 'github',
@@ -111,7 +116,7 @@ async function findAndUpdatePRsById(GHPullRequests) {
 
   let GHPRIds = GHPullRequests.map(item => item.id)
 
-  pullsArray = []
+  const pullsArray = []
   snapshot.forEach(doc => {
     let data = doc.data();
 
@@ -123,7 +128,7 @@ async function findAndUpdatePRsById(GHPullRequests) {
   return pullsArray
 }
 
-async function createOrUpdateCommit(commit, pullRequests = []) {
+async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit, pullRequests = []) {
   let commitRef = await firestore.collection('commits').doc(commit.sha)
   commitRef.set(commit, { merge: true })
 

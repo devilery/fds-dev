@@ -26,7 +26,7 @@ createAuthRefreshInterceptor(session, refreshAuthLogic);
 
 async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/pulls`, { headers: { 'Accept': 'application/vnd.github.groot-preview+json', 'Authorization': `token ${token}` } })
-  return res.data
+  return res.data //as Octokit.ReposListPullRequestsAssociatedWithCommitResponse
 }
 
 async function getCommitStatus(owner: string, repo: string, commit_sha: string, token: string) {
