@@ -10,9 +10,10 @@ const authenticated = async function(data: any) {
 
 	let team = await Team.findOne({where: { slackId: teamInfo.id }})
 	if (!team) {
-		team = new Team()
-		team.slackId = teamInfo.id
-		team.slackBotAccessToken = authInfo.botAccessToken
+		team = Team.create({
+			slackId: teamInfo.id,
+			slackBotAccessToken: authInfo.botAccessToken
+		})
 
 		await team.save()
 		emmit('team.created', team)
@@ -20,11 +21,12 @@ const authenticated = async function(data: any) {
 
 	let user = await User.findOne({where: { slackId: userInfo.id}})
 	if (!user) {
-		user = new User()
-		user.slackId = userInfo.id
-		user.name = userInfo.name
-		user.team = team
-		user.slackImChannelId = await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
+		user = User.create({
+			slackId: userInfo.id,
+			name: userInfo.name,
+			team: team,
+			slackImChannelId: await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
+		})
 
 		await user.save()
 		emmit('user.created', user)
