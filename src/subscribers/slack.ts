@@ -8,28 +8,26 @@ const authenticated = async function(data: any) {
 	const teamInfo = await slack.getTeamInfo(authInfo.userAccessToken)
 	const userInfo = await slack.getUserInfo(authInfo.userId, authInfo.userAccessToken)
 
-	var currentTeam = await Team.findOne({where: { slackId: teamInfo.id }})
+	let team = await Team.findOne({where: { slackId: teamInfo.id }})
+	if (!team) {
+		team = new Team()
+		team.slackId = teamInfo.id
+		team.slackBotAccessToken = authInfo.botAccessToken
 
-	if (!currentTeam) {
-		currentTeam = new Team()
-		currentTeam.slackId = teamInfo.id
-		currentTeam.slackBotAccessToken = authInfo.botAccessToken
-
-		await currentTeam.save()
-		emmit('team.created', currentTeam)
+		await team.save()
+		emmit('team.created', team)
 	}
 
+	let user = await User.findOne({where: { slackId: userInfo.id}})
+	if (!user) {
+		user = new User()
+		user.slackId = userInfo.id
+		user.name = userInfo.name
+		user.team = team
+		user.slackImChannelId = await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
 
-	var currentUser = await User.findOne({where: { slackId: userInfo.id}})
-	if (!currentUser) {
-		currentUser = new User()
-		currentUser.slackId = userInfo.id
-		currentUser.name = userInfo.name
-		currentUser.team = currentTeam
-		currentUser.slackImChannelId = await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
-
-		await currentUser.save()
-		emmit('user.created', currentUser)
+		await user.save()
+		emmit('user.created', user)
 	}
 
 }
