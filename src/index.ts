@@ -1,4 +1,5 @@
 require('dotenv').config();
+import db from './libs/db'
 
 const Sentry = require('@sentry/node');
 
@@ -141,7 +142,11 @@ app.use(function onError(err, req, res, next) {
   res.end(res.sentry + "\n");
 });
 
-app.listen(port, err => {
-  if (err) throw err
-  console.log(`> Ready on server http://localhost:${port}`)
-});
+(async() => {
+  await db.connect();
+  await db.synchronize();
+  app.listen(port, err => {
+    if (err) throw err
+    console.log(`> Ready on server http://localhost:${port}`)
+  });
+})();
