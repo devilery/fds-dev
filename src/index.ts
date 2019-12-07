@@ -1,5 +1,6 @@
 require('dotenv').config();
-import db from './libs/db'
+import dbConnect from './libs/db'
+import {Team} from './entity'
 
 const Sentry = require('@sentry/node');
 
@@ -143,8 +144,10 @@ app.use(function onError(err, req, res, next) {
 });
 
 (async() => {
-  await db.connect();
+  var db = await dbConnect();
   await db.synchronize();
+  var t = new Team()
+  var ts = await Team.findByIds([1])
   app.listen(port, err => {
     if (err) throw err
     console.log(`> Ready on server http://localhost:${port}`)
