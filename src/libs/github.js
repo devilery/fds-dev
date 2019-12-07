@@ -40,8 +40,6 @@ async function processCommitStatus(statusEvent) {
   let pullRequests = await findAndUpdatePRsById(commitPullRequests)
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
-  let statuses = await getCommitStatus(statusEvent.repository.owner.login, statusEvent.repository.name, statusEvent.sha, ownerRef.data().github_access_token)
-
   for (let pull of pullRequests) {
     let statusData = {
       status: normalizeCheckState(statusEvent.state),
@@ -62,13 +60,14 @@ async function processCommitStatus(statusEvent) {
 }
 
 async function processCheckRun(CheckRunEvent) {
+  let checkStatus = normalizeCheckState(CheckRunEvent.check_run.status)
 
+  console.log(checkStatus, CheckRunEvent.check_run.status, CheckRunEvent.action, CheckRunEvent.check_run.name)
   let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
   repoRef = repoRef.data()
   let ownerRef = await repoRef.app_owner_ref.get()
 
   let checkRun = CheckRunEvent.check_run
-  console.log(normalizeCheckState(checkRun.status), checkRun.status)
 
   let commitPullRequests = await getPullRequestsForCommit(CheckRunEvent.repository.owner.login, CheckRunEvent.repository.name, checkRun.head_sha, ownerRef.data().github_access_token);
   let pullRequests = await findAndUpdatePRsById(commitPullRequests)
@@ -78,7 +77,7 @@ async function processCheckRun(CheckRunEvent) {
 
   for (let pull of pullRequests) {
     let statusData = {
-      status: normalizeCheckState(checkRun.status),
+      status: checkStatus,
       type: 'check',
       from: 'github',
       id: checkRun.id,
@@ -147,7 +146,8 @@ function normalizeCheckState(status) {
     'neutral': 'error',
     'cancelled': 'error',
     'timed_out': 'error',
-    'created': 'pending'
+    'created': 'pending',
+    'queued': 'pending'
   }
 
   return avaibleStates[status]

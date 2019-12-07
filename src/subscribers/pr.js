@@ -16,6 +16,8 @@ opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check) {
 	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
+	let allChecksRef = await commitRef.collection('checks')
+
 	let pr = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
 	const user = await firestore.collection('users').doc(pr.data().user_id).get()
 	let team = await user.data().team.get()
@@ -38,7 +40,14 @@ const commitCheckUpdate = async function (check) {
 		})
 	}
 
-	commitRef.collection('checks').doc(Base64.encode(check.context)).set(check)
+	let checkRef = commitRef.collection('checks').doc(Base64.encode(check.context))
+	let dbCheck = await checkRef.get()
+
+	if (dbCheck.data() && dbCheck.data().status === check.status) {
+		return;
+	}
+
+	checkRef.set(check)
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
 	if (!isHeadCommit) {
@@ -46,7 +55,7 @@ const commitCheckUpdate = async function (check) {
 	}
 
 	let checks = []
-	let allChecks = await commitRef.collection('checks').get()
+	let allChecks = await allChecksRef.get()
 
 	allChecks.forEach((ref) => {
 		checks.push(ref.data())
@@ -59,15 +68,10 @@ const commitCheckUpdate = async function (check) {
 
 	await updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 
-	let ciChecks = checks.filter(check => check.context.includes('ci/circleci'))
-
-	let allCiPassed = ciChecks.every(check => check.status === 'success');
 	let allChecksPassed = checks.every(check => check.status === 'success')
 
 	if (allChecksPassed) {
 		sendChecksSuccess(checks, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
-	} else if (allCiPassed) {
-		sendCiBuildSuccess(ciChecks, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
 	}
 
 	if (check.status === 'failure' || check.status === 'error') {

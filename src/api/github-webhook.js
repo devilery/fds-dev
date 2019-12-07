@@ -13,7 +13,7 @@ router.post('/', async(req, res) => {
       processGithubPullRequest(body)
       break;
     case 'status':
-      processCommitStatus(body)
+      await processCommitStatus(body)
       break;
     case 'check_run':
       processCheckRun(body)

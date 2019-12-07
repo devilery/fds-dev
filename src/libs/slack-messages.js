@@ -49,7 +49,8 @@ let checkProgressBlock = (checks) => {
 			let checkName = item.context;
 			
 
-			let text = `⏳Check <${item.target_url}|${checkName}> in progress...`;
+			let linkOrName = item.target_url ? `<${item.target_url}|${checkName}>` : checkName;
+			let text = `⏳Check ${linkOrName} in progress...`;
 
 			if (item.ci_data && item.ci_data.estimate_ms) {
 				text += ` ${item.ci_data.estimate_ms / 1000}s est build time`
@@ -92,45 +93,16 @@ async function updatePrOpenedMessage(data, channel, ts, token) {
 	return updateMessage(dataMsg, channel, ts, token)
 }
 
-async function sendCiBuildSuccess(checksData, channel, ts, token) {
-
-	let checks = checksData.map(item => {
-		return {
-			"type": "context",
-			"elements": [
-				{
-					"type": "mrkdwn",
-					"text": `✅ *The <${item.target_url}|${item.context}> was successful!*`
-				}
-			]
-		}
-	})
-
-	data = {
-		"thread_ts": ts,
-		"channel": channel,
-		"blocks": [
-			{
-				"type": "section",
-				"text": {
-					"type": "mrkdwn",
-					"text": "All your CI builds passed!"
-				}
-			},
-			...checks]
-	}
-
-	return sendMessage(data, token)
-}
-
 async function sendChecksSuccess(checksData, channel, ts, token) {
 	let checks = checksData.map(item => {
+		let linkOrName = item.target_url ? `<${item.target_url}|${item.context}>` : item.context;
+
 		return {
 			"type": "context",
 			"elements": [
 				{
 					"type": "mrkdwn",
-					"text": `✅ *The <${item.target_url}|${item.context}> was successful!*`
+					"text": `✅ *The ${linkOrName} was successful!*`
 				}
 			]
 		}
@@ -154,8 +126,9 @@ async function sendChecksSuccess(checksData, channel, ts, token) {
 }
 
 async function sendCheckError(data, channel, token, ts) {
+	let linkOrName = item.target_url ? `<${item.target_url}|${item.context}>` : item.context;
 
-	let errorText = `⛔️ *There was an error with the <${data.target_url}|${data.context}>.*`;
+	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
 
 	data = {
 		"thread_ts": ts,
@@ -175,4 +148,4 @@ async function sendCheckError(data, channel, token, ts) {
 };
 
 
-module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess }
+module.exports = { sendMessage, sendPrOpenedMessage, sendWelcomeMessage, sendCheckError, updatePrOpenedMessage, sendChecksSuccess }
