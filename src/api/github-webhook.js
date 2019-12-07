@@ -6,7 +6,7 @@ const { processGithubPullRequest, processCommitStatus, processCheckRun } = requi
 router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
-  
+
   console.log('event name: ', eventName)
   switch (eventName) {
     case 'pull_request':

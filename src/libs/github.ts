@@ -1,11 +1,11 @@
 const { emmit } = require('./event');
-const { firestore } = require('./firebase')
+// const { firestore } = require('./firebase')
 const { getPullRequestsForCommit, getCommitStatus, getCommitInfo } = require('./github-api');
 const { createOrUpdatePr } = require('./pr');
 
 
 async function processGithubPullRequest(pullRequestEvent) {
-  const action = pullRequestEvent.action
+  const { action } = pullRequestEvent as Webhooks.WebhookPayloadPullRequest;
   const userGH = pullRequestEvent.pull_request.user
   let userId;
 
@@ -32,7 +32,7 @@ async function processGithubPullRequest(pullRequestEvent) {
 
 async function processCommitStatus(statusEvent) {
 
-  let repoRef = await firestore.collection('repos').doc(statusEvent.repository.id.toString()).get()
+  // let repoRef = await firestore.collection('r epos').doc(statusEvent.repository.id.toString()).get()
   repoRef = repoRef.data()
   let ownerRef = await repoRef.app_owner_ref.get()
 
@@ -62,7 +62,7 @@ async function processCommitStatus(statusEvent) {
 async function processCheckRun(CheckRunEvent) {
   let checkStatus = normalizeCheckState(CheckRunEvent.check_run.status)
 
-  let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
+  // let repoRef = await firestore.collection('repos').doc(CheckRunEvent.repository.id.toString()).get()
   repoRef = repoRef.data()
   let ownerRef = await repoRef.app_owner_ref.get()
 
@@ -93,7 +93,7 @@ async function processCheckRun(CheckRunEvent) {
 }
 
 async function findUserIdByGithubId(ghUserEvent) {
-  let ghUser = await firestore.collection('gh_users').doc(ghUserEvent.id.toString()).get()
+  // let ghUser = await firestore.collection('gh_users').doc(ghUserEvent.id.toString()).get()
   let user = ghUser.data().user_ref
   user = await user.get()
   return user.data().id
@@ -101,13 +101,13 @@ async function findUserIdByGithubId(ghUserEvent) {
 
 async function findAndUpdatePRsById(GHPullRequests) {
   for (let GHpr of GHPullRequests) {
-    let pr = await firestore.collection('pull_requests').doc(GHpr.id.toString()).get()
+    // let pr = await firestore.collection('pull_requests').doc(GHpr.id.toString()).get()
     if (pr.exists) {
       await createOrUpdatePr(transformPRevent(GHpr, pr.data().user_id))
     }
   }
 
-  let snapshot = await firestore.collection('pull_requests').get()
+  // let snapshot = await firestore.collection('pull_requests').get()
 
   let GHPRIds = GHPullRequests.map(item => item.id)
 
@@ -124,11 +124,11 @@ async function findAndUpdatePRsById(GHPullRequests) {
 }
 
 async function createOrUpdateCommit(commit, pullRequests = []) {
-  let commitRef = await firestore.collection('commits').doc(commit.sha)
+  // let commitRef = await firestore.collection('commits').doc(commit.sha)
   commitRef.set(commit, { merge: true })
 
   for (let pull of pullRequests) {
-    await firestore.collection('pull_requests').doc(pull.id.toString()).collection('commits').doc(commit.sha).set({
+    // await firestore.collection('pull_requests').doc(pull.id.toString()).collection('commits').doc(commit.sha).set({
       commit_ref: commitRef
     })
   }
