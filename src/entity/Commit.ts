@@ -20,6 +20,6 @@ export default class Commit extends BaseEntity {
   @OneToMany(type => CommitCheck, commitCheck => commitCheck.commit)
   checks: CommitCheck[]
 
-  @Column({nullable: true})
-  rawData: any;
+  @Column('jsonb', {nullable: true})
+  rawData: {};
 }

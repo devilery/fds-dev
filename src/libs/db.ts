@@ -1,8 +1,10 @@
 import {Connection} from 'typeorm';
-import Team from '../entity/Team'
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import * as entities from '../entity'
 
 
 var connection  = new Connection({
+    'namingStrategy': new SnakeNamingStrategy(),
     "type": "postgres",
     "host": "localhost",
     "port": 5432,
@@ -11,9 +13,7 @@ var connection  = new Connection({
     "database": "devilery",
     "synchronize": true,
     "logging": true,
-    "entities": [
-        Team
-    ],
+    "entities": Object.values(entities),
     "migrations": [
         "../migration/**/*.ts"
     ],
