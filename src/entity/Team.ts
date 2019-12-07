@@ -9,11 +9,14 @@ export default class Team extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({default: false})
   githubConnected: boolean;
 
   @Column()
   slackId: string;
+
+  @Column()
+  slackBotAccessToken: string;
 
   @OneToMany(type => User, user => user.team)
   users: User[];

@@ -14,10 +14,7 @@ export default class User extends BaseEntity {
   name: string;
 
   @Column()
-  slackAuthCode: string;
-
-  @Column()
-  slackImChannel: string;
+  slackImChannelId: string;
 
   @ManyToOne(type => Team, team => team.users)
   team: Team;
