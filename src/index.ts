@@ -1,24 +1,26 @@
 require('dotenv').config();
 import dbConnect from './libs/db'
+import { Team, GithubOwner, Repository } from './entity'
 
-const Sentry = require('@sentry/node');
+import * as Sentry from '@sentry/node';
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({ dsn: process.env.SENTRY_DSN });
 }
 
-const url = require('url')
+import url from 'url';
 const port = process.env.PORT || 3000;
 
-const path = require('path');
-const fs = require('fs');
-const express = require('express');
-const morgan = require('morgan');
-const axios = require('axios');
+import path from 'path';
+import fs from 'fs';
+import express from 'express';
+import morgan from 'morgan';
+import axios from 'axios';
 
-const githubOAuth = require('./oauth-github')
+import githubOAuth from './oauth-github';
 
-const { createInstallationToken } = require('./libs/github-api')
+
+import { createInstallationToken } from './libs/github-api';
 const { subscribe, emmit } = require('./libs/event.js');
 const { firestore } = require('./libs/firebase');
 const { honeycomb } = require('./libs/honeycomb');
@@ -58,39 +60,46 @@ app.post('/slack/events', async (req, res) => {
 
 app.get('/github/setup', async (req, res) => {
   let query = url.parse(req.url, true).query
-  let installation_id = query.installation_id
+  let installation_id = query.installation_id as string
   let team_id = query.state
   let setup_action = query.setup_action
 
-  let team = firestore.collection('teams').doc(team_id)
+  const team = await Team.findOne({ where: { id: team_id } })
+
+  if (!team) {
+    res.end('Could not find team!')
+    return;
+  }
 
   if (setup_action === 'install') {
-    await team.update({
-      githubConnected: true
+    team.githubConnected = true
+    await team.save()
+
+    const data = await createInstallationToken(installation_id)
+    const owner = .create({
+      githubAccessToken: data.token,
+      installationId: installation_id,
+      team: team,
+      githubAccessTokenRaw: data
     })
 
-    let data = await createInstallationToken(installation_id)
-    let owner = await firestore.collection('github_owners').doc(installation_id)
-
-    owner.set({
-      github_access_token: data.token,
-      github_access_token_raw: data,
-      installation_id: installation_id,
-      team_ref: team
-    })
+    await owner.save()
 
     let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` }})
     let repos = resRepos.data.repositories
 
     for (let repo of repos) {
-      await firestore.collection('repos').doc(repo.id.toString()).set(repo)
-      await firestore.collection('repos').doc(repo.id.toString()).update({ app_owner_ref: owner })
-
+      const repository = Repository.create({
+        githubId: repo.id,
+        rawData: repo,
+        owner: owner
+      })
+      
+      await repository.save()
     }
   }
 
   emmit('team.gh.connected', team_id)
-
   res.end('done')
 })
 
@@ -102,10 +111,6 @@ app.get('/github-login', async (req, res) => {
 
 
 app.get('/github-callback', ghOAuth.callback)
-
-ghOAuth.on('error', function (err) {
-  console.error('there was a login error', err)
-})
 
 
 const apiPath = path.join(__dirname, 'api');
@@ -123,7 +128,7 @@ fs.readdirSync(subscribersPath)
 .filter(file => { return (['.js', '.ts'].includes(file.slice(-3))); })
   .forEach(file => {
   	subscribe();
-  	let subscribers = require(path.join(subscribersPath, file)).forEach(subscriber => {
+  	let subscribers = require(path.join(subscribersPath, file)).forEach((subscriber: any) => {
   		subscribe(subscriber.eventType,  subscriber);
   	});
   });
@@ -135,7 +140,7 @@ app.get('/debug-sentry', function mainHandler(req, res) {
 // The error handler must be before any other error middleware and after all controllers
 app.use(Sentry.Handlers.errorHandler());
 
-app.use(function onError(err, req, res, next) {
+app.use(function onError(err: any, req: any, res: any, next: any) {
   // The error id is attached to `res.sentry` to be returned
   // and optionally displayed to the user for support.
   res.statusCode = 500;
@@ -145,8 +150,7 @@ app.use(function onError(err, req, res, next) {
 (async() => {
   var db = await dbConnect();
   await db.synchronize();
-  app.listen(port, err => {
-    if (err) throw err
+  app.listen(port, () => {
     console.log(`> Ready on server http://localhost:${port}`)
   });
 })();

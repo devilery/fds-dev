@@ -1,6 +1,6 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne } from "typeorm";
 import Team from './Team'
-
+import GithubUser from './GithubUser';
 
 @Entity()
 export default class User extends BaseEntity {
@@ -18,4 +18,7 @@ export default class User extends BaseEntity {
 
   @ManyToOne(type => Team, team => team.users)
   team: Team;
+
+  @OneToOne(type => GithubUser, githubUser => githubUser.user)
+  githubUser: GithubUser | null;
 }
