@@ -7,8 +7,8 @@
    "author": "Tomas Ruzicka <me@tomasr.com>",
    "license": "MIT",
    "scripts": {
-      "dev": "nodemon",
-      "start": "node ./src/index.js",
+      "dev": "ts-node-dev --respawn --transpileOnly ./src/index.js",
+      "start": "ts-node-dev --respawn --transpileOnly ./src/index.js",
       "test": "echo nothing here"
    },
    "dependencies": {
@@ -40,8 +40,8 @@
       ]
    },
    "devDependencies": {
-      "ts-node": "3.3.0",
       "@types/node": "^8.0.29",
+      "ts-node-dev": "^1.0.0-pre.44",
       "typescript": "3.3.3333"
    }
 }

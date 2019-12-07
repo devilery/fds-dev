@@ -1,5 +1,6 @@
 {
    "compilerOptions": {
+      "experimentalDecorators": true,
       "lib": [
          "es5",
          "es6"
@@ -10,6 +11,7 @@
       "outDir": "./build",
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
-      "sourceMap": true
+      "sourceMap": true,
+      "allowJs": true
    }
 }
