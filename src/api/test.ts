@@ -1,3 +1,4 @@
+// @ts-ignore
 import { strict as assert } from 'assert';
 
 const router = require('express').Router();
@@ -64,8 +65,7 @@ async function testDb() {
   user.team = team;
   user.slackId = 'adfasdfasd';
   user.name = 'name'
-  user.slackAuthCode = 'name'
-  user.slackImChannel = 'name'
+  user.slackImChannelId = 'name'
   await user.save();
 
   // loads db populated columns

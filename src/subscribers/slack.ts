@@ -3,12 +3,12 @@ const { emmit } = require('../libs/event.js')
 import {Team, User} from '../entity'
 
 
-const authenticated = async function(data) {
+const authenticated = async function(data: any) {
 	const authInfo = await slack.getAuthInfo(data.code)
 	const teamInfo = await slack.getTeamInfo(authInfo.userAccessToken)
 	const userInfo = await slack.getUserInfo(authInfo.userId, authInfo.userAccessToken)
 
-	var currentTeam: Team | null = await Team.findOne({where: { slackId: teamInfo.id }})
+	var currentTeam = await Team.findOne({where: { slackId: teamInfo.id }})
 
 	if (!currentTeam) {
 		currentTeam = new Team()
@@ -20,9 +20,11 @@ const authenticated = async function(data) {
 	}
 
 
-	var currentUser: User | null = await User.findOne({where: { slackId: userInfo.id}})
+	var currentUser = await User.findOne({where: { slackId: userInfo.id}})
 	if (!currentUser) {
 		currentUser = new User()
+		currentUser.slackId = userInfo.id
+		currentUser.name = userInfo.name
 		currentUser.team = currentTeam
 		currentUser.slackImChannelId = await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
 

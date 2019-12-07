@@ -8,7 +8,7 @@ async function sendWelcomeMessage(githubConnected, authLink, channel, accessToke
 		var text = `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.`
 	}
 
-	data = {
+	const data = {
 		'channel': channel,
 		'text': text
 	}
