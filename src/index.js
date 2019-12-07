@@ -33,7 +33,7 @@ app.use(Sentry.Handlers.requestHandler());
 let ghOAuth = githubOAuth({
   githubClient: process.env.GITHUB_APP_PUBLIC_KEY,
   githubSecret: process.env.GITHUB_APP_SECRET_KEY,
-  baseURL: process.env.OAUTH_BASE_URL,
+  baseURL: process.env.GITHUB_OAUTH_BASE_URL,
   loginURI: '/github-login',
   callbackURI: '/github-callback',
   scope: 'user' // optional, default scope is set to user
