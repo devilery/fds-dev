@@ -76,7 +76,7 @@ app.get('/github/setup', async (req, res) => {
     await team.save()
 
     const data = await createInstallationToken(installation_id)
-    const owner = .create({
+    const owner = GithubOwner.create({
       githubAccessToken: data.token,
       installationId: installation_id,
       team: team,
@@ -94,7 +94,7 @@ app.get('/github/setup', async (req, res) => {
         rawData: repo,
         owner: owner
       })
-      
+
       await repository.save()
     }
   }

@@ -1,9 +1,9 @@
 // import { strict as assert } from 'assert'
 const { emmit } = require('./event');
 const { firestore } = require('./firebase')
-const { getPullRequestsForCommit, getCommitStatus, getCommitInfo } = require('./github-api');
+import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './github-api';
 const { createOrUpdatePr } = require('./pr');
-import { Repository, GithubOwner } from '../entity'
+import { Repository, GithubOwner, PullRequest } from '../entity'
 
 async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -104,12 +104,11 @@ async function findUserIdByGithubId(ghUserEvent) {
   return user.data().id
 }
 
-async function findAndUpdatePRsById(GHPullRequests) {
+async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {
   for (let GHpr of GHPullRequests) {
-    let pr = await firestore.collection('pull_requests').doc(GHpr.id.toString()).get()
-    if (pr.exists) {
-      await createOrUpdatePr(transformPRevent(GHpr, pr.data().user_id))
-    }
+    const pr = await PullRequest.findOneOrFail({where: {id: GHpr.id.toString()}})
+
+    await createOrUpdatePr(transformPRevent(GHpr, pr.user.id))
   }
 
   let snapshot = await firestore.collection('pull_requests').get()

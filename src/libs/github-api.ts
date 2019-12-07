@@ -24,9 +24,10 @@ const refreshAuthLogic = async (failedRequest: any) => {
 
 createAuthRefreshInterceptor(session, refreshAuthLogic);
 
+// https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/pulls`, { headers: { 'Accept': 'application/vnd.github.groot-preview+json', 'Authorization': `token ${token}` } })
-  return res.data //as Octokit.ReposListPullRequestsAssociatedWithCommitResponse
+  return res.data as Octokit.ReposListPullRequestsAssociatedWithCommitResponse
 }
 
 async function getCommitStatus(owner: string, repo: string, commit_sha: string, token: string) {
@@ -65,10 +66,8 @@ async function createInstallationToken(installation_id: string) {
 }
 
 module.exports = {
-  getPullRequestsForCommit,
   createInstallationToken,
-  getCommitStatus,
-  getCommitInfo
+
 }
 
-export { createInstallationToken }
+export { createInstallationToken, getPullRequestsForCommit, getCommitStatus, getCommitInfo }
