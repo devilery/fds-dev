@@ -51,7 +51,7 @@ async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
       from: 'github',
       id: statusEvent.id,
       commit_sha: statusEvent.sha,
-      name: statusEvent.name,
+      name: statusEvent.context,
       target_url: statusEvent.target_url,
       context: statusEvent.context,
       description: statusEvent.description,

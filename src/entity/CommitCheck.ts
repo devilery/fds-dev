@@ -25,7 +25,7 @@ export default class CommitCheck extends BaseEntity {
   targetUrl: string;
 
   @Column()
-  type: 'standard' | 'check'
+  type: 'standard' | 'ci-circleci'
 
   @Column('jsonb')
   rawData: any;

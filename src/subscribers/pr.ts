@@ -1,3 +1,6 @@
+import { ICommitCheck } from "./eventTypes";
+import { Commit, CommitCheck, PullRequest, User } from '../entity';
+
 const { firestore } = require('../libs/firebase')
 const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
 const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
@@ -15,25 +18,24 @@ const opened = async function(data) {
 };
 opened.eventType = 'pr.opened';
 
-const commitCheckUpdate = async function (check) {
-	let commitRef = await firestore.collection('commits').doc(check.commit_sha)
-	let allChecksRef = await commitRef.collection('checks')
+const commitCheckUpdate = async function (check: ICommitCheck) {
+	const commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha } })
+	const allChecks = commit.checks
+	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id } })
+	const user = pr.user
 
-	let pr = await firestore.collection('pull_requests').doc(check.pull_request_id.toString()).get()
-	const user = await firestore.collection('users').doc(pr.data().user_id).get()
-	let team = await user.data().team.get()
-	pr = pr.data()
+	let team = user.team
 
 	if (check.context && check.context.includes('ci/circleci')) {
 		let ci_data = {};
 
-		if (team.circle_personal_token) {
-			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
-			ci_data = {
-				estimate_ms: circleCiData.estimate_ms,
-				jobs_on_hold: circleCiData.workflow.jobs_on_hold
-			}
-		}
+		// if (team.circle_personal_token) {
+		// 	let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
+		// 	ci_data = {
+		// 		estimate_ms: circleCiData.estimate_ms,
+		// 		jobs_on_hold: circleCiData.workflow.jobs_on_hold
+		// 	}
+		// }
 
 		Object.assign(check, {
 			type: 'ci-circleci',
@@ -41,21 +43,21 @@ const commitCheckUpdate = async function (check) {
 		})
 	}
 
-	let checkRef = commitRef.collection('checks').doc(Base64.encode(check.context))
-	let dbCheck = await checkRef.get()
+	const dbCheck = await CommitCheck.findOne({ where: { name: check.name } })
 
 	// if changed to done then wait 5 seconds. This way other pending events can activate and entire check flow will not return done
-	if (dbCheck.data() && dbCheck.data().status === 'pending' && check.status === 'success') {
+	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
 		await sleep(7000) // wait 7 seconds for other events to start if exists
 	}
 
 
-	// 
-	if (dbCheck.data() && dbCheck.data().status === check.status) {
+	if (dbCheck && dbCheck.status === check.status) {
 		return;
 	}
 
-	checkRef.set(check)
+	if (!dbCheck) {}
+
+
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
 	if (!isHeadCommit) {
