@@ -17,6 +17,7 @@
       "@types/express": "^4.17.2",
       "@types/jsonwebtoken": "^8.3.5",
       "@types/morgan": "^1.7.37",
+      "@slack/web-api": "^5.6.0",
       "axios": "^0.19.0",
       "axios-auth-refresh": "^1.0.7",
       "dotenv": "^8.2.0",
