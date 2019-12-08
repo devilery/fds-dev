@@ -13,7 +13,7 @@ async function dbConnect() {
         "password": process.env.PG_PASSWORD,
         "database": process.env.PG_DATABASE,
         "synchronize": Boolean(process.env.PG_AUTO_DROP_DB),
-        "logging": Boolean(process.env.TYPEORM_LOG),
+        "logging": process.env.TYPEORM_LOG == 'true',
         "entities": Object.values(entities),
         "migrations": [
             "../migration/**/*.ts"

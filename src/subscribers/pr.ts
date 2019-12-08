@@ -3,7 +3,7 @@ import { Commit, CommitCheck, PullRequest, User, Team } from '../entity';
 import { ICommitCheck, IPullRequestEvent } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
-import { getPrOpenedMessage } from '../libs/slack-messages'
+import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
@@ -13,7 +13,7 @@ const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
 	const client = pr.user.team.getSlackClient()
 
-	const messageData = getPrOpenedMessage(data)
+	const messageData = getPrMessage(pr)
 
 	const res = await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
 	pr.slackThreadId = res.message.ts
@@ -47,7 +47,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 	let dbCheck = await CommitCheck.findOne({ where: { name: check.name } })
 
-	// if changed to done then wait 5 seconds. This way other pending events can activate and entire check flow will not return done
+	// if changed to done then wait 7 seconds. This way other pending events can activate and entire check flow will not return done
 	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
 		await sleep(7000) // wait 7 seconds for other events to start if exists
 	}
@@ -81,19 +81,23 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	}
 
 	const client = pr.user.team.getSlackClient()
-	const messageData = getPrOpenedMessage(pr, checks)
+	const messageData = getPrMessage(pr, checks)
+	if (!pr.slackThreadId) {
+		console.error('je to v pici')
+		return
+	}
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
 	let allChecksPassed = checks.every(check => check.status === 'success')
 
-	var checkMessgae: IMessageData | null  = null
+	var checkMessage: IMessageData | null  = null
 	if (allChecksPassed)
-		checkMessgae = getChecksSuccessMessage(checks)
+		checkMessage = getChecksSuccessMessage(checks)
 	if (check.status === 'failure' || check.status === 'error')
-		checkMessgae = getCheckErrorMessage(check)
+		checkMessage = getCheckErrorMessage(dbCheck)
 
-	if (checkMessgae)
-		client.chat.postMessage({text: checkMessgae.text, blocks: checkMessgae.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+	if (checkMessage)
+		client.chat.postMessage({text: checkMessage.text, blocks: checkMessage.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
 }
 commitCheckUpdate.eventType = 'pr.check.update'

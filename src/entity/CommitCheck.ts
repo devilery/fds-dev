@@ -6,7 +6,7 @@ export default class CommitCheck extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column('bigint')
   githubId: number;
 
   @Column()
@@ -15,14 +15,14 @@ export default class CommitCheck extends BaseEntity {
   @Column()
   status: 'pending' | 'success' | 'error' | 'failure'
 
-  @Column({nullable: true})
-  description: string;
+  @Column('varchar', {nullable: true})
+  description: string | null;
 
   @ManyToOne(type => Commit, commit => commit.checks)
   commit: Commit;
 
-  @Column()
-  targetUrl: string;
+  @Column('varchar', {nullable: true})
+  targetUrl: string | null;
 
   @Column()
   type: 'standard' | 'ci-circleci'

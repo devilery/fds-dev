@@ -7,7 +7,7 @@ export default class GithubUser extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column('bigint')
   githubId: number;
 
   @Column()

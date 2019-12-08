@@ -136,6 +136,8 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
   com.sha = commit.sha
 
   await com.save();
+  await com.reload();
+
   for (let pull of pullRequests) {
     let exists = com.pullRequests.find(item => item.id === pull.id);
     if (!exists) {

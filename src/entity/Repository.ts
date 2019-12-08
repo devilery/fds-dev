@@ -6,7 +6,7 @@ export default class Repository extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column('bigint')
   githubId: number;
 
   @Column({ type: 'jsonb' })

@@ -7,8 +7,7 @@ const { emmit } = require('../libs/event.js')
 const { retryBuild, jobDetails } = require('../libs/circleci')
 const { getPullRequestsForCommit } = require('../libs/github-api')
 const { trackEvent } = require('../libs/honeycomb')
-import User from '../entity/User'
-import Team from '../entity/Team'
+import { User, Team, GithubUser } from '../entity';
 
 
 async function testDb() {
@@ -16,6 +15,7 @@ async function testDb() {
   const team = new Team();
   team.githubConnected = true;
   team.slackId = 'dfsdf';
+  team.slackBotAccessToken = 'adsasasd'
   await team.save();
 
   const [, count1] = await User.findAndCount()
@@ -45,6 +45,22 @@ async function testDb() {
   const [, count3] = await User.findAndCount()
 
   assert.equal(count1, count3)
+
+
+  const user2 = new User();
+  user2.team = team;
+  user2.slackId = 'adfasdfasd';
+  user2.name = 'name'
+  user2.slackImChannelId = 'name'
+  await user2.save();
+  await user2.reload();
+
+  const ghUser = GithubUser.create({githubId: 1, githubUsername: 'neco', githubAccessToken: 'asdasdasdasasdasd', rawGithubUserData: {}, user: user2})
+  await ghUser.save();
+  await ghUser.reload();
+
+  const u2 = await User.findOne(user2.id, {relations: ['githubUser']})
+  const gu = await GithubUser.findOne({where: {id: ghUser.id}, relations: ['user']})
 
   // await team.reload()
   await team.remove();

@@ -7,7 +7,7 @@ export default class PullRequest extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column('bigint')
   githubId: number;
 
   @Column()
@@ -16,8 +16,8 @@ export default class PullRequest extends BaseEntity {
   @Column()
   prNumber: number;
 
-  @Column()
-  slackThreadId: string;
+  @Column('varchar', { nullable: true })
+  slackThreadId: string | null;
 
   @Column()
   title: string;
