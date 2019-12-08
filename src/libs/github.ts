@@ -9,6 +9,10 @@ export async function processGithubPullRequest(pullRequestEvent: Webhooks.Webhoo
   const { user } = pullRequestEvent.pull_request;
 
   const userId = await findUserIdByGithubId(user)
+  if (!userId) {
+    return;
+  }
+
   const pullRequestData = transformPRevent(pullRequestEvent.pull_request, userId)
 
   switch (action) {
@@ -97,7 +101,11 @@ async function getOwnerByRepositoryId(repoId: number) {
 }
 
 async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequestPullRequestUser) {
-  const user = await GithubUser.findOneOrFail({where: {githubId: ghUserEvent.id }, relations: ['user']});
+  const user = await GithubUser.findOne({where: {githubId: ghUserEvent.id }, relations: ['user']});
+  if (!user) {
+    return;
+  }
+
   return user.user.id;
 }
 
@@ -120,6 +128,7 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
 
   if (!com) {
     com = new Commit()
+    com.pullRequests = []
   }
 
   com.rawData = commit;
@@ -128,7 +137,10 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
 
   await com.save();
   for (let pull of pullRequests) {
-    com.pullRequests.push(pull)
+    let exists = com.pullRequests.find(item => item.id === pull.id);
+    if (!exists) {
+      com.pullRequests.push(pull)
+    }
   }
   await com.save()
 }

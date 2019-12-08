@@ -59,7 +59,7 @@ export default function (opts) {
       await createdGithubUser.save()
 
       appUser.githubUser = createdGithubUser
-      appUser.save()
+      await appUser.save()
     }
 
     resp.end('Thanks, close the tab and create a new PR :)')
