@@ -6,8 +6,6 @@ import { GithubOwner } from '../entity'
 
 const GITHUB_API_URL = 'https://api.github.com'
 
-const { firestore } = require('./firebase');
-
 const session = axios.create({
   baseURL: GITHUB_API_URL
 })
