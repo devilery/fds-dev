@@ -54,7 +54,7 @@ jobs:
 
       - run:
           name: tests
-          command: yarn tsc || echo all is okay
+          command: yarn tsc
 
       - run:
           name: Build ...
