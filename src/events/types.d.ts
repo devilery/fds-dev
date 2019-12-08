@@ -10,3 +10,22 @@ export interface ICommitCheck {
   pull_request_id: number;
   raw_data: any;
 }
+
+export interface IPullRequestEvent {
+  id: number;
+  from: string;
+  pr_number: number;
+  website_url: string;
+  title: string;
+  head_sha: string;
+  repository: {
+    id: number;
+    name: string;
+    owner: {
+      id: number;
+      login: string;
+    },
+    raw_data: any;
+  },
+  raw_data: any;
+}

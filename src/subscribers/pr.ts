@@ -1,7 +1,6 @@
 
 import { Commit, CommitCheck, PullRequest, User } from '../entity';
-import { ICommitCheck } from '../events/types';
-import { IPullRequestEvent } from './eventTypes';
+import { ICommitCheck, IPullRequestEvent } from '../events/types';
 
 const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
