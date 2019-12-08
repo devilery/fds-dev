@@ -126,8 +126,6 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
     pull.commits.push(c)
     await pull.save()
   }
-
-
 }
 
 const avaibleStates: { [key: string]: string; }  = {
