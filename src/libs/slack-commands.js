@@ -1,9 +1,10 @@
 const { getUserInfo } = require('./circleci');
-const { firestore } = require('./firebase');
 
+import { Team } from '../entity'
 
 async function saveToken(teamId, token) {
-  await firestore.collection('teams').doc(teamId).update({circle_personal_token: token})
+  const team = await Team.findOneOrFail({where: {team_id: team_id}});
+  team.circlePersonalToken = token;
 }
 
 

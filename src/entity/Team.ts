@@ -19,6 +19,9 @@ export default class Team extends BaseEntity {
   @Column()
   slackBotAccessToken: string;
 
+  @Column()
+  circlePersonalToken: string;
+
   @OneToMany(type => User, user => user.team)
   users: User[];
 
