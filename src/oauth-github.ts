@@ -33,16 +33,18 @@ export default function (opts) {
       + '&code=' + code
       + '&state=' + query.state;
 
+    // // https://developer.github.com/apps/building-oauth-apps/authorizing-oauth-apps/#2-users-are-redirected-back-to-your-site-by-github
     const tokenResp = await axios.get(u, { headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' } });
-    const token = tokenResp.data
+    const token = tokenResp.data // as Octokit.oauth
 
+    // https://developer.github.com/v3/users/#get-the-authenticated-user
     const userRes = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
-    const user = userRes.data
+    const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
     const appUser = await User.findOneOrFail({ where: { id: query.state } })
     const githubUser = appUser.githubUser
 
-    if (appUser.githubUser) {
+    if (githubUser) {
       githubUser.githubAccessToken = token.access_token
       githubUser.rawGithubUserData = user
       await githubUser.save()
