@@ -24,7 +24,6 @@ opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check: ICommitCheck) {
 	const commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
-	const checks = commit.checks
 	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id }, relations: ['user', 'user.team'] })
 	const user = pr.user
 	const team = user.team
@@ -68,8 +67,12 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	dbCheck.targetUrl = check.target_url;
 	dbCheck.type = check.type as any;
 	dbCheck.rawData = check
+	dbCheck.commit = commit
 
 	await dbCheck.save()
+	await dbCheck.reload()
+	commit.reload()
+	const checks = commit.checks
 
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
