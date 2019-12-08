@@ -7,10 +7,10 @@ export default class Commit extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column()
+  @Column({ unique: true })
   sha: string;
 
-  @Column()
+  @Column({ unique: true })
   websiteUrl: string;
 
   @ManyToMany(type => PullRequest, pullRequest => pullRequest.commits)

@@ -10,7 +10,7 @@ export default class GithubOwner extends BaseEntity {
   @Column()
   githubAccessToken: string;
 
-  @Column()
+  @Column({ unique: true })
   installationId: string;
 
   @Column('jsonb')

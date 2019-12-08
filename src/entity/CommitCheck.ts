@@ -7,7 +7,7 @@ export default class CommitCheck extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint', { transformer: [bigInt] })
+  @Column('bigint', { transformer: [bigInt], unique: true })
   githubId: number;
 
   @Column()
