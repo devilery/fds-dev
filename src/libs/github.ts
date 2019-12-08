@@ -4,7 +4,7 @@ import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './gith
 import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser } from '../entity'
 
-async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
+export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
   const { user } = pullRequestEvent.pull_request;
 
@@ -25,7 +25,7 @@ async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloa
   }
 }
 
-async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
+export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
 
   const { repository } = statusEvent;
 
@@ -57,7 +57,7 @@ async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
   }
 }
 
-async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
+export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
   const checkStatus = normalizeCheckState(checkRunEvent.check_run.status)
 
   const { repository } = checkRunEvent;
@@ -178,11 +178,4 @@ function transformPRevent(
   }
 
   return data
-}
-
-
-module.exports = {
-  processGithubPullRequest,
-  processCommitStatus,
-  processCheckRun
 }
