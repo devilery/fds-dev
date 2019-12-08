@@ -14,10 +14,10 @@ interface IMessgeBlock {
 
 export function getWelcomeMessage(user: User): IMessageData {
 	if (user.team.githubConnected){
-		let authLink = process.env.GH_APP_INSTAL_URL + `?state=${user.team.id}`
+		let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
 		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.` }
 	} else {
-		let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
+		let authLink = process.env.GH_APP_INSTAL_URL + `?state=${user.team.id}`
 		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` } 
 	}
 }
