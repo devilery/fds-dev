@@ -1,12 +1,13 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
 import GithubOwner from './GithubOwner'
+import { bigInt } from './util';
 
 @Entity()
 export default class Repository extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint')
+  @Column('bigint', { transformer: [bigInt] })
   githubId: number;
 
   @Column({ type: 'jsonb' })

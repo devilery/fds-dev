@@ -4,6 +4,7 @@ import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './gith
 import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser } from '../entity'
 import { sleep } from './util';
+import { In } from 'typeorm';
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -114,7 +115,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
   const prs: PullRequest[] = []
 
   async function searchPrs(run = 0) {
-    let existingPulls = await PullRequest.find({ where: { githubId: GHPullRequests.map(item => item.id) }, relations: ['user'] })
+    let existingPulls = await PullRequest.find({ where: { githubId: In(GHPullRequests.map(item => item.id)) }, relations: ['user'] })
 
     if (run >= 3) {
       return;

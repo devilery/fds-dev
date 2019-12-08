@@ -1,13 +1,15 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer } from "typeorm";
 import User from './User'
 import Commit from './Commit';
+import { bigInt } from './util';
+
 
 @Entity()
 export default class PullRequest extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint')
+  @Column('bigint', { transformer: [bigInt] })
   githubId: number;
 
   @Column()

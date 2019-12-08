@@ -1,12 +1,13 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
 import Commit from './Commit';
+import { bigInt } from './util';
 
 @Entity()
 export default class CommitCheck extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint')
+  @Column('bigint', { transformer: [bigInt] })
   githubId: number;
 
   @Column()
