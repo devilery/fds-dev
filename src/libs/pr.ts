@@ -1,16 +1,24 @@
-import { PullRequest } from "../entity";
-
-const { firestore } = require('../libs/firebase');
+import { PullRequest, User } from "../entity";
 
 async function createOrUpdatePr(pullRequest: any) {
-  const pr = await firestore.collection('pull_requests').doc(pullRequest.id.toString())
+  let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}})
 
-  await pr.set(pullRequest, { merge: true })
+  if (!pr)
+	pr = new PullRequest();
 
+  pr.rawData = pullRequest;
+  pr.websiteUrl = pullRequest.website_url;
   if (pullRequest.user_id) {
-    let user = await firestore.collection('users').doc(pullRequest.user_id.toString())
-    await pr.update({ user_ref: user })
+  	const user = await User.findOne({where: {id: pullRequest.user_id}})
+  	if (user)
+  		pr.user = user;
   }
+  pr.title = pullRequest.title;
+  pr.prNumber = pullRequest.pr_number;
+  pr.headSha = pullRequest.head_sha;
+  pr.githubId = pullRequest.id;
+
+  await pr.save()
 
   return pr
 }
@@ -21,3 +29,5 @@ async function isHeadCommitCheck(sha: string, pullRequestId: number) {
 }
 
 module.exports = { createOrUpdatePr, isHeadCommitCheck }
+
+export { createOrUpdatePr }
