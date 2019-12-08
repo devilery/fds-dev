@@ -43,10 +43,9 @@ export default function (opts) {
     const githubUser = appUser.githubUser
 
     if (appUser.githubUser) {
-      await githubUser.save({
-        githubAccessToken: token.access_token,
-        rawGithubUserData: user,
-      })
+      githubUser.githubAccessToken = token.access_token
+      githubUser.rawGithubUserData = user
+      await githubUser.save()
     } else {
       const createdGithubUser = GithubUser.create({
         githubUsername: user.login,
