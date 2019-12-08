@@ -116,7 +116,12 @@ fs.readdirSync(apiPath)
   .filter(file => { return (['.js', '.ts'].includes(file.slice(-3))); })
   .forEach(file => {
     let baseRoute = `/api/${path.basename(file).split('.').slice(0, -1).join('.')}`;
-    let router = require(path.join(apiPath, file));
+    let mod = require(path.join(apiPath, file));
+    if (typeof mod === 'function') {
+      var router: any = mod;
+    } else {
+      var router: any = mod.default;
+    }
     app.use(baseRoute, router);
   });
 
