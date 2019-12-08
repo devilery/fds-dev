@@ -7,14 +7,15 @@
          "es6"
       ],
       "target": "es6",
-      "module": "commonjs",
+      "module": "esnext",
       "moduleResolution": "node",
       // "outDir": "./build",
       "noEmit": true,
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "sourceMap": true,
-      "allowJs": true
+      "allowJs": true,
+      "strictPropertyInitialization": false
    },
    "include": [
     "typings",

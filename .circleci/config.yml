@@ -54,7 +54,7 @@ jobs:
 
       - run:
           name: tests
-          command: echo run tets
+          command: yarn tsc
 
       - run:
           name: Build ...
