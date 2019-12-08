@@ -8,7 +8,7 @@ export default class PullRequest extends BaseEntity {
   id: number;
 
   @Column()
-  remoteId: number;
+  githubId: number;
 
   @Column()
   headSha: string;

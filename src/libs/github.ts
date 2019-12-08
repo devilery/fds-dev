@@ -1,9 +1,8 @@
 // import { strict as assert } from 'assert'
 const { emmit } = require('./event');
-const { firestore } = require('./firebase')
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './github-api';
-const { createOrUpdatePr } = require('./pr');
-import { Repository, GithubOwner, PullRequest } from '../entity'
+import { createOrUpdatePr } from './pr';
+import { Commit, Repository, GithubOwner, PullRequest, GithubUser } from '../entity'
 
 async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -43,7 +42,7 @@ async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
 
   const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, statusEvent.sha, owner.githubAccessToken);
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
-  await createOrUpdateCommit(statusEvent.commit, pullRequests as [])
+  await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   for (let pull of pullRequests) {
     const statusData = {
@@ -77,7 +76,7 @@ async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
   const commitInfo = await getCommitInfo(repository.owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
-  await createOrUpdateCommit(commitInfo, pullRequests as [])
+  await createOrUpdateCommit(commitInfo, pullRequests)
 
   for (let pull of pullRequests) {
     const statusData = {
@@ -97,11 +96,9 @@ async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
   }
 }
 
-async function findUserIdByGithubId(ghUserEvent) {
-  let ghUser = await firestore.collection('gh_users').doc(ghUserEvent.id.toString()).get()
-  let user = ghUser.data().user_ref
-  user = await user.get()
-  return user.data().id
+async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequestPullRequestUser) {
+  const user = await GithubUser.findOneOrFail({where: {id: ghUserEvent.id.toString()}});
+  return user.user.id;
 }
 
 async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {
@@ -111,53 +108,50 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
     await createOrUpdatePr(transformPRevent(GHpr, pr.user.id))
   }
 
-  let snapshot = await firestore.collection('pull_requests').get()
+  const GHPRIds = GHPullRequests.map(item => item.id)
 
-  let GHPRIds = GHPullRequests.map(item => item.id)
-
-  const pullsArray = []
-  snapshot.forEach(doc => {
-    let data = doc.data();
-
-    if (GHPRIds.includes(data.id)) {
-      pullsArray.push(doc.data())
-    }
-  });
-
-  return pullsArray
+  const pulls = PullRequest.find({where: {githubId: GHPRIds}});
+  return pulls;
 }
 
-async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit, pullRequests = []) {
-  let commitRef = await firestore.collection('commits').doc(commit.sha)
-  commitRef.set(commit, { merge: true })
+async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit, pullRequests: PullRequest[] = []) {
+  const com = await Commit.findOneOrFail({where: {sha: commit.sha}});
+  com.rawData = commit;
+  com.websiteUrl = commit.html_url;
+  await com.save();
+
 
   for (let pull of pullRequests) {
-    await firestore.collection('pull_requests').doc(pull.id.toString()).collection('commits').doc(commit.sha).set({
-      commit_ref: commitRef
-    })
+    const c = await Commit.findOneOrFail({where: {sha: commit.sha}})
+    pull.commits.push(c)
+    await pull.save()
   }
+
+
 }
 
-function normalizeCheckState(status) {
-  let avaibleStates = {
-    'pending': 'pending',
-    'in_progress': 'pending',
-    'success': 'success',
-    'completed': 'success',
-    'error': 'error',
-    'failure': 'failure',
-    'neutral': 'error',
-    'cancelled': 'error',
-    'timed_out': 'error',
-    'created': 'pending',
-    'queued': 'pending'
-  }
+const avaibleStates: { [key: string]: string; }  = {
+  'pending': 'pending',
+  'in_progress': 'pending',
+  'success': 'success',
+  'completed': 'success',
+  'error': 'error',
+  'failure': 'failure',
+  'neutral': 'error',
+  'cancelled': 'error',
+  'timed_out': 'error',
+  'created': 'pending',
+  'queued': 'pending'
+}
 
+function normalizeCheckState(status: string) {
   return avaibleStates[status]
 }
 
-function transformPRevent(pull_request, userId) {
-  let data = {
+function transformPRevent(
+  pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem,
+  userId: number) {
+  const data = {
     id: pull_request.id,
     from: 'github',
     pr_number: pull_request.number,

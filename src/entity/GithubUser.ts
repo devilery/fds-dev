@@ -14,9 +14,6 @@ export default class GithubUser extends BaseEntity {
   githubUsername: string;
 
   @Column()
-  githubId: string;
-
-  @Column()
   githubAccessToken: string;
 
   @Column('jsonb')
