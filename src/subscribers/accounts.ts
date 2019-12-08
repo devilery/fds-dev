@@ -1,22 +1,21 @@
-import {Team, User} from '../entity'
+import { Team, User } from '../entity'
+import { getWelcomeMessageText } from '../libs/slack-messages'
 
 
 const teamGhConnected = async function(team: Team) {
   team.users.forEach(user => {
-    let redirectUrl = process.env.APP_BASE_URL + `/github-login?userId=${user.id}`
-    // sendWelcomeMessage(true, redirectUrl, user.slackImChannelId, team.slackBotAccessToken)
+    const client = team.getSlackClient()
+    const text = getWelcomeMessageText(true, process.env.APP_BASE_URL + `/github-login?userId=${user.id}`)
+    client.chat.postMessage({channel: user.slackImChannelId, text: text})
   })
 }
 teamGhConnected.eventType = 'team.gh.connected'
 
 
 const userCreated = async function(user: User) {
-  if (user.team.githubConnected) {
-    var redirectUrl = process.env.APP_BASE_URL + `/github-login?userId=${user.slackId}`
-  } else {
-    var redirectUrl = process.env.GH_APP_INSTAL_URL + `?state=${user.team.slackId}`
-  }
-  // sendWelcomeMessage(user.team.githubConnected, redirectUrl, user.slackImChannelId, user.team.slackBotAccessToken)
+  const client = user.team.getSlackClient()
+  const text = getWelcomeMessageText(user.team.githubConnected, process.env.APP_BASE_URL + `/github-login?userId=${user.id}`)
+  client.chat.postMessage({channel: user.slackImChannelId, text: text})
 }
 userCreated.eventType = 'user.created'
 
