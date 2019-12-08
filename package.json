@@ -49,6 +49,7 @@
    "devDependencies": {
       "@types/node": "^8.0.29",
       "ts-node-dev": "^1.0.0-pre.44",
+      "tslint": "^5.20.1",
       "typescript": "3.3.3333"
    }
 }
