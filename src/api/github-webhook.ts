@@ -1,13 +1,13 @@
-const router = require('express').Router();
-const firebase = require('../libs/firebase')
-const { processGithubPullRequest, processCommitStatus, processCheckRun } = require('../libs/github')
+import express from 'express'
 
+import { processGithubPullRequest, processCommitStatus, processCheckRun } from '../libs/github'
+
+const router = express.Router();
 
 router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
-  
-  console.log('event name: ', eventName)
+
   switch (eventName) {
     case 'pull_request':
       processGithubPullRequest(body)
@@ -25,4 +25,4 @@ router.post('/', async(req, res) => {
 });
 
 
-module.exports = router;
+export default router;

@@ -4,7 +4,8 @@ const { emmit } = require('../libs/event.js')
 
 router.post('/', async(req, res) => {
   console.log(req.body)
-  emmit('slack.interaction', 'test')
+  const payload = JSON.parse(req.body.payload)
+  emmit('slack.interaction', payload)
   res.send('ok')
 });
 
