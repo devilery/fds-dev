@@ -1,3 +1,5 @@
+//@ts-ignore
+import { strict as assert } from 'assert'
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
@@ -25,25 +27,25 @@ const refreshAuthLogic = async (failedRequest: any) => {
 createAuthRefreshInterceptor(session, refreshAuthLogic);
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
-async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
+export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/pulls`, { headers: { 'Accept': 'application/vnd.github.groot-preview+json', 'Authorization': `token ${token}` } })
   return res.data as Octokit.ReposListPullRequestsAssociatedWithCommitResponse
 }
 
 // https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
-async function getCommitStatus(owner: string, repo: string, commit_sha: string, token: string) {
+export async function getCommitStatus(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
   return res.data as Octokit.ReposListStatusesForRefResponse
 }
 
 // https://developer.github.com/v3/repos/commits/#get-a-single-commit
-async function getCommitInfo(owner: string, repo: string, commit_sha: string, token: string) {
+export async function getCommitInfo(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}`, { headers: { 'Authorization': `token ${token}` } })
   return res.data as Octokit.ReposGetCommitResponse
 }
 
 // https://developer.github.com/v3/apps/#create-a-new-installation-token
-async function createInstallationToken(installation_id: string) {
+export async function createInstallationToken(installation_id: string) {
 
   let privateKey = JSON.parse(process.env.GITHUB_PRIVATE_KEY)
 
@@ -57,4 +59,18 @@ async function createInstallationToken(installation_id: string) {
   return res.data as Octokit.AppsCreateInstallationTokenResponse
 }
 
-export { createInstallationToken, getPullRequestsForCommit, getCommitStatus, getCommitInfo }
+export async function requestPullRequestReview(owner: string, repo: string, pr_number: number, data: Octokit.PullsCreateReviewRequestParams, token: string) {
+  assert(data.reviewers, 'No reviewers specified for review')
+  const res = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
+    { headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
+  )
+  return res.data as Octokit.PullsCreateReviewRequestResponse
+}
+
+export async function removePullRequestReview(owner: string, repo: string, pr_number: number, data: Octokit.PullsDeleteReviewRequestParams, token: string) {
+  assert(data.reviewers, 'No reviewers specified for review removal')
+  const res = await axios.delete(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`,
+    { data, headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
+  )
+  return res.data
+}

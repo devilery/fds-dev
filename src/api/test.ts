@@ -5,7 +5,7 @@ const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
 
 const { retryBuild, jobDetails } = require('../libs/circleci')
-const { getPullRequestsForCommit } = require('../libs/github-api')
+import { getPullRequestsForCommit, requestPullRequestReview, removePullRequestReview } from '../libs/github-api'
 const { trackEvent } = require('../libs/honeycomb')
 import { User, Team, GithubUser } from '../entity';
 
@@ -77,7 +77,10 @@ router.get('/', async(req, res) => {
 	// await jobDetails({jobUrl: 'https://circleci.com/gh/feature-delivery/fds-dev/102'})
 	// await getPullRequestsForCommit('feature-delivery', 'fds-dev', 'f0f23031314d2509a5a97fb9b0398c9125b6f636')
 	// trackEvent('test_event', {test_prop:true})
-    await testDb()
+    // await testDb()
+    // await requestPullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, '7f27ad66882d56535e68d006cf9dae8a2dabfedc')
+    // await removePullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, '7f27ad66882d56535e68d006cf9dae8a2dabfedc')
+
 	]
 
   console.log('TEST', output)
