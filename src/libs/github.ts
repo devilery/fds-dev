@@ -3,6 +3,7 @@ const { emmit } = require('./event');
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './github-api';
 import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser } from '../entity'
+import { sleep } from './util';
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -111,15 +112,29 @@ async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequ
 
 async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {
   const prs: PullRequest[] = []
-  for (let GHpr of GHPullRequests) {
-    const pr = await PullRequest.findOne({where: {githubId: GHpr.id}, relations: ['user']})
-    if (pr) {
-      await createOrUpdatePr(transformPRevent(GHpr, pr.user.id))
-      await pr.reload()
-      prs.push(pr)
+
+  async function searchPrs(run = 0) {
+    let existingPulls = await PullRequest.find({ where: { githubId: GHPullRequests.map(item => item.id) }, relations: ['user'] })
+
+    if (run >= 3) {
+      return;
+    }
+
+    if (existingPulls.length === 0) {
+      await sleep(3000)
+      await searchPrs(run++)
+      return;
+    }
+
+    for (const pull of existingPulls) {
+      const GHpr = GHPullRequests.find(item => item.id === pull.githubId)!
+      await createOrUpdatePr(transformPRevent(GHpr, pull.user.id))
+      await pull.reload()
+      prs.push(pull)
     }
   }
 
+  await searchPrs(); 
   return prs;
 }
 
@@ -136,8 +151,6 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
   com.sha = commit.sha
 
   await com.save();
-  await com.reload();
-
   for (let pull of pullRequests) {
     let exists = com.pullRequests.find(item => item.id === pull.id);
     if (!exists) {
@@ -165,9 +178,7 @@ function normalizeCheckState(status: string) {
   return avaibleStates[status]
 }
 
-function transformPRevent(
-  pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem,
-  userId: number) {
+function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem, userId: number) {
   const data = {
     id: pull_request.id,
     from: 'github',
