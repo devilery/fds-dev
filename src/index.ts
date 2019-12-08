@@ -45,9 +45,8 @@ app.use(morgan('dev'));
 app.use('/slack/events', eventMiddleware())
 
 app.use(express.json());
-app.use(express.urlencoded())
+app.use(express.urlencoded({ extended: true }))
 
-app.use('/slack/commands', express.urlencoded())
 app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)
 })
@@ -78,18 +77,19 @@ app.get('/github/setup', async (req, res) => {
       githubAccessToken: data.token,
       installationId: installation_id,
       team: team,
-      githubAccessTokenRaw: data
+      githubAccessTokenRaw: data as any
     })
 
     await owner.save()
 
+    // https://developer.github.com/v3/apps/installations/#list-repositories
     let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` }})
-    let repos = resRepos.data.repositories
+    let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
 
     for (let repo of repos) {
       const repository = Repository.create({
         githubId: repo.id,
-        rawData: repo,
+        rawData: repo as any,
         owner: owner
       })
 
