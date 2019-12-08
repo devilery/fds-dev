@@ -95,9 +95,8 @@ app.get('/github/setup', async (req, res) => {
 
       await repository.save()
     }
+    emmit('team.gh.connected', team)
   }
-
-  emmit('team.gh.connected', team_id)
   res.end('done')
 })
 

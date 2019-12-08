@@ -3,9 +3,7 @@
       "strict": true,
       "esModuleInterop": true,
       "lib": [
-         "es5",
-         "es6",
-         "es7"
+         "es2019"
       ],
       "target": "es6",
       "module": "commonjs",
