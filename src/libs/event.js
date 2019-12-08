@@ -22,3 +22,5 @@ module.exports = {
 	'subscribe': subscribe,
 	'emmit': emmit
 }
+
+export { emmit, subscribe }

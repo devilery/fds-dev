@@ -8,6 +8,7 @@ const { retryBuild, jobDetails } = require('../libs/circleci')
 import { getPullRequestsForCommit, requestPullRequestReview, removePullRequestReview } from '../libs/github-api'
 const { trackEvent } = require('../libs/honeycomb')
 import { User, Team, GithubUser } from '../entity';
+import { requestSlackUsersToReview } from '../libs/github'
 
 
 async function testDb() {
@@ -80,7 +81,8 @@ router.get('/', async(req, res) => {
     // await testDb()
     // await requestPullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, '7f27ad66882d56535e68d006cf9dae8a2dabfedc')
     // await removePullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, '7f27ad66882d56535e68d006cf9dae8a2dabfedc')
-
+    // U079RBVST marek, T072R1FNG 9roads
+    // await requestSlackUsersToReview(['U079RBVST'], 51, await Team.findOneOrFail({where: {slackId: 'T072R1FNG'}}))
 	]
 
   console.log('TEST', output)

@@ -1,10 +1,15 @@
-// import { strict as assert } from 'assert'
-const { emmit } = require('./event');
-import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './github-api';
-import { createOrUpdatePr } from './pr';
-import { Commit, Repository, PullRequest, GithubUser } from '../entity'
-import { sleep } from './util';
+//@ts-ignore
+import { strict as assert } from 'assert'
 import { In } from 'typeorm';
+import { WebClient } from '@slack/web-api'
+
+import { emmit } from './event';
+import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
+import { createOrUpdatePr } from './pr';
+import { Commit, Repository, PullRequest, GithubUser, User, Team } from '../entity'
+import { sleep } from './util';
+import { createUser } from '../libs/users'
+
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -95,6 +100,39 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   }
 }
 
+export async function requestSlackUsersToReview(handles: string[], prNumber: number, team: Team) {
+  assert(handles.length > 0, 'No slack users to request review')
+  assert(team, 'No team passed during review request')
+
+  const author = await GithubUser.findOneOrFail({where:{githubUsername:'LeZuse'}})
+
+  handles.forEach(async handle => {
+    const user = await User.findOne({where: {slackId: In(handles)}, relations: ['githubUser']})
+    console.log(user);
+    if (user) {
+      // send request to github api
+      if (user.githubUser) {
+        const { githubUser } = user;
+        // TODO: get dynamically
+        const repo = await Repository.findOneOrFail();
+        console.log('repo', repo);
+
+        requestPullRequestReview(repo.rawData.owner.login, repo.rawData.name, prNumber, {reviewers:[githubUser.githubUsername]}, author.githubAccessToken)
+      } else {
+        // TODO: send github login flow message
+      }
+    } else {
+      // create new user without github token and
+      // send them oauth message to slack to authenticate
+      // to populate the token column
+      // TODO: udpate the oauth flow finish to do request assign
+
+      // TODO: get dynamically
+      await createUser(handle, team, {reviewPR: prNumber, prAuthor: author.id})
+    }
+  })
+}
+
 async function getOwnerByRepositoryId(repoId: number) {
   const repo = await Repository.findOneOrFail({ where: { githubId: repoId }, relations: ['owner'] })
   const owner = repo.owner
@@ -135,7 +173,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
     }
   }
 
-  await searchPrs(); 
+  await searchPrs();
   return prs;
 }
 

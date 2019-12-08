@@ -1,13 +1,15 @@
 // @ts-ignore
 import { strict as assert } from 'assert';
+import { WebClient } from '@slack/web-api'
+
 import { emmit } from '../libs/event.js'
 import { Team, User } from '../entity'
-import { WebClient } from '@slack/web-api'
 import { OauthAccessResult, UsersInfoResult, TeamInfoResult, ImOpenResult } from '../libs/slack-api'
-import { SlackUserAuthenticatedEventData } from '../api/slack-oauth-webhook'
+import { ISlackUserAuthenticatedEvent } from '../api/slack-oauth-webhook'
+import { createUser } from '../libs/users'
 
 
-const authenticated = async function(data: SlackUserAuthenticatedEventData) {
+const authenticated = async function(data: ISlackUserAuthenticatedEvent) {
 	const authInfo = await (new WebClient()).oauth.access({
 		client_id: process.env.SLACK_CLIENT_ID,
 		client_secret: process.env.SLACK_CLIENT_SECRET,
@@ -17,7 +19,6 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 
 	const client = new WebClient(authInfo.bot.bot_access_token)
 	const teamInfo = await client.team.info() as TeamInfoResult
-	const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult
 
 	let team = await Team.findOne({where: { slackId: teamInfo.team.id }})
 	if (!team) {
@@ -31,21 +32,9 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 		emmit('team.created', team)
 	}
 
-	let user = await User.findOne({where: { slackId: userInfo.user.id}})
+	let user = await User.findOne({where: { slackId: authInfo.user_id}})
 	if (!user) {
-		const imInfo = await client.im.open({user: userInfo.user.id}) as ImOpenResult
-		assert(imInfo.ok, 'Im open failed!')
-
-		user = User.create({
-			slackId: userInfo.user.id,
-			name: userInfo.user.real_name,
-			team: team,
-			slackImChannelId: imInfo.channel.id
-		})
-
-		await user.save()
-		await user.reload()
-		emmit('user.created', user)
+		await createUser(authInfo.user_id, team)
 	}
 }
 authenticated.eventType = 'slack.user.authenticated'

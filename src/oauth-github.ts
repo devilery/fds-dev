@@ -1,8 +1,10 @@
 import request from 'request';
 import events from 'events';
 import url from 'url'
-import { GithubUser, User } from './entity';
 import axios from 'axios';
+
+import { GithubUser, User, Repository } from './entity';
+import { requestPullRequestReview } from './libs/github-api';
 
 export default function (opts) {
   if (!opts.callbackURI) opts.callbackURI = '/github/callback'
@@ -42,7 +44,7 @@ export default function (opts) {
     const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
     const appUser = await User.findOneOrFail({ where: { id: query.state }, relations: ['githubUser'] })
-    const githubUser = appUser.githubUser
+    let githubUser = appUser.githubUser
 
     if (githubUser) {
       githubUser.githubAccessToken = token.access_token
@@ -58,11 +60,25 @@ export default function (opts) {
 
       await createdGithubUser.save()
 
-      appUser.githubUser = createdGithubUser
+      githubUser = appUser.githubUser = createdGithubUser
       await appUser.save()
     }
 
-    resp.end('Thanks, close the tab and create a new PR :)')
+    if (appUser.metadata && appUser.metadata.reviewPR) {
+      // send request review
+      const repo = await Repository.findOneOrFail();
+      const author = await GithubUser.findOneOrFail(appUser.metadata.prAuthor)
+      requestPullRequestReview(
+        repo.rawData.owner.login,
+        repo.rawData.name,
+        appUser.metadata.reviewPR,
+        {reviewers:[githubUser.githubUsername]},
+        author.githubAccessToken
+      )
+      resp.end('Thanks! You can now review the PR :)')
+    } else {
+      resp.end('Thanks, close the tab and create a new PR :)')
+    }
   }
 
   this.login = login

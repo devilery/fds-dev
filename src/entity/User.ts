@@ -23,4 +23,7 @@ export default class User extends BaseEntity {
   @OneToOne(type => GithubUser, githubUser => githubUser.user, { nullable: true })
   @JoinColumn()
   githubUser: GithubUser | null;
+
+  @Column('jsonb', {nullable:true})
+  metadata: {reviewPR: number, prAuthor: GithubUser['id']};
 }
