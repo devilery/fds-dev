@@ -1,4 +1,4 @@
-// @ts-ignore
+// @ts-nocheck
 import { strict as assert } from 'assert';
 
 const router = require('express').Router();

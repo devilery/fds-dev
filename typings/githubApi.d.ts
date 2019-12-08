@@ -65,12 +65,12 @@ declare namespace Octokit {
       error?: (message: string, info?: object) => void;
     };
     request?: {
-      agent?: http.Agent;
+      // agent?: http.Agent;
       timeout?: number;
     };
     timeout?: number; // Deprecated
     headers?: { [header: string]: any }; // Deprecated
-    agent?: http.Agent; // Deprecated
+    // agent?: http.Agent; // Deprecated
     [option: string]: any;
   }
 
@@ -137,7 +137,7 @@ declare namespace Octokit {
     /**
      * Node only. Useful for custom proxy, certificate, or dns lookup.
      */
-    agent?: http.Agent;
+    // agent?: http.Agent;
     /**
      * Custom replacement for built-in fetch method. Useful for testing or request hooks.
      */
