@@ -32,7 +32,6 @@ export async function processGithubPullRequest(pullRequestEvent: Webhooks.Webhoo
 }
 
 export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
-
   const { repository } = statusEvent;
 
   // const repo = await Repository.findOneOrFail({where: {id: repository.id.toString()}})
@@ -120,6 +119,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
     if (run >= 3) {
       return;
     }
+
 
     if (existingPulls.length === 0) {
       await sleep(3000)
