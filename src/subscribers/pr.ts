@@ -77,24 +77,20 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return
 	}
 
-	let update_msg_data = {
-		checks,
-		pr: pr
-	}
-
-	await updatePrOpenedMessage(update_msg_data, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
+	const client = pr.user.team.getSlackClient()
+	const messageData = getPrOpenedMessage(pr, checks)
+	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
 	let allChecksPassed = checks.every(check => check.status === 'success')
 
-	if (allChecksPassed) {
-		sendChecksSuccess(checks, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
-	}
+	var checkMessgae: IMessageData | null  = null
+	if (allChecksPassed)
+		checkMessgae = getChecksSuccessMessage(checks)
+	if (check.status === 'failure' || check.status === 'error')
+		checkMessgae = getCheckErrorMessage(check)
 
-	if (check.status === 'failure' || check.status === 'error') {
-		sendCheckError(check, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
-	}
+	if (checkMessgae)
+		client.chat.postMessage({text: checkMessgae.text, blocks: checkMessgae.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
 }
 commitCheckUpdate.eventType = 'pr.check.update'
-
-module.exports = [opened, commitCheckUpdate];

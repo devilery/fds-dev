@@ -17,6 +17,7 @@ export default class User extends BaseEntity {
   slackImChannelId: string;
 
   @ManyToOne(type => Team, team => team.users)
+  @JoinColumn()
   team: Team;
 
   @OneToOne(type => GithubUser, githubUser => githubUser.user, { nullable: true })

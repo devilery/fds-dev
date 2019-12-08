@@ -1,5 +1,5 @@
-import { ICommitCheck, IPullRequestEvent } from '../events/types';
-import { PullRequest, User } from '../entity'
+import { ICommitCheck, IPullRequest } from '../events/types';
+import { User } from '../entity'
 
 export interface IMessageData {
 	text: string
@@ -7,7 +7,7 @@ export interface IMessageData {
 }
 
 interface IMessgeBlock {
-	type: string //'section'| 'context',
+	type: 'section'| 'context',
 	text?: string | { type: 'mrkdwn', text: string}
 	blocks?: []
 }
@@ -22,7 +22,7 @@ export function getWelcomeMessage(user: User): IMessageData {
 	}
 }
 
-function getBaseBlock(pr: PullRequest): IMessgeBlock{
+function getBaseBlock(pr: IPullRequest): IMessgeBlock{
 	return {
 		"type": "section",
 		"text": {
@@ -33,11 +33,10 @@ function getBaseBlock(pr: PullRequest): IMessgeBlock{
 }
 
 function getCheckProgressBlock(checks: ICommitCheck[]): IMessageData[] | [] {
-	let pendingChecks = checks.filter((item: any) => item.status === 'pending')
-
-	if (checks.length === 0) {
+	if (checks.length === 0)
 		return []
-	}
+
+	let pendingChecks = checks.filter(item => item.status === 'pending')
 
 	return [
 		{
@@ -52,11 +51,11 @@ function getCheckProgressBlock(checks: ICommitCheck[]): IMessageData[] | [] {
 		pendingChecks.map(item => {
 			let checkName = item.context;
 			
-			let linkOrName = item.target_url ? `<${item.target_url}|${checkName}>` : checkName;
+			let linkOrName = item.targetUrl ? `<${item.targetUrl}|${checkName}>` : checkName;
 			let text = `⏳Check ${linkOrName} in progress...`;
 
-			if (item.ci_data && item.ci_data.estimate_ms) {
-				text += ` ${item.ci_data.estimate_ms / 1000}s est build time`
+			if (item.ciData && item.ciData.estimate_ms) {
+				text += ` ${item.ciData.estimate_ms / 1000}s est build time`
 			}
 
 			return {
@@ -70,7 +69,7 @@ function getCheckProgressBlock(checks: ICommitCheck[]): IMessageData[] | [] {
 	].flat()
 }
 
-export function getPrOpenedMessage(pr: PullRequest, checks: ICommitCheck[]): IMessageData {
+export function getPrMessage(pr: IPullRequest, checks: ICommitCheck[]): IMessageData {
 	let blocks = [[getBaseBlock(pr)], getCheckProgressBlock(checks)]
 	return {
 		"text": "Pull Request opened",
@@ -79,12 +78,12 @@ export function getPrOpenedMessage(pr: PullRequest, checks: ICommitCheck[]): IMe
 };
 
 export function getChecksSuccessMessage(checks: ICommitCheck[]): IMessageData {
-	var blocks: IMessgeBlock = checks.map(item => {
-		let linkOrName = item.target_url ? `<${item.target_url}|${item.context}>` : item.context;
+	var blocks: IMessgeBlock[] = checks.map(item => {
+		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${item.rawData.context}>` : item.rawData.context;
 
 		return {
-			"type": "context",
-			"elements": [
+			type: "context",
+			elements: [
 				{
 					"type": "mrkdwn",
 					"text": `✅ *The ${linkOrName} was successful!*`
@@ -108,7 +107,7 @@ export function getChecksSuccessMessage(checks: ICommitCheck[]): IMessageData {
 }
 
 export function getCheckErrorMessage(check: ICommitCheck): IMessageData {
-	let linkOrName = check.target_url ? `<${check.target_url}|${check.context}>` : check.context;
+	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.rawData.context}>` : check.rawData.context;
 
 	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
 
