@@ -1,6 +1,6 @@
 import { PullRequest, User } from "../entity";
 
-async function createOrUpdatePr(pullRequest: any) {
+export async function createOrUpdatePr(pullRequest: any) {
   let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}})
 
   if (!pr) {
@@ -26,11 +26,9 @@ async function createOrUpdatePr(pullRequest: any) {
   return pr
 }
 
-async function isHeadCommitCheck(sha: string, pullRequestId: number) {
+export async function isHeadCommitCheck(sha: string, pullRequestId: number) {
   const pullRequest = await PullRequest.findOneOrFail({ where: { id: pullRequestId } })
   return pullRequest.headSha === sha
 }
 
 module.exports = { createOrUpdatePr, isHeadCommitCheck }
-
-export { createOrUpdatePr }

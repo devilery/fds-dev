@@ -1,22 +1,23 @@
 
 import { Commit, CommitCheck, PullRequest, User } from '../entity';
 import { ICommitCheck } from '../events/types';
+import { IPullRequestEvent } from './eventTypes';
 
-const { firestore } = require('../libs/firebase')
 const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
-const { createOrUpdatePr, isHeadCommitCheck } = require('../libs/pr');
+import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
 var Base64 = require('js-base64').Base64;
 
-const opened = async function(data) {
+const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
-	const prGet = await pr.get()
-	const user = await firestore.collection('users').doc(prGet.data().user_id).get()
-	const team = await user.data().team.get()
-	threadId = await sendPrOpenedMessage(data, user.data().slack_im_channel_id, team.data().slack_bot_access_token)
-	pr.update({ slack_thread_id: threadId })
+	const user = pr.user
+	const team = user.team
+	let threadId = await sendPrOpenedMessage(data, user.slackImChannelId, team.slackBotAccessToken)
+	pr.slackThreadId = threadId
+	await pr.save()
 };
+
 opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check: ICommitCheck) {
