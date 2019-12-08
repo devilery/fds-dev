@@ -19,7 +19,7 @@ export default class User extends BaseEntity {
   @ManyToOne(type => Team, team => team.users)
   team: Team;
 
-  @OneToOne(type => GithubUser, githubUser => githubUser.user)
+  @OneToOne(type => GithubUser, githubUser => githubUser.user, { nullable: true })
   @JoinColumn()
   githubUser: GithubUser | null;
 }
