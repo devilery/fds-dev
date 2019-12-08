@@ -29,19 +29,16 @@ async function getPullRequestsForCommit(owner: string, repo: string, commit_sha:
   return res.data as Octokit.ReposListPullRequestsAssociatedWithCommitResponse
 }
 
+// https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
 async function getCommitStatus(owner: string, repo: string, commit_sha: string, token: string) {
-  try {
-    let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
-    return res.data
-  } catch (error) {
-    console.error(error)
-    return;
-  }
+  let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
+  return res.data as Octokit.ReposListStatusesForRefResponse
 }
 
+// https://developer.github.com/v3/repos/commits/#get-a-single-commit
 async function getCommitInfo(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}`, { headers: { 'Authorization': `token ${token}` } })
-  return res.data
+  return res.data as Octokit.ReposGetCommitResponse
 }
 
 // https://developer.github.com/v3/apps/#create-a-new-installation-token
@@ -56,13 +53,7 @@ async function createInstallationToken(installation_id: string) {
   }, privateKey.key, { algorithm: 'RS256' });
 
   var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
-  let data = res.data
-  return data as Octokit.AppsCreateInstallationTokenResponse
-}
-
-module.exports = {
-  createInstallationToken,
-
+  return res.data as Octokit.AppsCreateInstallationTokenResponse
 }
 
 export { createInstallationToken, getPullRequestsForCommit, getCommitStatus, getCommitInfo }

@@ -114,7 +114,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
   return pulls;
 }
 
-async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit, pullRequests: PullRequest[] = []) {
+async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit | Octokit.ReposGetCommitResponse, pullRequests: PullRequest[] = []) {
   const com = await Commit.findOneOrFail({where: {sha: commit.sha}});
   com.rawData = commit;
   com.websiteUrl = commit.html_url;
