@@ -2,6 +2,8 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
 
+import { GithubOwner } from '../entity'
+
 const GITHUB_API_URL = 'https://api.github.com'
 
 const { firestore } = require('./firebase');
@@ -11,12 +13,11 @@ const session = axios.create({
 })
 
 const refreshAuthLogic = async (failedRequest: any) => {
-  let token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
-  let owners = await firestore.collection('github_owners', ref => ref.where('github_access_token', '==', token)).get()
-  let owner = owners.docs.map(doc => doc)[0]
-  let acessToken = await createInstallationToken(owner.data().installation_id)
+  const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
+  const owner = await GithubOwner.findOneOrFail({where: {githubAccessToken: token}})
+  const acessToken = await createInstallationToken(owner.installationId)
 
-  await owner.ref.update({ github_access_token: acessToken.token, expires_at: acessToken.expires_at })
+  owner.githubAccessToken = acessToken.token;
 
   failedRequest.config.headers.Authorization = `token ${acessToken.token}`
   return Promise.resolve()
@@ -45,6 +46,7 @@ async function getCommitInfo(owner: string, repo: string, commit_sha: string, to
   return res.data
 }
 
+// https://developer.github.com/v3/apps/#create-a-new-installation-token
 async function createInstallationToken(installation_id: string) {
 
   let privateKey = JSON.parse(process.env.GITHUB_PRIVATE_KEY)
@@ -55,14 +57,9 @@ async function createInstallationToken(installation_id: string) {
     iss: process.env.APP_ID
   }, privateKey.key, { algorithm: 'RS256' });
 
-  try {
-    var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
-    let data = res.data
-    return data
-  } catch(e) {
-    console.log(e)
-    return;
-  }
+  var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+  let data = res.data
+  return data as Octokit.AppsCreateInstallationTokenResponse
 }
 
 module.exports = {
