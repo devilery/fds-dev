@@ -30,7 +30,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		let ci_data = {};
 
 		if (team.circlePersonalToken) {
-			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
+			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circlePersonalToken })
 			ci_data = {
 				estimate_ms: circleCiData.estimate_ms,
 				jobs_on_hold: circleCiData.workflow.jobs_on_hold
