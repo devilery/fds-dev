@@ -7,7 +7,6 @@ const { emmit } = require('../libs/event.js')
 const { retryBuild, jobDetails } = require('../libs/circleci')
 const { getPullRequestsForCommit } = require('../libs/github-api')
 const { trackEvent } = require('../libs/honeycomb')
-const { firestore } = require('../libs/firebase')
 import User from '../entity/User'
 import Team from '../entity/Team'
 

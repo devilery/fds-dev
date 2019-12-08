@@ -129,7 +129,6 @@ const subscribersPath = path.join(__dirname, 'subscribers');
 fs.readdirSync(subscribersPath)
 .filter(file => { return (['.js', '.ts'].includes(file.slice(-3))); })
   .forEach(file => {
-  	subscribe();
   	let subscribers = require(path.join(subscribersPath, file)).forEach((subscriber: any) => {
   		subscribe(subscriber.eventType,  subscriber);
   	});

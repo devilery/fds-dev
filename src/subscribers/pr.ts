@@ -97,3 +97,5 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 }
 commitCheckUpdate.eventType = 'pr.check.update'
+
+module.exports = [opened, commitCheckUpdate]
