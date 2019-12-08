@@ -3,8 +3,7 @@ import {Team, User} from '../entity'
 
 
 const teamGhConnected = async function(team: Team) {
-  const users = await User.find({where: {team: team}})
-  users.forEach(user => {
+  team.users.forEach(user => {
     let redirectUrl = process.env.APP_BASE_URL + `/github-login?userId=${user.id}`
     sendWelcomeMessage(true, redirectUrl, user.slackImChannelId, team.slackBotAccessToken)
   })
