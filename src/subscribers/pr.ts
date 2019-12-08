@@ -1,8 +1,9 @@
 
 import { Commit, CommitCheck, PullRequest, User } from '../entity';
 import { ICommitCheck, IPullRequestEvent } from '../events/types';
+import { ChatPostMessageResult } from '../libs/slack-api'
 
-const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
+import { getPrOpenedMessage } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
@@ -10,10 +11,12 @@ var Base64 = require('js-base64').Base64;
 
 const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
-	const user = pr.user
-	const team = user.team
-	let threadId = await sendPrOpenedMessage(data, user.slackImChannelId, team.slackBotAccessToken)
-	pr.slackThreadId = threadId
+	const client = pr.user.team.getSlackClient()
+
+	const messageData = getPrOpenedMessage(data)
+
+	const res = await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
+	pr.slackThreadId = res.message.ts
 	await pr.save()
 };
 

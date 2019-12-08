@@ -7,5 +7,6 @@ declare namespace NodeJS {
     SLACK_CLIENT_SECRET: string;
     SLACK_CLIENT_ID: string;
     SLACK_OAUTH_REDIRECT_URI: string;
+    PG_PORT: string;
   }
 }

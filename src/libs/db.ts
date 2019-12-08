@@ -2,7 +2,6 @@ import {createConnection} from 'typeorm';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import * as entities from '../entity'
 
-console.log(process.env.PG_PORT)
 async function dbConnect() {
     return createConnection({
         'name': 'default',

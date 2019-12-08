@@ -9,6 +9,7 @@ export interface ICommitCheck {
   context: string;
   pull_request_id: number;
   raw_data: any;
+  ci_data: any;
 }
 
 export interface IPullRequestEvent {

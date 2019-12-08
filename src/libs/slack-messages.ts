@@ -1,25 +1,39 @@
-export function getWelcomeMessageText(githubConnected: boolean, authLink: string) {
-	if (githubConnected){
-		return `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!`
+import { ICommitCheck, IPullRequestEvent } from '../events/types';
+import { PullRequest, User } from '../entity'
+
+export interface IMessageData {
+	text: string
+	blocks?: IMessgeBlock[]
+}
+
+interface IMessgeBlock {
+	type: string //'section'| 'context',
+	text?: string | { type: 'mrkdwn', text: string}
+	blocks?: []
+}
+
+export function getWelcomeMessage(user: User): IMessageData {
+	if (user.team.githubConnected){
+		let authLink = process.env.APP_BASE_URL + `/github-login?userId=${user.id}`
+		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.` }
 	} else {
-		return `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.`
+		let authLink = process.env.GH_APP_INSTAL_URL + `?state=${user.team.id}`
+		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` } 
 	}
 }
 
-let baseBlock = (data) => [
-	{
+function getBaseBlock(pr: PullRequest): IMessgeBlock{
+	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `🧐 *PR*: #${data.pr_number} | <${data.website_url}| ${data['title']}>`
+			"text": `🧐 *PR*: #${pr.prNumber} | <${pr.websiteUrl}| ${pr.title}>`
 		}
 	}
-]
+}
 
-
-let checkProgressBlock = (checks) => {
-	
-	let filter = checks.filter(item => item.status === 'pending')
+function getCheckProgressBlock(checks: ICommitCheck[]): IMessageData[] | [] {
+	let pendingChecks = checks.filter((item: any) => item.status === 'pending')
 
 	if (checks.length === 0) {
 		return []
@@ -35,10 +49,9 @@ let checkProgressBlock = (checks) => {
 				}
 			]
 		},
-		filter.map(item => {
+		pendingChecks.map(item => {
 			let checkName = item.context;
 			
-
 			let linkOrName = item.target_url ? `<${item.target_url}|${checkName}>` : checkName;
 			let text = `⏳Check ${linkOrName} in progress...`;
 
@@ -57,34 +70,16 @@ let checkProgressBlock = (checks) => {
 	].flat()
 }
 
-async function sendPrOpenedMessage(data, channel, token) {
-	let blocks = [baseBlock(data)]
-
-	data = {
-		"channel": channel,
+export function getPrOpenedMessage(pr: PullRequest, checks: ICommitCheck[]): IMessageData {
+	let blocks = [[getBaseBlock(pr)], getCheckProgressBlock(checks)]
+	return {
 		"text": "Pull Request opened",
 		"blocks": blocks.flat()
 	}
-
-	let res = await sendMessage(data, token)
-	return res.data.message.ts
 };
 
-
-
-async function updatePrOpenedMessage(data, channel, ts, token) {
-	let checks = checkProgressBlock(data.checks)
-	let blocks = [baseBlock(data.pr), checks]
-	let dataMsg = {
-		"blocks": blocks.flat(),
-		"text": "sadasd"
-	}
-
-	return updateMessage(dataMsg, channel, ts, token)
-}
-
-async function sendChecksSuccess(checksData, channel, ts, token) {
-	let checks = checksData.map(item => {
+export function getChecksSuccessMessage(checks: ICommitCheck[]): IMessageData {
+	var blocks: IMessgeBlock = checks.map(item => {
 		let linkOrName = item.target_url ? `<${item.target_url}|${item.context}>` : item.context;
 
 		return {
@@ -98,9 +93,8 @@ async function sendChecksSuccess(checksData, channel, ts, token) {
 		}
 	})
 
-	data = {
-		"thread_ts": ts,
-		"channel": channel,
+	return {
+		"text": "Build sucessful", // TODO: make this better
 		"blocks": [
 			{
 				"type": "section",
@@ -109,20 +103,17 @@ async function sendChecksSuccess(checksData, channel, ts, token) {
 					"text": "All your Checks passed! 🎉"
 				}
 			},
-			...checks]
+			...blocks]
 	}
-
-	return sendMessage(data, token)
 }
 
-async function sendCheckError(data, channel, token, ts) {
-	let linkOrName = item.target_url ? `<${item.target_url}|${item.context}>` : item.context;
+export function getCheckErrorMessage(check: ICommitCheck): IMessageData {
+	let linkOrName = check.target_url ? `<${check.target_url}|${check.context}>` : check.context;
 
 	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
 
-	data = {
-		"thread_ts": ts,
-		"channel": channel,
+	return {
+		"text": errorText,
 		"blocks": [
 			{
 				"type": "section",
@@ -133,6 +124,4 @@ async function sendCheckError(data, channel, token, ts) {
 			}
 		]
 	}
-
-	return sendMessage(data, token)
 };
