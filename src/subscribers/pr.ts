@@ -23,7 +23,7 @@ const opened = async function (data: IPullRequestEvent) {
 opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check: ICommitCheck) {
-	const commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
+	let commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
 	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id }, relations: ['user', 'user.team'] })
 	const user = pr.user
 	const team = user.team
@@ -45,7 +45,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		})
 	}
 
-	let dbCheck = await CommitCheck.findOne({ where: { name: check.name } })
+	let dbCheck = await CommitCheck.findOne({ where: { name: check.name, commit: { id: commit.id } } })
 
 	// if changed to done then wait 7 seconds. This way other pending events can activate and entire check flow will not return done
 	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
@@ -71,7 +71,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 	await dbCheck.save()
 	await dbCheck.reload()
-	commit.reload()
+	commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
 	const checks = commit.checks
 
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
