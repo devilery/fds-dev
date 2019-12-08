@@ -14,15 +14,10 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 		redirect_uri: process.env.SLACK_OAUTH_REDIRECT_URI,
 		code: data.code
 	}) as OauthAccessResult;
-	assert(authInfo.ok, 'Fetching auth info failed!')
 
-	const client = new WebClient(authInfo.access_token)
-
+	const client = new WebClient(authInfo.bot.bot_access_token)
 	const teamInfo = await client.team.info() as TeamInfoResult
-	assert(teamInfo.ok, 'Fetching team info failed!')
-
-	const userInfo = await client.users.info() as UsersInfoResult
-	assert(teamInfo.ok, 'Fetching team info failed!')
+	const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult
 
 	let team = await Team.findOne({where: { slackId: teamInfo }})
 	if (!team) {
