@@ -151,7 +151,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
   const prs: PullRequest[] = []
 
   async function searchPrs(run = 0) {
-    let existingPulls = await PullRequest.find({ where: { githubId: In(GHPullRequests.map(item => item.id)) }, relations: ['user'] })
+    let existingPulls = await PullRequest.find({ where: { githubId: In([null, ...GHPullRequests.map(item => item.id)]) }, relations: ['user'] })
 
     if (run >= 3) {
       return;
