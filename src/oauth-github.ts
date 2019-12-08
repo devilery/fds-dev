@@ -41,7 +41,7 @@ export default function (opts) {
     const userRes = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
     const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
-    const appUser = await User.findOneOrFail({ where: { id: query.state } })
+    const appUser = await User.findOneOrFail({ where: { id: query.state }, relations: ['githubUser'] })
     const githubUser = appUser.githubUser
 
     if (githubUser) {
@@ -53,7 +53,7 @@ export default function (opts) {
         githubUsername: user.login,
         githubId: user.id,
         githubAccessToken: token.access_token,
-        rawGithubUserData: user,
+        rawGithubUserData: user as any,
       })
 
       await createdGithubUser.save()

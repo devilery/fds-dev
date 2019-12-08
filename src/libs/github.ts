@@ -2,7 +2,7 @@
 const { emmit } = require('./event');
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo } from './github-api';
 import { createOrUpdatePr } from './pr';
-import { Commit, Repository, GithubOwner, PullRequest, GithubUser } from '../entity'
+import { Commit, Repository, PullRequest, GithubUser } from '../entity'
 
 async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
   const { action } = pullRequestEvent;
@@ -23,12 +23,6 @@ async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloa
     default:
       break;
   }
-}
-
-async function getOwnerByRepositoryId(repoId: number) {
-  const repo = await Repository.findOneOrFail({where: {id: repoId.toString()}})
-  const owner = await GithubOwner.findOneOrFail({where: {id: repo.id}})
-  return owner;
 }
 
 async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
@@ -96,36 +90,47 @@ async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
   }
 }
 
+async function getOwnerByRepositoryId(repoId: number) {
+  const repo = await Repository.findOneOrFail({ where: { githubId: repoId }, relations: ['owner'] })
+  const owner = repo.owner
+  return owner;
+}
+
 async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequestPullRequestUser) {
-  const user = await GithubUser.findOneOrFail({where: {id: ghUserEvent.id.toString()}});
+  const user = await GithubUser.findOneOrFail({where: {githubId: ghUserEvent.id }, relations: ['user']});
   return user.user.id;
 }
 
 async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {
+  const prs: PullRequest[] = []
   for (let GHpr of GHPullRequests) {
-    const pr = await PullRequest.findOneOrFail({where: {id: GHpr.id.toString()}})
-
-    await createOrUpdatePr(transformPRevent(GHpr, pr.user.id))
+    const pr = await PullRequest.findOne({where: {githubId: GHpr.id}, relations: ['user']})
+    if (pr) {
+      await createOrUpdatePr(transformPRevent(GHpr, pr.user.id))
+      await pr.reload()
+      prs.push(pr)
+    }
   }
 
-  const GHPRIds = GHPullRequests.map(item => item.id)
-
-  const pulls = PullRequest.find({where: {githubId: GHPRIds}});
-  return pulls;
+  return prs;
 }
 
 async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit | Octokit.ReposGetCommitResponse, pullRequests: PullRequest[] = []) {
-  const com = await Commit.findOneOrFail({where: {sha: commit.sha}});
+  let com = await Commit.findOne({where: {sha: commit.sha}, relations: ['pullRequests']});
+
+  if (!com) {
+    com = new Commit()
+  }
+
   com.rawData = commit;
   com.websiteUrl = commit.html_url;
+  com.sha = commit.sha
+
   await com.save();
-
-
   for (let pull of pullRequests) {
-    const c = await Commit.findOneOrFail({where: {sha: commit.sha}})
-    pull.commits.push(c)
-    await pull.save()
+    com.pullRequests.push(pull)
   }
+  await com.save()
 }
 
 const avaibleStates: { [key: string]: string; }  = {

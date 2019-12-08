@@ -16,6 +16,7 @@ const refreshAuthLogic = async (failedRequest: any) => {
   const acessToken = await createInstallationToken(owner.installationId)
 
   owner.githubAccessToken = acessToken.token;
+  await owner.save()
 
   failedRequest.config.headers.Authorization = `token ${acessToken.token}`
   return Promise.resolve()
