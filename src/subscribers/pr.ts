@@ -1,5 +1,6 @@
-import { ICommitCheck } from "./eventTypes";
+
 import { Commit, CommitCheck, PullRequest, User } from '../entity';
+import { ICommitCheck } from '../events/types';
 
 const { firestore } = require('../libs/firebase')
 const { sendPrOpenedMessage, sendCiBuildSuccess, sendCheckError, updatePrOpenedMessage, sendChecksSuccess } = require('../libs/slack-messages');
@@ -20,22 +21,21 @@ opened.eventType = 'pr.opened';
 
 const commitCheckUpdate = async function (check: ICommitCheck) {
 	const commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha } })
-	const allChecks = commit.checks
+	const checks = commit.checks
 	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id } })
 	const user = pr.user
-
-	let team = user.team
+	const team = user.team
 
 	if (check.context && check.context.includes('ci/circleci')) {
 		let ci_data = {};
 
-		// if (team.circle_personal_token) {
-		// 	let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
-		// 	ci_data = {
-		// 		estimate_ms: circleCiData.estimate_ms,
-		// 		jobs_on_hold: circleCiData.workflow.jobs_on_hold
-		// 	}
-		// }
+		if (team.circlePersonalToken) {
+			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
+			ci_data = {
+				estimate_ms: circleCiData.estimate_ms,
+				jobs_on_hold: circleCiData.workflow.jobs_on_hold
+			}
+		}
 
 		Object.assign(check, {
 			type: 'ci-circleci',
@@ -43,7 +43,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		})
 	}
 
-	const dbCheck = await CommitCheck.findOne({ where: { name: check.name } })
+	let dbCheck = await CommitCheck.findOne({ where: { name: check.name } })
 
 	// if changed to done then wait 5 seconds. This way other pending events can activate and entire check flow will not return done
 	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
@@ -55,8 +55,18 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return;
 	}
 
-	if (!dbCheck) {}
+	if (!dbCheck) {
+		dbCheck = new CommitCheck()
+	}
 
+	dbCheck.githubId = check.id;
+	dbCheck.name = check.name;
+	dbCheck.status = check.status;
+	dbCheck.targetUrl = check.target_url;
+	dbCheck.type = check.type as any;
+	dbCheck.rawData = check
+
+	await dbCheck.save()
 
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
@@ -64,28 +74,21 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return
 	}
 
-	let checks = []
-	let allChecks = await allChecksRef.get()
-
-	allChecks.forEach((ref) => {
-		checks.push(ref.data())
-	})
-
 	let update_msg_data = {
 		checks,
 		pr: pr
 	}
 
-	await updatePrOpenedMessage(update_msg_data, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+	await updatePrOpenedMessage(update_msg_data, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
 
 	let allChecksPassed = checks.every(check => check.status === 'success')
 
 	if (allChecksPassed) {
-		sendChecksSuccess(checks, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+		sendChecksSuccess(checks, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
 	}
 
 	if (check.status === 'failure' || check.status === 'error') {
-		sendCheckError(check, user.data().slack_im_channel_id, pr.slack_thread_id, team.data().slack_bot_access_token)
+		sendCheckError(check, user.slackImChannelId, pr.slackThreadId, team.slackBotAccessToken)
 	}
 
 }

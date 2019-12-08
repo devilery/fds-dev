@@ -3,15 +3,18 @@ import { PullRequest, User } from "../entity";
 async function createOrUpdatePr(pullRequest: any) {
   let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}})
 
-  if (!pr)
-	pr = new PullRequest();
+  if (!pr) {
+    pr = new PullRequest();
+  }
+	  
 
   pr.rawData = pullRequest;
   pr.websiteUrl = pullRequest.website_url;
   if (pullRequest.user_id) {
   	const user = await User.findOne({where: {id: pullRequest.user_id}})
-  	if (user)
-  		pr.user = user;
+  	if (user) {
+      pr.user = user;
+    }
   }
   pr.title = pullRequest.title;
   pr.prNumber = pullRequest.pr_number;
