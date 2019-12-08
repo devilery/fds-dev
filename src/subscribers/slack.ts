@@ -1,11 +1,9 @@
 // @ts-ignore
 import { strict as assert } from 'assert';
-
-const slack = require('../libs/slack-api.js')
-const { emmit } = require('../libs/event.js')
+import { emmit } from '../libs/event.js'
 import { Team, User } from '../entity'
 import { WebClient } from '@slack/web-api'
-import { OauthAccessResult, UsersInfoResult, TeamInfoResult } from '../libs/slack-api'
+import { OauthAccessResult, UsersInfoResult, TeamInfoResult, ImOpenResult } from '../libs/slack-api'
 import { SlackUserAuthenticatedEventData } from '../api/slack-oauth-webhook'
 
 
@@ -34,19 +32,24 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 		})
 
 		await team.save()
+		await team.reload()
 		emmit('team.created', team)
 	}
 
 	let user = await User.findOne({where: { slackId: userInfo.id}})
 	if (!user) {
+		const imInfo = await client.im.open({user: userInfo.user.id}) as ImOpenResult
+		assert(imInfo.ok, 'Im open failed!')
+
 		user = User.create({
 			slackId: userInfo.user.id,
 			name: userInfo.user.real_name,
 			team: team,
-			slackImChannelId: await slack.openImChannel(userInfo.id, authInfo.botAccessToken)
+			slackImChannelId: imInfo.channel.id
 		})
 
 		await user.save()
+		await user.reload()
 		emmit('user.created', user)
 	}
 }
