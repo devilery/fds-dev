@@ -25,7 +25,7 @@ const commitCheckUpdate = async function (check) {
 	pr = pr.data()
 
 	if (check.context && check.context.includes('ci/circleci')) {
-		ci_data = {};
+		let ci_data = {};
 
 		if (team.circle_personal_token) {
 			let circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circle_personal_token })
