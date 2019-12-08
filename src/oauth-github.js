@@ -1,8 +1,7 @@
 import request from 'request';
 import events from 'events';
 import url from 'url'
-import { GithubUser } from './entity';
-const { firestore } = require('./libs/firebase');
+import { GithubUser, User } from './entity';
 import axios from 'axios';
 
 export default function (opts) {
@@ -40,17 +39,27 @@ export default function (opts) {
     const userRes = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
     const user = userRes.data
 
-    let githubUser = await GithubUser.findOne({ where: { id: query.state } })
-    
-    let appUser = firestore.collection('users').doc(query.state)
+    const appUser = await User.findOneOrFail({ where: { id: query.state } })
+    const githubUser = appUser.githubUser
 
-    firestore.collection('gh_users').doc(user.id.toString()).set({
-      github_username: user.login,
-      github_id: user.id,
-      github_access_token: token.access_token,
-      raw_github_user_data: user,
-      user_ref: appUser
-    })
+    if (appUser.githubUser) {
+      await githubUser.save({
+        githubAccessToken: token.access_token,
+        rawGithubUserData: user,
+      })
+    } else {
+      const createdGithubUser = GithubUser.create({
+        githubUsername: user.login,
+        githubId: user.id,
+        githubAccessToken: token.access_token,
+        rawGithubUserData: user,
+      })
+
+      await createdGithubUser.save()
+
+      appUser.githubUser = createdGithubUser
+      appUser.save()
+    }
 
     resp.end('Thanks, close the tab and create a new PR :)')
   }

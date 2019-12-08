@@ -49,6 +49,8 @@ const commitCheckUpdate = async function (check) {
 		await sleep(7000) // wait 7 seconds for other events to start if exists
 	}
 
+
+	// 
 	if (dbCheck.data() && dbCheck.data().status === check.status) {
 		return;
 	}

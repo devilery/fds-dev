@@ -1,6 +1,8 @@
+import { PullRequest } from "../entity";
+
 const { firestore } = require('../libs/firebase');
 
-async function createOrUpdatePr(pullRequest) {
+async function createOrUpdatePr(pullRequest: any) {
   const pr = await firestore.collection('pull_requests').doc(pullRequest.id.toString())
 
   await pr.set(pullRequest, { merge: true })
@@ -13,9 +15,9 @@ async function createOrUpdatePr(pullRequest) {
   return pr
 }
 
-async function isHeadCommitCheck(sha, pullRequestId) {
-  let ref = await firestore.collection('pull_requests').doc(pullRequestId.toString()).get()
-  return ref.data().head_sha === sha
+async function isHeadCommitCheck(sha: string, pullRequestId: number) {
+  const pullRequest = await PullRequest.findOneOrFail({ where: { id: pullRequestId } })
+  return pullRequest.headSha === sha
 }
 
 module.exports = { createOrUpdatePr, isHeadCommitCheck }

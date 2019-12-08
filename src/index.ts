@@ -22,8 +22,6 @@ import githubOAuth from './oauth-github';
 
 import { createInstallationToken } from './libs/github-api';
 const { subscribe, emmit } = require('./libs/event.js');
-const { firestore } = require('./libs/firebase');
-const { honeycomb } = require('./libs/honeycomb');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
 
