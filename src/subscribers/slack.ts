@@ -19,7 +19,7 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 	const teamInfo = await client.team.info() as TeamInfoResult
 	const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult
 
-	let team = await Team.findOne({where: { slackId: teamInfo }})
+	let team = await Team.findOne({where: { slackId: teamInfo.team.id }})
 	if (!team) {
 		team = Team.create({
 			slackId: teamInfo.team.id,
@@ -31,7 +31,7 @@ const authenticated = async function(data: SlackUserAuthenticatedEventData) {
 		emmit('team.created', team)
 	}
 
-	let user = await User.findOne({where: { slackId: userInfo.id}})
+	let user = await User.findOne({where: { slackId: userInfo.user.id}})
 	if (!user) {
 		const imInfo = await client.im.open({user: userInfo.user.id}) as ImOpenResult
 		assert(imInfo.ok, 'Im open failed!')
