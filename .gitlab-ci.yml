@@ -17,4 +17,4 @@ image: "node:12"
 
 test:
   script:
-      - exit 1
+      - echo 1
