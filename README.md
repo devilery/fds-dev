@@ -12,7 +12,7 @@ Feature delivery streamlining
 ### Manual Deploy
 - `heroku git:remote -a fds-dev` # add heroku remote
 - `git push heroku master`
-
+sadfasd
 ### example .env File
 FIREBASE_AUTH_JSON=
 GITHUB_API_TOKEN=
