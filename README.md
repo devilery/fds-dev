@@ -8,8 +8,8 @@ Feature delivery streamlining
 ### run server
 - `yarn dev` # nodemon reload on *.js changes
 
-### SSL webhook and serveo
-Some webhooks might require the connection to your machine over https (e.g. [Slack interactive endpoint](https://api.slack.com/interactivity/actions)).
+### SSL webhooks and serveo
+Some webhooks might require HTTPS (e.g. [Slack interactive endpoint](https://api.slack.com/interactivity/actions)).
 Use our private [Serveo](http://serveo.net/) instance in this case:
 Execute:
 - `ssh -R 80:localhost:3000 serveo.lab.9roads.red -p 23`
