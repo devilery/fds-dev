@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { processGithubPullRequest, processCommitStatus, processCheckRun } from '../libs/github'
+import { processGithubPullRequest, processCommitStatus, processCheckRun, processPullRequestReview } from '../libs/github'
 
 const router = express.Router();
 
@@ -17,6 +17,9 @@ router.post('/', async(req, res) => {
       break;
     case 'check_run':
       processCheckRun(body)
+      break;
+    case 'pull_request_review':
+      processPullRequestReview(body)
       break;
     default:
       break;

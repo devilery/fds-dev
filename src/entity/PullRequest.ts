@@ -1,7 +1,8 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer, OneToMany } from "typeorm";
 import User from './User'
 import Commit from './Commit';
 import { bigInt } from './util';
+import PullRequestReview from './PullRequestReview';
 
 
 @Entity()
@@ -32,6 +33,9 @@ export default class PullRequest extends BaseEntity {
 
   @ManyToMany(type => Commit, commit => commit.pullRequests)
   commits: Commit[]
+
+  @OneToMany(type => PullRequestReview, review => review.pullRequest)
+  reviews: PullRequestReview[]
 
   @Column('jsonb')
   rawData: any;

@@ -15,6 +15,7 @@ export interface UsersInfoResult extends WebAPICallResult {
 	user: {
 		id: string
 		real_name: string
+		name: string
 	}
 }
 

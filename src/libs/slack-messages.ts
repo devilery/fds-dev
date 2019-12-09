@@ -1,5 +1,5 @@
 import { ICommitCheck } from '../events/types';
-import { User, PullRequest, CommitCheck } from '../entity'
+import { User, PullRequest, CommitCheck, PullRequestReview } from '../entity'
 
 export interface IMessageData {
 	text: string
@@ -170,5 +170,23 @@ export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 				}
 			}
 		]
+	}
+}
+
+export function getReviewMessage(review: PullRequestReview, mentionName: string): IMessageData {
+	let notificationText = `🎉 *${review.reviewUserName}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`;
+
+	if (review.state === 'changes_requested') {
+		notificationText = `🚧 *${review.reviewUserName}* requested changes - <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+	}
+
+	if (review.state === 'commented') {
+		notificationText = `🧐 *${review.reviewUserName}* commented on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+	}
+
+	notificationText += ` @${mentionName}`
+
+	return {
+		'text': notificationText
 	}
 }

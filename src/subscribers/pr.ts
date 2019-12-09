@@ -1,9 +1,9 @@
 
-import { Commit, CommitCheck, PullRequest, User, Team } from '../entity';
-import { ICommitCheck, IPullRequestEvent } from '../events/types';
+import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview } from '../entity';
+import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
-import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage } from '../libs/slack-messages'
+import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
@@ -102,4 +102,30 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
-module.exports = [opened, commitCheckUpdate]
+
+const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent) {
+	const pr = await PullRequest.findOneOrFail({ where: { id: reviewEvent.pull_request_id }, relations: ['user', 'user.team'] })
+	const user = pr.user
+	const team = user.team
+	const client = team.getSlackClient()
+
+	const review = await PullRequestReview.create({
+		remoteId: reviewEvent.remoteId,
+		state: reviewEvent.state,
+		websiteUrl: reviewEvent.website_url,
+		rawData: reviewEvent.raw_data,
+		reviewUserName: reviewEvent.user.github_login,
+		pullRequest: pr
+	})
+
+	await review.save()
+
+	const slackUsername = await user.getSlackUsername()
+	const notification = getReviewMessage(review, slackUsername);
+
+	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
+}
+
+pullRequestReviewed.eventType = 'pr.reviewed'
+
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed]

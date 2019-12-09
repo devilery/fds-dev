@@ -9,6 +9,8 @@ import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
+import { IPullRequestReviewEvent } from '../events/types';
+import { ReviewStateType } from '../entity/PullRequestReview';
 
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
@@ -100,6 +102,35 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   }
 }
 
+export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayloadPullRequestReview) {
+  const review = reviewEvent.review;
+
+
+  console.log(review.state)
+  console.log(review.id)
+  const pullRequest = await findPRByGithubId(reviewEvent.pull_request.id);
+
+  if (!pullRequest) {
+    console.log('no pull request ', reviewEvent.pull_request.id)
+    return;
+  }
+
+  let eventData: IPullRequestReviewEvent = {
+    remoteId: review.id,
+    from: 'github',
+    body: review.body,
+    pull_request_id: pullRequest.id,
+    state: review.state as ReviewStateType,
+    website_url: review.html_url,
+    user: {
+      github_login: reviewEvent.review.user.login
+    },
+    raw_data: review
+  }
+
+  emmit('pr.reviewed', eventData)
+}
+
 export async function requestSlackUsersToReview(handles: string[], prNumber: number, githubAuthor: GithubUser, team: Team) {
   assert(handles.length > 0, 'No slack users to request review')
   assert(githubAuthor, 'No github author passed during review request')
@@ -145,6 +176,10 @@ async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequ
   }
 
   return user.user.id;
+}
+
+async function findPRByGithubId(id: number) {
+  return await PullRequest.findOne({ where: { githubId: id } })
 }
 
 async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {
