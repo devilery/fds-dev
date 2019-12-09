@@ -8,8 +8,13 @@ export interface IMessageData {
 
 interface IMessgeBlock {
 	type: 'section'| 'context',
-	text?: string | { type: 'mrkdwn', text: string}
+	text?: string | { type: 'mrkdwn' | 'plain_text', text: string}
 	blocks?: []
+	accessory?: {
+		type: string
+		text: string | { type: 'mrkdwn' | 'plain_text', text: string, emoji: boolean}
+		value: string
+	}
 }
 
 export function getWelcomeMessage(user: User): IMessageData {
@@ -22,12 +27,31 @@ export function getWelcomeMessage(user: User): IMessageData {
 	}
 }
 
-function getBaseBlock(pr: PullRequest): IMessgeBlock{
+function getBaseBlock(pr: PullRequest): IMessgeBlock {
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
 			"text": `🧐 *PR*: #${pr.prNumber} | <${pr.websiteUrl}| ${pr.title}>`
+		}
+	}
+}
+
+function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
+	return {
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": "Assigne review"
+		},
+		"accessory": {
+			"type": "button",
+			"text": {
+				"type": "plain_text",
+				"text": "Assigne review",
+				"emoji": true
+			},
+			"value": `review_assigne_${pr.id}`
 		}
 	}
 }
@@ -70,7 +94,7 @@ function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 }
 
 export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
-	let blocks = [[getBaseBlock(pr)], getCheckProgressBlock(checks)]
+	let blocks = [[getBaseBlock(pr)], getReviewAssigneBlock(pr), getCheckProgressBlock(checks)]
 	return {
 		"text": "Pull Request opened",
 		"blocks": blocks.flat()
@@ -123,4 +147,4 @@ export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 			}
 		]
 	}
-};
+}

@@ -97,7 +97,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		checkMessage = getCheckErrorMessage(dbCheck)
 
 	if (checkMessage)
-		client.chat.postMessage({text: checkMessage.text, blocks: checkMessage.blocks, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId})
+		client.chat.postMessage({text: checkMessage.text, blocks: checkMessage.blocks, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
 
 }
 commitCheckUpdate.eventType = 'pr.check.update'
