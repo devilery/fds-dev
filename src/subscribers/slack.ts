@@ -3,10 +3,11 @@ import { strict as assert } from 'assert';
 import { WebClient } from '@slack/web-api'
 
 import { emmit } from '../libs/event.js'
-import { Team, User } from '../entity'
+import { Team, User, PullRequest } from '../entity'
 import { OauthAccessResult, UsersInfoResult, TeamInfoResult, ImOpenResult } from '../libs/slack-api'
 import { ISlackUserAuthenticatedEvent } from '../api/slack-oauth-webhook'
 import { createUser } from '../libs/users'
+import { mergePR } from '../libs/github-api'
 
 
 const authenticated = async function(data: ISlackUserAuthenticatedEvent) {
@@ -42,6 +43,11 @@ authenticated.eventType = 'slack.user.authenticated'
 const actionMerge = async function(data: {pr: number, team: Team}) {
 	console.log('event action Merge', data);
 	console.log('Merge PR number', data['pr']);
+	const pr = await PullRequest.findOneOrFail(data.pr, { relations:['user', 'user.githubUser'] });
+	// const user = await User.findOneOrFail(pr.user.id, {relations:['githubUser']});
+	console.log(pr.user.githubUser);
+	assert(pr.user.githubUser, 'Github User for PR not found')
+	mergePR(pr.rawData.repository.owner.login, pr.rawData.repository.name, pr.prNumber, pr.user.githubUser.githubAccessToken)
 }
 actionMerge.eventType = 'slack.action.merge'
 
