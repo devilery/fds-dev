@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
-import { Team, User } from '../entity'
+import { Team, User, PullRequest } from '../entity'
 import { requestSlackUsersToReview } from '../libs/github'
 
 
@@ -16,7 +16,7 @@ function getModal(prId) {
         },
         "close": {
           "type": "plain_text",
-          "text": "Cancel",
+          "text": "Close",
           "emoji": true
         },
         "blocks": [
@@ -95,7 +95,7 @@ router.post('/', async(req, res) => {
     }
 
     if (actionId.indexOf('review_target_user_selected_') >= 0) {
-      const prId = actionId.replace('review_assigne_', '')
+      const prId = actionId.replace('review_target_user_selected_', '')
       const modal = getModal(prId)
 
       const selectedUser = action.selected_user
@@ -106,9 +106,11 @@ router.post('/', async(req, res) => {
 
       const u = await User.findOneOrFail({where: {slackId: selectingUser}, relations: ['githubUser']})
 
+      const pr = await PullRequest.findOneOrFail(parseInt(prId))
+
       requestSlackUsersToReview(
         [selectedUser],
-        parseInt(prId),
+        pr.prNumber,
         u.githubUser,
         await Team.findOneOrFail({where: {slackId: team}}),
       )

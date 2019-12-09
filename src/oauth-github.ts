@@ -75,7 +75,8 @@ export default function (opts) {
         {reviewers:[githubUser.githubUsername]},
         author.githubAccessToken
       )
-      resp.end('Thanks! You can now review the PR :)')
+      resp.set('Content-type', 'text/html')
+      resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.rawData.owner.login}/${repo.rawData.name}/pull/${appUser.metadata.reviewPR}">here</a>`)
     } else {
       resp.end('Thanks, close the tab and create a new PR :)')
     }
