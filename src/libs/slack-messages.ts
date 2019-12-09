@@ -17,13 +17,17 @@ interface IMessgeBlock {
 	}
 }
 
+function encodeAction(actionName: string, actionData: {}) {
+	return `${actionName}___${encodeURIComponent(JSON.stringify(actionData))}`
+}
+
 export function getWelcomeMessage(user: User): IMessageData {
 	if (user.team.githubConnected){
 		let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
 		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.` }
 	} else {
 		let authLink = process.env.GH_APP_INSTAL_URL + `?state=${user.team.id}`
-		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` } 
+		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` }
 	}
 }
 
@@ -56,6 +60,26 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 	}
 }
 
+function getMergeBlock(pr: PullRequest): IMessgeBlock {
+	return {
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": "Merge PR"
+		},
+		"accessory": {
+			"type": "button",
+			"text": {
+				"type": "plain_text",
+				"text": "Merge PR 💣",
+				"emoji": true
+			},
+			// "value": `merge___${encodeURIComponent(JSON.stringify({'pr': pr.id}))}`
+			"value": encodeAction('merge', {pr: pr.id})
+		}
+	}
+}
+
 function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 	if (checks.length === 0)
 		return []
@@ -74,7 +98,7 @@ function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 		},
 		pendingChecks.map(item => {
 			let checkName = item.name;
-			
+
 			let linkOrName = item.targetUrl ? `<${item.targetUrl}|${checkName}>` : checkName;
 			let text = `⏳Check ${linkOrName} in progress...`;
 
@@ -94,7 +118,7 @@ function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 }
 
 export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
-	let blocks = [[getBaseBlock(pr)], getReviewAssigneBlock(pr), getCheckProgressBlock(checks)]
+	let blocks = [[getBaseBlock(pr)], getReviewAssigneBlock(pr), getMergeBlock(pr), getCheckProgressBlock(checks)]
 	return {
 		"text": "Pull Request opened",
 		"blocks": blocks.flat()

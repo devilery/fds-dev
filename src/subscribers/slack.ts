@@ -39,5 +39,10 @@ const authenticated = async function(data: ISlackUserAuthenticatedEvent) {
 }
 authenticated.eventType = 'slack.user.authenticated'
 
+const actionMerge = async function(data: {pr: number, team: Team}) {
+	console.log('event action Merge', data);
+	console.log('Merge PR number', data['pr']);
+}
+actionMerge.eventType = 'slack.action.merge'
 
-module.exports = [authenticated]
+module.exports = [authenticated, actionMerge]

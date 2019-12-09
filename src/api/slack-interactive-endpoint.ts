@@ -3,7 +3,6 @@ const { emmit } = require('../libs/event.js')
 import { Team, User, PullRequest } from '../entity'
 import { requestSlackUsersToReview } from '../libs/github'
 
-
 function getModal(prId) {
   return {
     "response_action": "push",
@@ -77,7 +76,7 @@ router.post('/', async(req, res) => {
   const client = team.getSlackClient()
 
   if (payload.type === 'block_actions') {
-    const action = payload.actions.pop()
+    const action = payload.actions[0]
     let actionId = ''
     if (action.value)
       actionId = action.value
@@ -115,11 +114,34 @@ router.post('/', async(req, res) => {
         await Team.findOneOrFail({where: {slackId: team}}),
       )
     }
-
   }
-  
+
   if (payload.type === 'view_submission')
     console.log(payload)
+
+  //   actions: [
+  //   {
+  //     action_id: '5FpJ',
+  //     block_id: 'y26',
+  //     text: [Object],
+  //     value: 'merge_7',
+  //     type: 'button',
+  //     action_ts: '1575927307.994587'
+  //   }
+  // ]
+   decodeAction(payload, team)
 });
+
+function decodeAction(payload: {}, team: Team) {
+  const action = payload.actions[0]
+  const actionName = (action.value || action.action_id || '');
+  const eventName = actionName.split('___', 2)[0];
+  if (eventName) {
+    const data = JSON.parse(decodeURIComponent(actionName.split('___', 2)[1]))
+    // console.log('data', data);
+    data['team'] = team;
+    emmit(`slack.action.${eventName}`, data)
+  }
+}
 
 module.exports = router;
