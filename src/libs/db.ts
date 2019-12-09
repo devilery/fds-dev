@@ -23,7 +23,7 @@ const config = {
 };
 
 if (process.env.DATABASE_URL) {
-    config['url'] = process.env.DATABASE_URL;
+    config['url'] = String(process.env.DATABASE_URL);
 } else {
     config["host"] = process.env.TYPEORM_CONNECTION;
     config["port"] = parseInt(process.env.PG_PORT);
