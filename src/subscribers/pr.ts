@@ -120,8 +120,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 
 	await review.save()
 
-	const slackUsername = await user.getSlackUsername()
-	const notification = getReviewMessage(review, slackUsername);
+	const notification = getReviewMessage(review);
 
 	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
 }
