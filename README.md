@@ -14,7 +14,7 @@ Use our private [Serveo](http://serveo.net/) instance in this case:
 Execute:
 - `ssh -R 80:localhost:3000 serveo.lab.9roads.red -p 23`
 Your domain is now prited (e.g. https://vestri.serveo.lab.9roads.red)
-Unfortunately you have to **use port 444** on this domain (e.g. https://vestri.serveo.lab.9roads.red:444/)
+Unfortunately you have to **use port 444** on this domain (e.g. https://vestri.serveo.lab.9roads.red:444/) 
 
 
 ## Deploy
