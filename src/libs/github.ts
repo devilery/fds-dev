@@ -100,11 +100,10 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   }
 }
 
-export async function requestSlackUsersToReview(handles: string[], prNumber: number, team: Team) {
+export async function requestSlackUsersToReview(handles: string[], prNumber: number, githubAuthor: GithubUser, team: Team) {
   assert(handles.length > 0, 'No slack users to request review')
+  assert(githubAuthor, 'No github author passed during review request')
   assert(team, 'No team passed during review request')
-
-  const author = await GithubUser.findOneOrFail({where:{githubUsername:'LeZuse'}})
 
   handles.forEach(async handle => {
     const user = await User.findOne({where: {slackId: In(handles)}, relations: ['githubUser']})
@@ -117,7 +116,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
         const repo = await Repository.findOneOrFail();
         console.log('repo', repo);
 
-        requestPullRequestReview(repo.rawData.owner.login, repo.rawData.name, prNumber, {reviewers:[githubUser.githubUsername]}, author.githubAccessToken)
+        requestPullRequestReview(repo.rawData.owner.login, repo.rawData.name, prNumber, {reviewers:[githubUser.githubUsername]}, githubAuthor.githubAccessToken)
       } else {
         // TODO: send github login flow message
       }
@@ -128,7 +127,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       // TODO: udpate the oauth flow finish to do request assign
 
       // TODO: get dynamically
-      await createUser(handle, team, {reviewPR: prNumber, prAuthor: author.id})
+      await createUser(handle, team, {reviewPR: prNumber, prAuthor: githubAuthor.id})
     }
   })
 }
