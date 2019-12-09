@@ -5,7 +5,16 @@ import { Team, GithubOwner, Repository } from './entity'
 import * as Sentry from '@sentry/node';
 
 if (process.env.SENTRY_DSN) {
-  Sentry.init({ dsn: process.env.SENTRY_DSN });
+  Sentry.init({
+    dsn: process.env.SENTRY_DSN,
+    beforeSend(event, hint) {
+      const error = hint && hint.originalException;
+      if (error && error.message && error.message.match(/Request failed with status code 40[134]/i)) {
+        return null;
+      }
+      return event;
+    }
+  });
 }
 
 import url from 'url';
