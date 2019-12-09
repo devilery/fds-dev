@@ -46,13 +46,13 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": "Assigne review"
+			"text": "Assign review"
 		},
 		"accessory": {
 			"type": "button",
 			"text": {
 				"type": "plain_text",
-				"text": "Assigne review",
+				"text": "Assign review 📝",
 				"emoji": true
 			},
 			"value": `review_assigne_${pr.id}`
