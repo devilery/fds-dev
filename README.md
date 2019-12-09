@@ -5,35 +5,20 @@ Feature delivery streamlining
 - `yarn install` # download deps
 
 ## Development
+### run server
 - `yarn dev` # nodemon reload on *.js changes
+
+### SSL webhook and serveo
+Some webhooks might require the connection to your machine over https (e.g. [Slack interactive endpoint](https://api.slack.com/interactivity/actions)).
+Use our private [Serveo](http://serveo.net/) instance in this case:
+Execute:
+- `ssh -R 80:localhost:3000 serveo.lab.9roads.red -p 23`
+Your domain is now prited (e.g. https://vestri.serveo.lab.9roads.red)
+Unfortunately you have to **use port 444** on this domain (e.g. https://vestri.serveo.lab.9roads.red:444/)
+
 
 ## Deploy
 - `git push origin master` # heroku picks up any changes and deploys
 ### Manual Deploy
 - `heroku git:remote -a fds-dev` # add heroku remote
 - `git push heroku master`
-
-### example .env File
-FIREBASE_AUTH_JSON=
-GITHUB_API_TOKEN=
-CIRCLE_TOKEN=
-APP_ID=
-GH_APP_INSTAL_URL=https://example.com/apps/devilery-app-test-3/installations/new
-SLACK_CLIENT_ID=
-SLACK_CLIENT_SECRET=
-APP_BASE_URL=https://example.com
-GITHUB_APP_PUBLIC_KEY=
-GITHUB_APP_SECRET_KEY=
-GITHUB_OAUTH_BASE_URL=https://example.com/
-GITHUB_PRIVATE_KEY=
-SLACK_OAUTH_REDIRECT_URI=https://example.com/api/slack-oauth-webhook
-WEBHOOK_SECRET=
-SLACK_SIGNING_SECRET=
-TYPEORM_CONNECTION=postgres
-TYPEORM_HOST=localhost
-TYPEORM_USERNAME=devilery
-TYPEORM_PASSWORD=devilery
-TYPEORM_DATABASE=devilery
-TYPEORM_PORT=5432
-TYPEORM_SYNCHRONIZE=true
-TYPEORM_LOGGING=true
