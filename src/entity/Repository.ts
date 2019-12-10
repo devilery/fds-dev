@@ -1,6 +1,7 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany } from "typeorm";
 import GithubOwner from './GithubOwner'
 import { bigInt } from './util';
+import { PullRequest } from '.'
 
 @Entity()
 export default class Repository extends BaseEntity {
@@ -15,4 +16,7 @@ export default class Repository extends BaseEntity {
 
   @ManyToOne(type => GithubOwner, team => team.repositories)
   owner: GithubOwner;
+
+  @OneToMany(type => PullRequest, pr => pr.repository)
+  pullRequests: PullRequest[];
 }

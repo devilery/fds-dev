@@ -3,6 +3,7 @@ import User from './User'
 import Commit from './Commit';
 import { bigInt } from './util';
 import PullRequestReview from './PullRequestReview';
+import { Repository } from '.'
 
 
 @Entity()
@@ -42,4 +43,7 @@ export default class PullRequest extends BaseEntity {
 
   @Column({default: 'github'})
   from: 'github';
+
+  @ManyToOne(type => Repository, repo => repo.pullRequests)
+  repository: Repository;
 }

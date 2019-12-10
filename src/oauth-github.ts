@@ -3,7 +3,7 @@ import events from 'events';
 import url from 'url'
 import axios from 'axios';
 
-import { GithubUser, User, Repository } from './entity';
+import { GithubUser, User, Repository, PullRequest } from './entity';
 import { requestPullRequestReview } from './libs/github-api';
 
 export default function (opts) {
@@ -64,9 +64,12 @@ export default function (opts) {
       await appUser.save()
     }
 
+    // TODO: add repo info (multiple PRs can have same IDs)
     if (appUser.metadata && appUser.metadata.reviewPR) {
       // send request review
-      const repo = await Repository.findOneOrFail();
+      const pr = await PullRequest.findOneOrFail({where: {prNumber: appUser.metadata.reviewPR}, relations: ['repository']})
+      const repo = pr.repository;
+      // const repo = await Repository.findOneOrFail(appUser.metadata.reviewRepo);
       const author = await GithubUser.findOneOrFail(appUser.metadata.prAuthor)
       requestPullRequestReview(
         repo.rawData.owner.login,

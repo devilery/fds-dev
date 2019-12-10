@@ -144,7 +144,10 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       if (user.githubUser) {
         const { githubUser } = user;
         // TODO: get dynamically
-        const repo = await Repository.findOneOrFail();
+        // const repo = await Repository.findOneOrFail();
+
+        const pr = await PullRequest.findOneOrFail({where: {prNumber: prNumber}, relations:['repository']})
+        const repo = pr.repository;
         console.log('repo', repo);
 
         requestPullRequestReview(repo.rawData.owner.login, repo.rawData.name, prNumber, {reviewers:[githubUser.githubUsername]}, githubAuthor.githubAccessToken)

@@ -1,6 +1,5 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne, JoinColumn } from "typeorm";
-import Team from './Team'
-import GithubUser from './GithubUser';
+import { Repository, Team, GithubUser } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
 
 @Entity()
@@ -26,7 +25,7 @@ export default class User extends BaseEntity {
   githubUser: GithubUser | null;
 
   @Column('jsonb', {nullable:true})
-  metadata: {reviewPR: number, prAuthor: GithubUser['id']};
+  metadata: {reviewPR: number, prAuthor: GithubUser['id'], reviewRepo: Repository['id']};
 
   async getSlackUsername() {
     if (!this.team) {
