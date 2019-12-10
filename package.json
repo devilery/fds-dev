@@ -7,8 +7,8 @@
    "author": "Tomas Ruzicka <me@tomasr.com>",
    "license": "MIT",
    "scripts": {
-      "dev": "ts-node-dev --respawn --transpileOnly ./src/index.ts",
-      "start": "ts-node --log-error --transpile-only ./src/index.ts",
+      "dev": "ts-node-dev --async-stack-traces --respawn --transpileOnly ./src/index.ts",
+      "start": "ts-node --async-stack-traces --log-error --transpile-only ./src/index.ts",
       "test": "echo nothing here"
    },
    "dependencies": {
@@ -20,6 +20,7 @@
       "@types/morgan": "^1.7.37",
       "@types/request": "^2.48.3",
       "axios": "^0.19.0",
+
       "axios-auth-refresh": "^1.0.7",
       "dotenv": "^8.2.0",
       "express": "^4.17.1",
