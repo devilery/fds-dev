@@ -5,19 +5,23 @@ jobs:
       - image: circleci/node:10
 
     working_directory: ~/repo
+
     steps:
       - checkout
       - run: sleep 60s
       - run: echo "test 1 done"
+
   test-wait:
     docker:
       - image: circleci/node:10
 
     working_directory: ~/repo
+
     steps:
       - checkout
       - run: sleep 60s
       - run: echo "test 2 done"
+
   build:
     docker:
       - image: circleci/node:10
@@ -75,6 +79,28 @@ jobs:
       - run:
           when: on_fail
           command: ./scripts/ci_webhook.sh pipeline.finished ", \"status\":\"failure\""
+
+  long-running-tests:
+    docker:
+      - image: circleci/node:10
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run: sleep 20s
+      - run: echo "long tests done"
+
+  some-deployment:
+    docker:
+      - image: circleci/node:10
+
+    working_directory: ~/repo
+
+    steps:
+      - checkout
+      - run: echo doin magic stuff to push to prod
+
 workflows:
   version: 2
   build_and_test:
@@ -84,3 +110,18 @@ workflows:
       - test-wait:
           requires:
             - build
+      - approve-long-tests:
+          type: approval
+          requires:
+            - build
+      - long-running-tests:
+          requires:
+            - approve-long-tests
+      - chained-approval:
+          type: approval
+          requires:
+            - approve-long-tests
+      - some-deployment:
+          requires:
+            - chained-approval
+
