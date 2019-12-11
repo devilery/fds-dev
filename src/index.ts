@@ -30,6 +30,7 @@ import githubOAuth from './oauth-github';
 
 
 import { createInstallationToken } from './libs/github-api';
+import { strict as assert } from 'assert';
 const { subscribe, emmit } = require('./libs/event.js');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
@@ -60,6 +61,10 @@ app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)
 })
 
+app.get('/test', async (req, res) => {
+  res.end('test done')
+})
+
 app.post('/slack/events', async (req, res) => {
   res.end();
 })
@@ -82,8 +87,16 @@ app.get('/github/setup', async (req, res) => {
     await team.save()
 
     const data = await createInstallationToken(installation_id)
+
+    // https://developer.github.com/v3/apps/installations/#list-repositories
+    let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` } })
+    let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
+
+    assert(repos.length > 0, 'Installation has no repos!')
+
     const owner = GithubOwner.create({
       githubAccessToken: data.token,
+      login: repos[0].owner.login,
       installationId: installation_id,
       team: team,
       githubAccessTokenRaw: data as any
@@ -91,13 +104,10 @@ app.get('/github/setup', async (req, res) => {
 
     await owner.save()
 
-    // https://developer.github.com/v3/apps/installations/#list-repositories
-    let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` }})
-    let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
-
     for (let repo of repos) {
       const repository = Repository.create({
         githubId: repo.id,
+        name: repo.name,
         rawData: repo as any,
         owner: owner
       })

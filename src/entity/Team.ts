@@ -1,4 +1,4 @@
-import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, OneToOne, JoinColumn } from "typeorm";
 import User from './User'
 import GithubOwner from './GithubOwner';
 import { WebClient } from '@slack/web-api'
@@ -25,8 +25,9 @@ export default class Team extends BaseEntity {
   @OneToMany(type => User, user => user.team)
   users: User[];
 
-  @OneToMany(type => GithubOwner, githubOwner => githubOwner.team)
-  githubOwner: GithubOwner[];
+  @OneToOne(type => GithubOwner, githubOwner => githubOwner.team, { nullable: true })
+  @JoinColumn()
+  githubOwner: GithubOwner | null;
 
   getSlackClient(): WebClient {
     return new WebClient(this.slackBotAccessToken)

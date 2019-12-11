@@ -1,4 +1,4 @@
-import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, ManyToOne } from "typeorm";
+import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, ManyToOne, OneToOne } from "typeorm";
 import Team from './Team'
 import Repository from './Repository'
 
@@ -6,6 +6,9 @@ import Repository from './Repository'
 export default class GithubOwner extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
+
+  @Column({ default: 'Company' })
+  login: string;
 
   @Column()
   githubAccessToken: string;
@@ -16,7 +19,7 @@ export default class GithubOwner extends BaseEntity {
   @Column('jsonb')
   githubAccessTokenRaw: any;
 
-  @ManyToOne(type => Team, team => team.users)
+  @OneToOne(type => Team, team => team.githubOwner)
   team: Team;
 
   @OneToMany(type => Repository, repository => repository.owner)

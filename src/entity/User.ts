@@ -1,4 +1,4 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne, JoinColumn } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne, JoinColumn, OneToMany } from "typeorm";
 import { Repository, Team, GithubUser } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
 
@@ -20,8 +20,7 @@ export default class User extends BaseEntity {
   @JoinColumn()
   team: Team;
 
-  @OneToOne(type => GithubUser, githubUser => githubUser.user, { nullable: true })
-  @JoinColumn()
+  @ManyToOne(type => GithubUser, githubUser => githubUser.users, { nullable: true })
   githubUser: GithubUser | null;
 
   @Column('jsonb', {nullable:true})

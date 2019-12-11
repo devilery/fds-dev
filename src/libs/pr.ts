@@ -1,4 +1,4 @@
-import { PullRequest, User } from "../entity";
+import { PullRequest, User, Repository } from "../entity";
 
 export async function createOrUpdatePr(pullRequest: any) {
   let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}, relations: ['user', 'user.team']})
@@ -19,6 +19,7 @@ export async function createOrUpdatePr(pullRequest: any) {
   pr.prNumber = pullRequest.pr_number;
   pr.headSha = pullRequest.head_sha;
   pr.githubId = pullRequest.id;
+  pr.repository = await Repository.findOneOrFail({ where: { githubId: pullRequest.repository.id } })
 
   await pr.save()
 

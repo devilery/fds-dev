@@ -6,7 +6,7 @@ import { WebClient } from '@slack/web-api'
 import { emmit } from './event';
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
 import { createOrUpdatePr } from './pr';
-import { Commit, Repository, PullRequest, GithubUser, User, Team } from '../entity'
+import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
 import { IPullRequestReviewEvent } from '../events/types';
@@ -14,10 +14,11 @@ import { ReviewStateType } from '../entity/PullRequestReview';
 
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
-  const { action } = pullRequestEvent;
+  const { action, repository } = pullRequestEvent;
   const { user } = pullRequestEvent.pull_request;
 
-  const userId = await findUserIdByGithubId(user)
+  const owner = await getOwnerByRepositoryId(repository.id)
+  const userId = await findUserIdByGithubId(user.id, owner)
   if (!userId) {
     return;
   }
@@ -103,27 +104,31 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
 }
 
 export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayloadPullRequestReview) {
-  const review = reviewEvent.review;
-
-
-  console.log(review.state)
-  console.log(review.id)
+  const review  = reviewEvent.review;
   const pullRequest = await findPRByGithubId(reviewEvent.pull_request.id);
+  const owner = await getOwnerByRepositoryId(reviewEvent.repository.id)
+  const reviewUserId = await findUserIdByGithubId(reviewEvent.review.user.id, owner)
 
   if (!pullRequest) {
     console.log('no pull request ', reviewEvent.pull_request.id)
     return;
   }
 
+  if (reviewUserId === pullRequest.user.id) {
+    console.log('review from the user that created an PR. Ignore... ', reviewUserId)
+    return;
+  }
+
   let eventData: IPullRequestReviewEvent = {
     remoteId: review.id,
     from: 'github',
-    body: review.body,
+    body: review. body,
     pull_request_id: pullRequest.id,
     state: review.state as ReviewStateType,
     website_url: review.html_url,
     user: {
-      github_login: reviewEvent.review.user.login
+      github_login: reviewEvent.review.user.login,
+      github_id: reviewEvent.review.user.id
     },
     raw_data: review
   }
@@ -150,7 +155,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
         const repo = pr.repository;
         console.log('repo', repo);
 
-        requestPullRequestReview(repo.rawData.owner.login, repo.rawData.name, prNumber, {reviewers:[githubUser.githubUsername]}, githubAuthor.githubAccessToken)
+        requestPullRequestReview(repo.owner.login, repo.name, prNumber, {reviewers:[githubUser.githubUsername]}, githubAuthor.githubAccessToken)
       } else {
         // TODO: send github login flow message
       }
@@ -172,13 +177,13 @@ async function getOwnerByRepositoryId(repoId: number) {
   return owner;
 }
 
-async function findUserIdByGithubId(ghUserEvent: Webhooks.WebhookPayloadPullRequestPullRequestUser) {
-  const user = await GithubUser.findOne({where: {githubId: ghUserEvent.id }, relations: ['user']});
+async function findUserIdByGithubId(ghUserId: number, owner: GithubOwner) {
+  const user = await User.findOne({ where: { githubUser: { githubId: ghUserId }, team: { githubOwner: { id: owner.id } } } })
   if (!user) {
     return;
   }
 
-  return user.user.id;
+  return user.id
 }
 
 async function findPRByGithubId(id: number) {

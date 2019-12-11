@@ -2,7 +2,7 @@ import { ReviewStateType } from "../entity/PullRequestReview";
 
 export interface ICommitCheck {
   status: 'pending' | 'success' | 'error' | 'failure';
-  type: 'standard' | 'check';
+  type: 'standard' | 'circleci';
   from: string;
   id: number;
   commit_sha: string;
@@ -43,5 +43,6 @@ export interface IPullRequestReviewEvent {
   raw_data: any;
   user: {
     github_login: string;
+    github_id: number;
   }
 }

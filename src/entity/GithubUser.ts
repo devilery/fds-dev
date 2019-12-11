@@ -1,4 +1,4 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne } from 'typeorm';
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
 import User from './User';
 import { bigInt } from './util';
 
@@ -20,6 +20,6 @@ export default class GithubUser extends BaseEntity {
   @Column('jsonb')
   rawGithubUserData: any;
 
-  @OneToOne(type => User, user => user.githubUser)
-  user: User
+  @OneToMany(type => User, user => user.githubUser)
+  users: User[]
 }

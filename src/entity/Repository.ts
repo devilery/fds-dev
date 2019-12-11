@@ -8,6 +8,9 @@ export default class Repository extends BaseEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({default: 'Repo'})
+  name: string;
+
   @Column('bigint', { transformer: [bigInt], unique: true })
   githubId: number;
 

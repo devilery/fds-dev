@@ -1,5 +1,5 @@
 
-import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview } from '../entity';
+import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser } from '../entity';
 import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
@@ -108,6 +108,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 	const user = pr.user
 	const team = user.team
 	const client = team.getSlackClient()
+
 
 	const review = await PullRequestReview.create({
 		remoteId: reviewEvent.remoteId,
