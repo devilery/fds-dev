@@ -1,5 +1,5 @@
 import { ICommitCheck } from '../events/types';
-import { User, PullRequest, CommitCheck, PullRequestReview } from '../entity'
+import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest } from '../entity'
 
 export interface IMessageData {
 	text: string
@@ -186,5 +186,11 @@ export function getReviewMessage(review: PullRequestReview): IMessageData {
 
 	return {
 		'text': notificationText
+	}
+}
+
+export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string): IMessageData {
+	return {
+		'text': `@${requesterUsername} request review on PR #<${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
 	}
 }

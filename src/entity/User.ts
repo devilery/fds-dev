@@ -1,5 +1,5 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToOne, JoinColumn, OneToMany } from "typeorm";
-import { Repository, Team, GithubUser } from '.'
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinTable, JoinColumn, OneToMany, ManyToMany } from "typeorm";
+import { Repository, Team, GithubUser, PullRequestReviewRequest } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
 
 @Entity()
@@ -25,6 +25,9 @@ export default class User extends BaseEntity {
 
   @Column('jsonb', {nullable:true})
   metadata: {reviewPR: number, prAuthor: GithubUser['id'], reviewRepo: Repository['id']};
+
+  @OneToMany(type => PullRequestReviewRequest, request => request.assigneeUser)
+  prReviewRequests: PullRequestReviewRequest[]
 
   async getSlackUsername() {
     if (!this.team) {

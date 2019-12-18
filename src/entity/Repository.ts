@@ -14,11 +14,11 @@ export default class Repository extends BaseEntity {
   @Column('bigint', { transformer: [bigInt], unique: true })
   githubId: number;
 
+  @ManyToOne(type => GithubOwner, owner => owner.repositories)
+  owner: GithubOwner;
+
   @Column({ type: 'jsonb' })
   rawData: any;
-
-  @ManyToOne(type => GithubOwner, team => team.repositories)
-  owner: GithubOwner;
 
   @OneToMany(type => PullRequest, pr => pr.repository)
   pullRequests: PullRequest[];

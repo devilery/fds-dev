@@ -7,5 +7,6 @@ import Team from './Team';
 import User from './User'
 import GithubUser from './GithubUser'
 import PullRequestReview from './PullRequestReview';
+import PullRequestReviewRequest from './PullRequestReviewRequest';
 
-export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User, GithubUser, PullRequestReview }
+export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User, GithubUser, PullRequestReview, PullRequestReviewRequest }

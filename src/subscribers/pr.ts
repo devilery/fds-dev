@@ -1,9 +1,9 @@
 
-import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser } from '../entity';
-import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent } from '../events/types';
+import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest } from '../entity';
+import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
-import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage } from '../libs/slack-messages'
+import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
@@ -128,4 +128,24 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 
 pullRequestReviewed.eventType = 'pr.reviewed'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed]
+const pullRequestReviewRequest = async function (reviewRequest: IPullRequestReviewRequest) {
+	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
+	const assigneeUser = await User.findOneOrFail(reviewRequest.assignee_user_id, { relations: ['team'] })
+	const client = assigneeUser.team.getSlackClient()
+
+	const request = PullRequestReviewRequest.create({
+		pullRequest: pr,
+		assigneeUser: assigneeUser
+	})
+
+	await request.save()
+
+	const requesterUsername = await pr.user.getSlackUsername()
+	const notification = getReviewRequestNotification(request, requesterUsername)
+
+	await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
+}
+
+pullRequestReviewRequest.eventType = 'pr.review.request'
+
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest]

@@ -3,7 +3,7 @@ import User from './User'
 import Commit from './Commit';
 import { bigInt } from './util';
 import PullRequestReview from './PullRequestReview';
-import { Repository } from '.'
+import { Repository, PullRequestReviewRequest } from '.'
 
 
 @Entity()
@@ -37,6 +37,9 @@ export default class PullRequest extends BaseEntity {
 
   @OneToMany(type => PullRequestReview, review => review.pullRequest)
   reviews: PullRequestReview[]
+
+  @OneToMany(type => PullRequestReviewRequest, reviewRequest => reviewRequest.pullRequest)
+  reviewRequests: PullRequestReviewRequest;
 
   @Column('jsonb')
   rawData: any;

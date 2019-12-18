@@ -9,7 +9,7 @@ import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
-import { IPullRequestReviewEvent } from '../events/types';
+import { IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
 import { ReviewStateType } from '../entity/PullRequestReview';
 
 
@@ -19,6 +19,7 @@ export async function processGithubPullRequest(pullRequestEvent: Webhooks.Webhoo
 
   const owner = await getOwnerByRepositoryId(repository.id)
   const userId = await findUserIdByGithubId(user.id, owner)
+
   if (!userId) {
     return;
   }
@@ -136,26 +137,28 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
   emmit('pr.reviewed', eventData)
 }
 
-export async function requestSlackUsersToReview(handles: string[], prNumber: number, githubAuthor: GithubUser, team: Team) {
+export async function requestSlackUsersToReview(handles: string[], prNumber: number, author: User, team: Team) {
   assert(handles.length > 0, 'No slack users to request review')
-  assert(githubAuthor, 'No github author passed during review request')
+  assert(author, 'No github author passed during review request')
   assert(team, 'No team passed during review request')
 
   handles.forEach(async handle => {
-    const user = await User.findOne({where: {slackId: In(handles)}, relations: ['githubUser']})
-    console.log(user);
+    const user = await User.findOne({ where: { slackId: handle }, relations: ['githubUser']})
     if (user) {
       // send request to github api
       if (user.githubUser) {
         const { githubUser } = user;
-        // TODO: get dynamically
-        // const repo = await Repository.findOneOrFail();
 
-        const pr = await PullRequest.findOneOrFail({where: {prNumber: prNumber}, relations:['repository']})
+        const pr = await PullRequest.findOneOrFail({ where: { prNumber: prNumber }, relations: ['repository', 'repository.owner']})
         const repo = pr.repository;
-        console.log('repo', repo);
+        await requestPullRequestReview(repo.owner.login, repo.name, prNumber, { reviewers: [githubUser.githubUsername] }, author.githubUser!.githubAccessToken)
 
-        requestPullRequestReview(repo.owner.login, repo.name, prNumber, {reviewers:[githubUser.githubUsername]}, githubAuthor.githubAccessToken)
+        let reviewRequest: IPullRequestReviewRequest = {
+          pull_request_id: pr.id,
+          assignee_user_id: user.id
+        }
+
+        emmit('pr.review.request', reviewRequest)
       } else {
         // TODO: send github login flow message
       }
@@ -166,7 +169,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       // TODO: udpate the oauth flow finish to do request assign
 
       // TODO: get dynamically
-      await createUser(handle, team, {reviewPR: prNumber, prAuthor: githubAuthor.id})
+      await createUser(handle, team, { reviewPR: prNumber, prAuthor: author.id})
     }
   })
 }
@@ -178,7 +181,9 @@ async function getOwnerByRepositoryId(repoId: number) {
 }
 
 async function findUserIdByGithubId(ghUserId: number, owner: GithubOwner) {
-  const user = await User.findOne({ where: { githubUser: { githubId: ghUserId }, team: { githubOwner: { id: owner.id } } } })
+  const team = await Team.findOneOrFail({where: { githubOwner: owner }})
+  const githubUser = await GithubUser.findOne({where: { githubId: ghUserId }})
+  const user = await User.findOne({ where: { githubUser: githubUser, team: team } })
   if (!user) {
     return;
   }

@@ -46,3 +46,8 @@ export interface IPullRequestReviewEvent {
     github_id: number;
   }
 }
+
+export interface IPullRequestReviewRequest {
+  pull_request_id: number;
+  assignee_user_id: number;
+}

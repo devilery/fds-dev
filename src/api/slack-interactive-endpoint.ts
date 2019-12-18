@@ -68,7 +68,6 @@ const emptyView = {
 }
 
 router.post('/', async(req, res) => {
-  console.log(req.body)
   const payload = JSON.parse(req.body.payload)
   res.send('ok')
 
@@ -103,39 +102,35 @@ router.post('/', async(req, res) => {
 
       client.views.update({'view': emptyView, 'view_id': payload.view.id})
 
-      const u = await User.findOneOrFail({where: {slackId: selectingUser}, relations: ['githubUser']})
+      const user = await User.findOneOrFail({where: {slackId: selectingUser}, relations: ['githubUser']})
 
       const pr = await PullRequest.findOneOrFail(parseInt(prId))
+
+      if (!user.githubUser) {
+        console.log('Author does not have github user')
+        return;
+      }
 
       requestSlackUsersToReview(
         [selectedUser],
         pr.prNumber,
-        u.githubUser,
+        user,
         await Team.findOneOrFail({where: {slackId: team}}),
       )
     }
   }
 
-  if (payload.type === 'view_submission')
+  if (payload.type === 'view_submission') {
     console.log(payload)
-
-  //   actions: [
-  //   {
-  //     action_id: '5FpJ',
-  //     block_id: 'y26',
-  //     text: [Object],
-  //     value: 'merge_7',
-  //     type: 'button',
-  //     action_ts: '1575927307.994587'
-  //   }
-  // ]
-   decodeAction(payload, team)
+    decodeAction(payload, team)
+  }
 });
 
 function decodeAction(payload: {}, team: Team) {
   const action = payload.actions[0]
   const actionName = (action.value || action.action_id || '');
   const eventName = actionName.split('___', 2)[0];
+  console.log(eventName)
   if (eventName) {
     const data = JSON.parse(decodeURIComponent(actionName.split('___', 2)[1]))
     // console.log('data', data);
