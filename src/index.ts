@@ -52,10 +52,10 @@ let ghOAuth = githubOAuth({
 
 app.use(morgan('dev'));
 
-app.use('/slack/events', eventMiddleware())
+app.use('/api/slack-events', eventMiddleware())
 
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }))
+// app.use(express.json());
+// app.use(express.urlencoded({ extended: true }))
 
 app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)
@@ -65,9 +65,10 @@ app.get('/test', async (req, res) => {
   res.end('test done')
 })
 
-app.post('/slack/events', async (req, res) => {
-  res.end();
-})
+// app.post('/api/slack/events', async (req, res) => {
+//   console.log('req', res, res);
+//   res.end();
+// })
 
 app.get('/github/setup', async (req, res) => {
   let query = url.parse(req.url, true).query
