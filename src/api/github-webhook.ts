@@ -7,7 +7,9 @@ const router = express.Router();
 router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
-
+  console.log(body);
+  // prolly dont have permissions for that data
+  if (!body) return;
   switch (eventName) {
     case 'pull_request':
       processGithubPullRequest(body)

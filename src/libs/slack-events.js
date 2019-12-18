@@ -1,5 +1,6 @@
 const { createEventAdapter } = require('@slack/events-api');
-import { Team } from '../entity'
+import { Team, PullRequest } from '../entity'
+import { getPrMessage } from './slack-messages'
 
 if (!process.env.SLACK_SIGNING_SECRET) {
   throw 'Missing SLACK_SIGNING_SECRET. Slack webhooks wont work.'
@@ -16,6 +17,8 @@ const CIRCLE_TOKEN = /circle (\w+)/;
 async function handleHomePage(event, payload, respond) {
 	console.log('event', event, payload);
 
+	if(event.tab !== 'home') return;
+
 	const team = await Team.findOneOrFail({where: {slackId: payload.team_id}})
 	console.log(team);
   	const client = team.getSlackClient()
@@ -30,19 +33,46 @@ async function handleHomePage(event, payload, respond) {
 			// },
   	// ]})
 
-  	client.views.publish({
-	"user_id": event.user,
-  	"view": {
-       "type":"home", "blocks": [
-  			{
-				"type": "section",
-				"text": {
-					"type": "mrkdwn",
-					"text": "Hey there 👋 I'm TaskBot. I'm here to help you create and manage tasks in Slack.\nThere are two ways to quickly create tasks:"
-				}
-			},
-  		]
-   	}})
+
+  	const allPRs = await PullRequest.find()
+  	console.log('prs', allPRs);
+  	if(!allPRs.length) {
+  		await client.views.publish({
+			"user_id": event.user,
+		  	"view": {
+		       "type":"home", "blocks": [
+		  			{
+						"type": "section",
+						"text": {
+							"type": "mrkdwn",
+							"text": "open your first PR!"
+						}
+					},
+		  		]
+	   		}
+	   	})
+  	}
+
+  	allPRs.forEach(async pr => {
+	   	const messageData = getPrMessage(pr)
+
+		// client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
+	  	const res = await  client.views.publish({
+		"user_id": event.user,
+	  	"view": {
+	       "type":"home", text:messageData.text, "blocks": [
+	  	// 		{
+				// 	"type": "section",
+				// 	"text": {
+				// 		"type": "mrkdwn",
+				// 		"text": "Hey there 👋 I'm TaskBot. I'm here to help you create and manage tasks in Slack.\nThere are two ways to quickly create tasks:"
+				// 	}
+				// },
+				...messageData.blocks
+	  		]
+	   	}})
+  	})
+
 
   	// respond(null, {blocks: [
   	// 	{
