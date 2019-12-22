@@ -14,6 +14,8 @@ const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET, {
 const CIRCLE_TOKEN = /circle (\w+)/;
 
 // https://api.slack.com/surfaces/tabs/using#publishing
+// https://api.slack.com/events/app_home_opened
+// https://api.slack.com/methods/views.publish
 async function handleHomePage(event, payload, respond) {
 	console.log('event', event, payload);
 
