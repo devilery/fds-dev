@@ -7,9 +7,9 @@ const router = express.Router();
 router.post('/', async(req, res) => {
   const { body } = req
   const eventName = req.headers['x-github-event']
-  console.log(body);
+  // console.log(eventName, body);
   // prolly dont have permissions for that data
-  if (!body) return;
+  if (!body) throw new Error('GitHub webhook missing payload body');
   switch (eventName) {
     case 'pull_request':
       processGithubPullRequest(body)

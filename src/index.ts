@@ -54,8 +54,8 @@ app.use(morgan('dev'));
 
 app.use('/api/slack-events', eventMiddleware())
 
-// app.use(express.json());
-// app.use(express.urlencoded({ extended: true }))
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }))
 
 app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)

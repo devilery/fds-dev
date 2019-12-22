@@ -13,16 +13,21 @@ const slackEvents = createEventAdapter(process.env.SLACK_SIGNING_SECRET, {
 
 const CIRCLE_TOKEN = /circle (\w+)/;
 
+const INSTALL_URL = `\
+https://slack.com/oauth/authorize?client_id=${process.env.SLACK_CLIENT_ID}\
+&scope=channels:history,chat:write:bot,groups:history,identify,im:history,mpim:history,team:read,users.profile:read,users:read,bot\
+`;
+
 // https://api.slack.com/surfaces/tabs/using#publishing
 // https://api.slack.com/events/app_home_opened
 // https://api.slack.com/methods/views.publish
 async function handleHomePage(event, payload, respond) {
-	console.log('event', event, payload);
+	// console.log('event', event, payload);
 
 	if(event.tab !== 'home') return;
 
 	const team = await Team.findOneOrFail({where: {slackId: payload.team_id}})
-	console.log(team);
+	// console.log(team);
   	const client = team.getSlackClient()
 
   	// client.chat.postMessage({"channel": event.channel, "type":"home", "blocks": [
@@ -50,6 +55,40 @@ async function handleHomePage(event, payload, respond) {
 							"text": "open your first PR!"
 						}
 					},
+					{
+						"type": "actions",
+						"elements": [
+							{
+								"type": "button",
+								"text": {
+									"type": "plain_text",
+									"emoji": true,
+									"text": "Install (default redirect uri)"
+								},
+								"style": "primary",
+								"url": INSTALL_URL,
+								"value": "install_app"
+							},
+							// {
+							// 	"type": "button",
+							// 	"text": {
+							// 		"type": "plain_text",
+							// 		"emoji": true,
+							// 		"text": "Kin Khao"
+							// 	},
+							// 	"value": "click_me_123"
+							// },
+							// {
+							// 	"type": "button",
+							// 	"text": {
+							// 		"type": "plain_text",
+							// 		"emoji": true,
+							// 		"text": "Ler Ros"
+							// 	},
+							// 	"value": "click_me_123"
+							// }
+						]
+					}
 		  		]
 	   		}
 	   	})
