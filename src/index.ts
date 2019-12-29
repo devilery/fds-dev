@@ -63,7 +63,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(httpContext.middleware)
 
 app.use(async (req, res, next) => {
-  console.log(req.url, req.headers['x-github-event'], req.body);
+  // console.log(req.url, req.headers['x-github-event'], req.body);
 
   // installation: {
   //   id: 5874996,
@@ -75,10 +75,10 @@ app.use(async (req, res, next) => {
       // console.log('====', req.headers['x-github-event'], req.body)
       const { body } = req;
       if (body.sender.id) {
-        console.log('installation', body.installation.id)
+        // console.log('installation', body.installation.id)
         // const ghUser = await GithubUser.findOneOrFail({where: {githubId: req.body.sender.id}, relations: ['users']})
         const ghOwner = await GithubOwner.findOneOrFail({where: {installationId: req.body.installation.id}, relations: ['team']})
-        console.log(ghOwner.team)
+        // console.log(ghOwner.team)
 
         httpContext.set('team', ghOwner.team)
       }
@@ -93,6 +93,7 @@ app.use(async (req, res, next) => {
       httpContext.set('team', team)
     }
   } catch(e) {
+    console.error(e)
     err = e;
   }
 
