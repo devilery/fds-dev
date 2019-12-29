@@ -124,11 +124,13 @@ router.post('/', async(req, res) => {
 
   if (payload.type === 'view_submission') {
     console.log(payload)
-    decodeAction(payload, team)
   }
+
+  if (payload && payload.actions)
+    decodeAction(payload, team)
 });
 
-function decodeAction(payload: {}, team: Team) {
+function decodeAction(payload: {actions: Array<{}>}, team: Team) {
   const action = payload.actions[0]
   const actionName = (action.value || action.action_id || '');
   const eventName = actionName.split('___', 2)[0];
