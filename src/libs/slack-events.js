@@ -117,7 +117,14 @@ async function handleHomePage(event, payload, respond) {
 					"type": "section",
 					"text": {
 						"type": "mrkdwn",
-						"text": "*PRs waiting for your review:*"
+						"text": "*No PRs are waiting for your review*"
+					}
+				},
+				{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": `_Updated at ${(new Date).toLocaleTimeString()} ${(new Date).toLocaleDateString()}_`
 					}
 				},
 	  		]
