@@ -95,7 +95,7 @@ async function handleHomePage(event, payload, respond) {
   	}
 
   	// TODO: next stuff
-  	return;
+  	// return;
 
   	allPRs.forEach(async pr => {
 	   	const messageData = getPrMessage(pr)
@@ -104,15 +104,22 @@ async function handleHomePage(event, payload, respond) {
 	  	const res = await  client.views.publish({
 		"user_id": event.user,
 	  	"view": {
-	       "type":"home", text:messageData.text, "blocks": [
-	  	// 		{
-				// 	"type": "section",
-				// 	"text": {
-				// 		"type": "mrkdwn",
-				// 		"text": "Hey there 👋 I'm TaskBot. I'm here to help you create and manage tasks in Slack.\nThere are two ways to quickly create tasks:"
-				// 	}
-				// },
-				...messageData.blocks
+	       "type":"home", /*text:messageData.text, */"blocks": [
+	  			{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": "*PRs you own:*"
+					}
+				},
+				...messageData.blocks,
+				{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": "*PRs waiting for your review:*"
+					}
+				},
 	  		]
 	   	}})
   	})
