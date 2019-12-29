@@ -72,7 +72,7 @@ app.use(async (req, res, next) => {
   let err;
   try {
     if (req.headers['x-github-event']) {
-      // console.log('====', req.headers['x-github-event'], req.body)
+      console.log('[github]', req.headers['x-github-event'])
       const { body } = req;
       if (body.sender.id) {
         // console.log('installation', body.installation.id)
