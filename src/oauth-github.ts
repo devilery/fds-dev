@@ -1,3 +1,4 @@
+import { strict as assert } from 'assert';
 import request from 'request';
 import events from 'events';
 import url from 'url'
@@ -43,44 +44,38 @@ export default function (opts: any) {
     const userRes = await axios.get('https://api.github.com/user', { headers: { 'Authorization': `token ${token.access_token}` } })
     const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
-    const appUser = await User.findOneOrFail({ where: { id: query.state }, relations: ['githubUser'] })
-    const githubUser = await GithubUser.findOne({ where: { githubId: user.id } })
+    const appUser = await User.findOneOrFail({ where: { id: query.state } })
+    const githubUser = await GithubUser.findOrCreate<GithubUser>(
+      {githubId: user.id},
+      { githubUsername: user.login, githubAccessToken: token.access_token, rawGithubUserData: user }
+    )
 
-    if (githubUser) {
-      githubUser.githubAccessToken = token.access_token
-      githubUser.rawGithubUserData = user
-      appUser.githubUser = githubUser
-      await appUser.save()
-      await githubUser.save()
-    } else {
-      const createdGithubUser = GithubUser.create({
-        githubUsername: user.login,
-        githubId: user.id,
-        githubAccessToken: token.access_token,
-        rawGithubUserData: user as any,
-      })
+    // update existing
+    githubUser.githubAccessToken = token.access_token;
+    githubUser.rawGithubUserData = user;
+    await githubUser.save();
 
-      await createdGithubUser.save()
-
-      appUser.githubUser = createdGithubUser
-      await appUser.save()
-    }
+    appUser.githubUser = githubUser;
+    await appUser.save();
 
     await appUser.reload()
 
     // TODO: add repo info (multiple PRs can have same IDs)
     if (appUser.metadata && appUser.metadata.reviewPR) {
       // send request review
-      const pr = await PullRequest.findOneOrFail({where: {prNumber: appUser.metadata.reviewPR}, relations: ['repository']})
+      const pr = await PullRequest.findOneOrFail({where: {prNumber: appUser.metadata.reviewPR}, relations: ['repository', 'repository.owner']})
       const repo = pr.repository;
       // const repo = await Repository.findOneOrFail(appUser.metadata.reviewRepo);
-      const author = await GithubUser.findOneOrFail(appUser.metadata.prAuthor)
+      const author = await User.findOneOrFail(appUser.metadata.prAuthor, {relations: ['githubUser']})
+
+      assert(author.githubUser, 'Missing github user relation')
+
       requestPullRequestReview(
         repo.owner.login,
         repo.name,
         appUser.metadata.reviewPR,
         {reviewers:[githubUser.githubUsername]},
-        author.githubAccessToken
+        author.githubUser.githubAccessToken
       )
       resp.set('Content-type', 'text/html')
       resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}">here</a>`)
