@@ -1,5 +1,6 @@
-
-import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest } from '../entity';
+import { strict as assert } from 'assert'
+import httpContext from 'express-http-context'
+import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest, Repository } from '../entity';
 import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
@@ -21,6 +22,28 @@ const opened = async function (data: IPullRequestEvent) {
 };
 
 opened.eventType = 'pr.opened';
+
+async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
+	const pr = await createOrUpdatePr(reviewRequest)
+	const team = httpContext.get('team')
+	console.log('pr closed/merged')
+	console.log(reviewRequest.merged)
+
+	const text = reviewRequest.merged ? '✅ PR has been merged' : '🗑 PR has been closed';
+	// const repo = Repository.findOneOrFail({where: {githubId: reviewRequest.repository.id}})
+	// const pr = await PullRequest.findOneOrFail({where: {githubId: reviewRequest.id}, relations: ['user']})
+	assert(pr.user, 'PR doesnt have user relation')
+	assert(pr.slackThreadId, 'PR does not have slack thread id')
+
+	const client = team.getSlackClient()
+	await client.chat.postMessage({ text, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true })
+
+	const messageData = getPrMessage(pr)
+
+	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+}
+
+pullRequestClosed.eventType = 'pr.closed'
 
 const commitCheckUpdate = async function (check: ICommitCheck) {
 	let commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
@@ -148,4 +171,4 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 
 pullRequestReviewRequest.eventType = 'pr.review.request'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest]
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed]
