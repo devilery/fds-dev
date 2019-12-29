@@ -1,3 +1,5 @@
+import { strict as assert } from 'assert';
+import httpContext from 'express-http-context';
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
 import { Team, User, PullRequest } from '../entity'
@@ -71,7 +73,9 @@ router.post('/', async(req, res) => {
   const payload = JSON.parse(req.body.payload)
   res.send('ok')
 
-  const team = await Team.findOneOrFail({where: {slackId: payload.team.id}})
+  const team = httpContext.get('team')
+  assert(team, 'No team found in context')
+
   const client = team.getSlackClient()
 
   if (payload.type === 'block_actions') {
