@@ -1,9 +1,9 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
-import User from './User';
+import { CustomEntity, User } from '.';
 import { bigInt } from './util';
 
 @Entity()
-export default class GithubUser extends BaseEntity {
+export default class GithubUser extends CustomEntity {
 
   @PrimaryGeneratedColumn()
   id: number;

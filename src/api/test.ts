@@ -84,6 +84,7 @@ router.get('/', async(req, res) => {
     // U079RBVST marek, T072R1FNG 9roads
     // await requestSlackUsersToReview(['U079RBVST'], 51, await Team.findOneOrFail({where: {slackId: 'T072R1FNG'}}))
     // await mergePR('devilery', 'fds-dev', 57, 'token')
+    // await GithubUser.findOrCreate({githubId: 1}, {githubUsername: 'fake', githubAccessToken: 'faketoken', rawGithubUserData: {}})
 	]
 
   console.log('TEST', output)
