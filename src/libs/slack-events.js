@@ -1,5 +1,5 @@
 const { createEventAdapter } = require('@slack/events-api');
-import { Team, PullRequest } from '../entity'
+import { User, Team, PullRequest } from '../entity'
 import { getPrMessage } from './slack-messages'
 
 if (!process.env.SLACK_SIGNING_SECRET) {
@@ -22,13 +22,15 @@ https://slack.com/oauth/authorize?client_id=${process.env.SLACK_CLIENT_ID}\
 // https://api.slack.com/events/app_home_opened
 // https://api.slack.com/methods/views.publish
 async function handleHomePage(event, payload, respond) {
-	// console.log('event', event, payload);
+	console.log('event', event, payload);
 
 	if(event.tab !== 'home') return;
 
 	const team = await Team.findOneOrFail({where: {slackId: payload.team_id}})
 	// console.log(team);
   	const client = team.getSlackClient()
+
+  	const user = await User.findOneOrFail({where: {slackId: event.user}})
 
   	// client.chat.postMessage({"channel": event.channel, "type":"home", "blocks": [
   	// 	{
@@ -41,7 +43,7 @@ async function handleHomePage(event, payload, respond) {
   	// ]})
 
 
-  	const allPRs = await PullRequest.find()
+  	const allPRs = await PullRequest.find({where: {user: user}})
   	console.log('prs', allPRs, 'user', event.user);
   	if(!allPRs.length) {
   		await client.views.publish({
@@ -94,28 +96,39 @@ async function handleHomePage(event, payload, respond) {
 	   	})
   	}
 
-  	// TODO: next stuff
-  	return;
+  	const data = allPRs.map(pr => getPrMessage(pr))
 
-  	allPRs.forEach(async pr => {
-	   	const messageData = getPrMessage(pr)
-
-		// client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
-	  	const res = await  client.views.publish({
+  	// console.log(data)
+	// client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
+  	const res = await client.views.publish({
 		"user_id": event.user,
 	  	"view": {
-	       "type":"home", text:messageData.text, "blocks": [
-	  	// 		{
-				// 	"type": "section",
-				// 	"text": {
-				// 		"type": "mrkdwn",
-				// 		"text": "Hey there 👋 I'm TaskBot. I'm here to help you create and manage tasks in Slack.\nThere are two ways to quickly create tasks:"
-				// 	}
-				// },
-				...messageData.blocks
+	       "type":"home", /*text:messageData.text, */"blocks": [
+	  			{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": "*PRs you own:*"
+					}
+				},
+				...data.reduce((arr, d) => arr.push(...d.blocks) && arr, []),
+				{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": "*No PRs are waiting for your review*"
+					}
+				},
+				{
+					"type": "section",
+					"text": {
+						"type": "mrkdwn",
+						"text": `_Updated at ${(new Date).toLocaleTimeString()} ${(new Date).toLocaleDateString()}_`
+					}
+				},
 	  		]
-	   	}})
-  	})
+	   	}
+   	})
 
 
   	// respond(null, {blocks: [
