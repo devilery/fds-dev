@@ -73,7 +73,7 @@ router.post('/', async(req, res) => {
   const payload = JSON.parse(req.body.payload)
   res.send('ok')
 
-  const team = httpContext.get('team')
+  const team = httpContext.get('team') as Team
   assert(team, 'No team found in context')
 
   const client = team.getSlackClient()
@@ -102,7 +102,6 @@ router.post('/', async(req, res) => {
 
       const selectedUser = action.selected_user
       const selectingUser = payload.user.id
-      const team = payload.team.id
 
       client.views.update({'view': emptyView, 'view_id': payload.view.id})
 
@@ -118,8 +117,7 @@ router.post('/', async(req, res) => {
       requestSlackUsersToReview(
         [selectedUser],
         pr.prNumber,
-        user,
-        await Team.findOneOrFail({where: {slackId: team}}),
+        user
       )
     }
   }
