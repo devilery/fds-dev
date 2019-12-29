@@ -1,6 +1,6 @@
 require('dotenv').config();
 import dbConnect from './libs/db'
-import { Team, GithubOwner, Repository } from './entity'
+import { Team, GithubOwner, Repository, GithubUser } from './entity'
 
 import * as Sentry from '@sentry/node';
 
@@ -25,6 +25,7 @@ import fs from 'fs';
 import express from 'express';
 import morgan from 'morgan';
 import axios from 'axios';
+import httpContext from 'express-http-context';
 
 import githubOAuth from './oauth-github';
 
@@ -52,10 +53,52 @@ let ghOAuth = githubOAuth({
 
 app.use(morgan('dev'));
 
+// TODO: provide context to this handler as well
 app.use('/api/slack-events', eventMiddleware())
 
+// these middlwares are breaking the slack event middleware above for some reason
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
+
+app.use(httpContext.middleware)
+
+app.use(async (req, res, next) => {
+  // console.log(req.url, req.headers['x-github-event'], req.body);
+
+  // installation: {
+  //   id: 5874996,
+  //   node_id: 'MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNTg3NDk5Ng=='
+  // }
+  let err;
+  try {
+    if (req.headers['x-github-event']) {
+      // console.log('====', req.headers['x-github-event'], req.body)
+      const { body } = req;
+      if (body.sender.id) {
+        // console.log('installation', body.installation.id)
+        // const ghUser = await GithubUser.findOneOrFail({where: {githubId: req.body.sender.id}, relations: ['users']})
+        const ghOwner = await GithubOwner.findOneOrFail({where: {installationId: req.body.installation.id}, relations: ['team']})
+        // console.log(ghOwner.team)
+
+        httpContext.set('team', ghOwner.team)
+      }
+    }
+    else if (req.headers['x-slack-signature']) {
+      // TODO: slack auth
+      const { body: { payload } } = req;
+      // console.log(req.headers, payload)
+      const data = JSON.parse(payload)
+      const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      // console.log(team)
+      httpContext.set('team', team)
+    }
+  } catch(e) {
+    console.error(e)
+    err = e;
+  }
+
+  next(err)
+})
 
 app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)

@@ -2,6 +2,7 @@
 import { strict as assert } from 'assert'
 import { In } from 'typeorm';
 import { WebClient } from '@slack/web-api'
+import httpContext from 'express-http-context'
 
 import { emmit } from './event';
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
@@ -137,9 +138,11 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
   emmit('pr.reviewed', eventData)
 }
 
-export async function requestSlackUsersToReview(handles: string[], prNumber: number, author: User, team: Team) {
+export async function requestSlackUsersToReview(handles: string[], prNumber: number, author: User) {
   assert(handles.length > 0, 'No slack users to request review')
   assert(author, 'No github author passed during review request')
+
+  const team = httpContext.get('team') as Team
   assert(team, 'No team passed during review request')
 
   handles.forEach(async handle => {

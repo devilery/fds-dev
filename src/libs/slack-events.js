@@ -42,7 +42,7 @@ async function handleHomePage(event, payload, respond) {
 
 
   	const allPRs = await PullRequest.find()
-  	console.log('prs', allPRs);
+  	console.log('prs', allPRs, 'user', event.user);
   	if(!allPRs.length) {
   		await client.views.publish({
 			"user_id": event.user,
@@ -93,6 +93,9 @@ async function handleHomePage(event, payload, respond) {
 	   		}
 	   	})
   	}
+
+  	// TODO: next stuff
+  	return;
 
   	allPRs.forEach(async pr => {
 	   	const messageData = getPrMessage(pr)
