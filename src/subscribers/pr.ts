@@ -74,19 +74,21 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 	let dbCheck = await CommitCheck.findOne({ where: { name: check.name, commit: { id: commit.id } } })
 
-	// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
-	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
-		await sleep(CI_SLEEP) // wait for other events to start if exists
-	}
+	if (dbCheck) {
+		// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
+		if (dbCheck.status === 'pending' && check.status === 'success') {
+			await sleep(CI_SLEEP) // wait for other events to start if exists
+		}
 
-	if (dbCheck && dbCheck.status === check.status) {
-		return;
-	}
+		if (dbCheck.status === check.status) {
+			return;
+		}
 
-	if (!dbCheck) {
+	} else {
 		dbCheck = new CommitCheck()
 	}
 
+	// upsert info
 	dbCheck.githubId = check.id;
 	dbCheck.name = check.name;
 	dbCheck.status = check.status;
@@ -97,6 +99,8 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 	await dbCheck.save()
 	await dbCheck.reload()
+
+	// TODO: maybe we can remove this redundant query
 	commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
 	const checks = commit.checks
 
@@ -109,28 +113,6 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	await updatePrMessage(pr, checks)
 
 	await sendPipelineNotifiation(pr, checks, dbCheck)
-
-	// const allChecksPassed = checks.every(check => check.status === 'success')
-
-	// let checkMessage: IMessageData | null  = null
-	// // if (allChecksPassed)
-	// // 	checkMessage = getChecksSuccessMessage(checks)
-	// // if (check.status === 'failure' || check.status === 'error')
-	// // 	checkMessage = getCheckErrorMessage(dbCheck)
-
-	// checkMessage = allChecksPassed
-	// 	? getChecksSuccessMessage(checks)
-	// 	: ['failure', 'error'].includes(check.status)
-	// 		? getCheckErrorMessage(dbCheck)
-	// 		: null;
-
-	// if (!checkMessage) {
-	// 	return;
-	// }
-
-	// // client.chat.postMessage({...checkMessage, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
-	// await attachPrMessageUpdate(pr)
-
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
