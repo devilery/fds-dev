@@ -33,7 +33,12 @@ import githubOAuth from './auth/github/oauth';
 const { subscribe } = require('./libs/event.js');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
-import './libs/http-debug';
+
+if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
+  require('log-that-http')
+} else {
+  require('./libs/http-debug')
+}
 
 const app = express();
 

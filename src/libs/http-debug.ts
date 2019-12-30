@@ -36,7 +36,7 @@ function httpDebug(proto) {
             // request.__end = request.end;
             // request.end   = function httpDebugEnd(data) {
             //     if (data) {
-            //         console.dir(data);
+            //         console.dir(data.toString('utf8'));
             //     }
             //     return request.__end.apply(request, arguments);
             // };
