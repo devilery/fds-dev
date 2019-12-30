@@ -32,6 +32,7 @@ export async function processGithubPullRequest(pullRequestEvent: Webhooks.Webhoo
       emmit('pr.opened', pullRequestData)
       break;
     case 'closed':
+      emmit('pr.closed', pullRequestData)
       break;
     case 'reopened':
       emmit('pr.opened', pullRequestData)
@@ -184,7 +185,7 @@ async function getOwnerByRepositoryId(repoId: number) {
 }
 
 async function findUserIdByGithubId(ghUserId: number, owner: GithubOwner) {
-  const team = await Team.findOneOrFail({where: { githubOwner: owner }})
+  const team = httpContext.get('team')
   const githubUser = await GithubUser.findOne({where: { githubId: ghUserId }})
   const user = await User.findOne({ where: { githubUser: githubUser, team: team } })
   if (!user) {
@@ -276,6 +277,7 @@ function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRe
     website_url: pull_request.html_url,
     title: pull_request.title,
     head_sha: pull_request.head.sha,
+    merged: pull_request.merged,
     repository: {
       id: pull_request.head.repo.id,
       name: pull_request.head.repo.name,

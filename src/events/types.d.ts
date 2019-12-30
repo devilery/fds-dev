@@ -21,6 +21,7 @@ export interface IPullRequestEvent {
   website_url: string;
   title: string;
   head_sha: string;
+  merged: boolean;
   repository: {
     id: number;
     name: string;

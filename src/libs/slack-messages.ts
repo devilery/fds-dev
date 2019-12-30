@@ -14,6 +14,7 @@ interface IMessgeBlock {
 		type: string
 		text: string | { type: 'mrkdwn' | 'plain_text', text: string, emoji: boolean}
 		value: string
+		confirm: {},
 	}
 }
 
@@ -74,6 +75,24 @@ function getMergeBlock(pr: PullRequest): IMessgeBlock {
 				"text": "Merge PR 💣",
 				"emoji": true
 			},
+			"confirm": {
+				"title": {
+					"type": "plain_text",
+					"text": "confirm merge",
+				},
+				"text": {
+					"type": "plain_text",
+					"text": `do you really want to merge PR #${pr.prNumber} ${pr.title}?`
+				},
+				"confirm": {
+					"type": "plain_text",
+					"text": "Merge please",
+				},
+				"deny": {
+					"type": "plain_text",
+					"text": "Abort merge",
+				}
+			},
 			// "value": `merge___${encodeURIComponent(JSON.stringify({'pr': pr.id}))}`
 			"value": encodeAction('merge', {pr: pr.id})
 		}
@@ -117,11 +136,29 @@ function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 	].flat()
 }
 
+function getMergedBlock(mergedAt: string) {
+		return {
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": `_Merged at ${mergedAt}_`
+		},
+	}
+}
+
 export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
-	let blocks = [[getBaseBlock(pr)], getReviewAssigneBlock(pr), getMergeBlock(pr), getCheckProgressBlock(checks)]
+	const open = pr.rawData.raw_data.state === 'open';
+	const merged = !!pr.rawData.raw_data.merged_at;
+	let blocks = [
+		getBaseBlock(pr),
+		open && getReviewAssigneBlock(pr),
+		open && getMergeBlock(pr),
+		open && getCheckProgressBlock(checks),
+		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
+	]
 	return {
 		"text": "Pull Request opened",
-		"blocks": blocks.flat()
+		"blocks": blocks.filter(Boolean).flat()
 	}
 };
 
