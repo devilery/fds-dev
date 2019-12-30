@@ -37,7 +37,7 @@ import { strict as assert } from 'assert';
 const { subscribe, emmit } = require('./libs/event.js');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
-
+import './libs/http-debug';
 
 const app = express();
 
