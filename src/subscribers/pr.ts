@@ -131,7 +131,8 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 	const user = pr.user
 	const team = user.team
 	const client = team.getSlackClient()
-
+	const ghReviewUser = await GithubUser.findOne({ where: { githubId: reviewEvent.user.github_id } })
+	const reviewUser = await User.findOne({ where: { githubUser: ghReviewUser, team: team } })
 
 	const review = await PullRequestReview.create({
 		remoteId: reviewEvent.remoteId,
@@ -139,12 +140,20 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 		websiteUrl: reviewEvent.website_url,
 		rawData: reviewEvent.raw_data,
 		reviewUserName: reviewEvent.user.github_login,
+		reviewUser: reviewUser,
 		pullRequest: pr
 	})
 
 	await review.save()
 
-	const notification = getReviewMessage(review);
+	let username = review.reviewUserName;
+
+	if (reviewUser) {
+		const slackUsername = await reviewUser.getSlackUsername();
+		username = `@${slackUsername}`
+	}
+
+	const notification = getReviewMessage(review, username);
 
 	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
 }

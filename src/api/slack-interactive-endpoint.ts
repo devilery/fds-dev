@@ -120,14 +120,18 @@ router.post('/', async(req, res) => {
         user
       )
     }
+
+    return;
   }
 
   if (payload.type === 'view_submission') {
     console.log(payload)
+    return;
   }
 
-  if (payload && payload.actions)
+  if (payload && payload.actions) {
     decodeAction(payload, team)
+  }
 });
 
 function decodeAction(payload: {actions: Array<{}>}, team: Team) {
@@ -136,6 +140,7 @@ function decodeAction(payload: {actions: Array<{}>}, team: Team) {
   const eventName = actionName.split('___', 2)[0];
   console.log(eventName)
   if (eventName) {
+    console.log(`---------------------\n ${actionName} \n----------------------------`)
     const data = JSON.parse(decodeURIComponent(actionName.split('___', 2)[1]))
     // console.log('data', data);
     data['team'] = team;

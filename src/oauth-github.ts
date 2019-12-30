@@ -75,7 +75,7 @@ export default function (opts: any) {
         repo.name,
         appUser.metadata.reviewPR,
         {reviewers:[githubUser.githubUsername]},
-        author.githubUser.githubAccessToken
+        author.githubUser!.githubAccessToken
       )
       resp.set('Content-type', 'text/html')
       resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}">here</a>`)

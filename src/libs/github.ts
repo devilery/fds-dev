@@ -117,6 +117,11 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
     return;
   }
 
+  if (!pullRequest.user) {
+    console.log('no pr user found')
+    return;
+  }
+
   if (reviewUserId === pullRequest.user.id) {
     console.log('review from the user that created an PR. Ignore... ', reviewUserId)
     return;
@@ -152,7 +157,6 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       // send request to github api
       if (user.githubUser) {
         const { githubUser } = user;
-
         const pr = await PullRequest.findOneOrFail({ where: { prNumber: prNumber }, relations: ['repository', 'repository.owner']})
         const repo = pr.repository;
         await requestPullRequestReview(repo.owner.login, repo.name, prNumber, { reviewers: [githubUser.githubUsername] }, author.githubUser!.githubAccessToken)
@@ -196,7 +200,7 @@ async function findUserIdByGithubId(ghUserId: number, owner: GithubOwner) {
 }
 
 async function findPRByGithubId(id: number) {
-  return await PullRequest.findOne({ where: { githubId: id } })
+  return await PullRequest.findOne({ where: { githubId: id }, relations: ['user'] })
 }
 
 async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequestsAssociatedWithCommitResponse) {

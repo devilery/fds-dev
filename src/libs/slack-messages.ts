@@ -210,15 +210,15 @@ export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 	}
 }
 
-export function getReviewMessage(review: PullRequestReview): IMessageData {
-	let notificationText = `🎉 *${review.reviewUserName}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`;
+export function getReviewMessage(review: PullRequestReview, reviewUsername: string): IMessageData {
+	let notificationText = `🎉 *${reviewUsername}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`;
 
 	if (review.state === 'changes_requested') {
-		notificationText = `🚧 *${review.reviewUserName}* requested changes - <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+		notificationText = `🚧 *${reviewUsername}* requested changes - <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
 	}
 
 	if (review.state === 'commented') {
-		notificationText = `🧐 *${review.reviewUserName}* commented on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+		notificationText = `🧐 *${reviewUsername}* commented on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
 	}
 
 	return {
@@ -228,6 +228,6 @@ export function getReviewMessage(review: PullRequestReview): IMessageData {
 
 export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string): IMessageData {
 	return {
-		'text': `@${requesterUsername} request review on PR #<${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
+		'text': `@${requesterUsername} request review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
 	}
 }

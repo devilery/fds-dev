@@ -61,6 +61,7 @@ export async function createInstallationToken(installation_id: string) {
 
 export async function requestPullRequestReview(owner: string, repo: string, pr_number: number, data: Octokit.PullsCreateReviewRequestParams, token: string) {
   assert(data.reviewers, 'No reviewers specified for review')
+  console.log(data);
   const res = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
     { headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
   )

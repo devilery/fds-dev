@@ -6,7 +6,7 @@ import { emmit } from '../libs/event.js'
 import { Team, User } from '../entity'
 import { UsersInfoResult, ImOpenResult } from '../libs/slack-api'
 
-export async function createUser(userSlackId: string, team: Team, metadata: User['metadata'] | null = null) {
+export async function createUser(userSlackId: string, team: Team, metadata: any | null = null) {
 	const client = team.getSlackClient();
 	const userInfo = await client.users.info({user: userSlackId}) as UsersInfoResult
 	const imInfo = await client.im.open({user: userSlackId}) as ImOpenResult

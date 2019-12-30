@@ -1,4 +1,6 @@
 require('dotenv').config();
+require('pretty-error').start();
+
 import dbConnect from './libs/db'
 import { Team, GithubOwner, Repository, GithubUser } from './entity'
 
