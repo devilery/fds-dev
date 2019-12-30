@@ -72,6 +72,7 @@ app.use(async (req, res, next) => {
       // TODO: slack auth
       const { body: { payload } } = req;
       // console.log(req.headers, payload)
+      console.log('[slack]', '???')
       const data = JSON.parse(payload)
       const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
       // console.log(team)

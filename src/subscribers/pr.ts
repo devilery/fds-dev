@@ -1,14 +1,18 @@
 import { strict as assert } from 'assert'
 import httpContext from 'express-http-context'
+const { Base64 } = require('js-base64');
+
 import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest, Repository } from '../entity';
 import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
 import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
+import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
 const { jobDetails } = require('../libs/circleci');
 const { sleep } = require('../libs/util');
-var Base64 = require('js-base64').Base64;
+
+const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
 
 const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
@@ -70,11 +74,10 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 	let dbCheck = await CommitCheck.findOne({ where: { name: check.name, commit: { id: commit.id } } })
 
-	// if changed to done then wait 7 seconds. This way other pending events can activate and entire check flow will not return done
+	// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
 	if (dbCheck && dbCheck.status === 'pending' && check.status === 'success') {
-		await sleep(7000) // wait 7 seconds for other events to start if exists
+		await sleep(CI_SLEEP) // wait for other events to start if exists
 	}
-
 
 	if (dbCheck && dbCheck.status === check.status) {
 		return;
@@ -103,24 +106,30 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return
 	}
 
-	const client = pr.user.team.getSlackClient()
-	const messageData = getPrMessage(pr, checks)
-	if (!pr.slackThreadId) {
-		console.error('je to v pici')
-		return
-	}
-	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+	await updatePrMessage(pr, checks)
 
-	let allChecksPassed = checks.every(check => check.status === 'success')
+	await sendPipelineNotifiation(pr, checks, dbCheck)
 
-	var checkMessage: IMessageData | null  = null
-	if (allChecksPassed)
-		checkMessage = getChecksSuccessMessage(checks)
-	if (check.status === 'failure' || check.status === 'error')
-		checkMessage = getCheckErrorMessage(dbCheck)
+	// const allChecksPassed = checks.every(check => check.status === 'success')
 
-	if (checkMessage)
-		client.chat.postMessage({text: checkMessage.text, blocks: checkMessage.blocks, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+	// let checkMessage: IMessageData | null  = null
+	// // if (allChecksPassed)
+	// // 	checkMessage = getChecksSuccessMessage(checks)
+	// // if (check.status === 'failure' || check.status === 'error')
+	// // 	checkMessage = getCheckErrorMessage(dbCheck)
+
+	// checkMessage = allChecksPassed
+	// 	? getChecksSuccessMessage(checks)
+	// 	: ['failure', 'error'].includes(check.status)
+	// 		? getCheckErrorMessage(dbCheck)
+	// 		: null;
+
+	// if (!checkMessage) {
+	// 	return;
+	// }
+
+	// // client.chat.postMessage({...checkMessage, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+	// await attachPrMessageUpdate(pr)
 
 }
 commitCheckUpdate.eventType = 'pr.check.update'
