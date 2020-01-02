@@ -21,6 +21,10 @@ const opened = async function (data: IPullRequestEvent) {
 
 	const messageData = getPrMessage(pr)
 
+	// TODO: find correct check and pass it to loadPipeline
+	// const headCommit = await Commit.findOneOrFail({where: {sha: pr.headSha}});
+	// await loadPipeline(pr, headCommit,)
+
 	const res = await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
 	pr.slackThreadId = res.message.ts
 	await pr.save()
@@ -50,6 +54,106 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 
 pullRequestClosed.eventType = 'pr.closed'
 
+async function loadPipeline(pr: PullRequest, commit: Commit, check: ICommitCheck): Promise<Pipeline> {
+	// const checkName = check.name.replace(CIRCLE_JOB_PREFIX, '');
+	// console.log('check name', checkName)
+
+	const team = httpContext.get('team') as Team
+
+	// console.error('Team is missing Circle token')
+	if (!team.circlePersonalToken) throw new Error('Team is missing Circle token');
+
+	// TODO: race conditions?; add transaction???
+
+	// TODO: approval jobs return 404
+	const circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circlePersonalToken })
+	assert(circleCiData.raw_job_data.platform === '2.0', 'Unsupported CircleCI version')
+	// workflows(workflow_id), build_time_millis, lifecycle, status, previous(build_num, status, build_time_millis), fail_reason, steps(*)
+
+	const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
+
+
+
+	// if we don't have the pipeline, download it and use its state (prolly more fresh than webhook data)
+		// populate the database with checks according to the pipeline data
+
+	const prPipeline = await Pipeline.findOne({ where: { pullRequest: pr } });
+
+	// TODO: query this on PR open
+	// TODO: race condition when we receive another check webhook?
+	if (!prPipeline) {
+		console.log('downloading pipeline')
+		const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw})
+		await newPipeline.save()
+		await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
+			const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
+			const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: check.status})
+			// upsert status
+			if (commitCheck.status !== check.status) {
+				commitCheck.status = check.status;
+				await commitCheck.save()
+			}
+		}))
+
+		newPipeline.reload();
+		return newPipeline;
+
+	// if we already have pipeline data, use the webhook check data to update the single check
+	} else {
+		console.log('updating check')
+		const singleCheck = await CommitCheck.updateOrCreate({commit, type: 'ci-circleci', name: check.name}, {status: check.status});
+
+		return prPipeline;
+	}
+
+	// then run the pipeline final status check
+
+
+	// const pl = await Pipeline.findOrCreate<Pipeline>({pullRequest: pr}, {rawData: pipelineRaw})
+	// // console.log(pl, pl.rawData.items)
+
+	// // build f847fe95-ba3b-4638-908f-9aa8521295b8 success build
+	// // approve-long-tests b5a7a5fc-7d0a-4007-9f46-caa1e02a1893 on_hold approval
+	// // chained-approval dd9d6ccd-f868-43e1-bde2-73b0ba3ae276 blocked approval
+	// // long-running-tests da6fb088-6477-4efc-a6cb-feb9c237edd5 blocked build
+	// await Promise.all(pipelineRaw.items.map(async step => {
+	// 	// console.log(step.name, step.id, step.status, step.type)
+
+	// 	const fullStepName = CIRCLE_JOB_PREFIX + step.name;
+
+	// 	// TODO: we prolly don't need this anymore
+	// 	// if (step.name === checkName) {
+	// 	// 	if (step.status !== check.status) {
+	// 	// 		console.log('status update', step.status, '->', check.status)
+	// 	// 	}
+	// 	// }
+
+	// 	// TODO: normalize step.status
+	// 	const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullStepName}, {status: step.status})
+	// 	console.log('commit check in db', commitCheck)
+	// 	// upsert
+	// 	if (commitCheck.status !== step.status) {
+	// 		commitCheck.status = step.status;
+	// 		await commitCheck.save()
+	// 	}
+	// }))
+
+	// TODO: raw data version; DEPRECATE
+	// const pipelineDone = pl.rawData.items.every(item => item.status === 'success')
+	// pipelineDone && console.log('pipe done!!')
+
+
+
+	// update data for next webhook
+	// TODO: different field order OMG
+	// console.log(JSON.stringify(pipelineRaw), JSON.stringify(pl.rawData))
+	// if (JSON.stringify(pipelineRaw) !== JSON.stringify(pl.rawData)) {
+	// 	console.log('updating pipeline')
+	// 	pl.rawData = pipelineRaw
+	// 	await pl.save()
+	// }
+}
+
 const commitCheckUpdate = async function (check: ICommitCheck) {
 	// {
 	//   status: 'success',
@@ -73,105 +177,15 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	// TODO: handle commit pipeline re-run (PR's pipelines status gets reset as new commits arrive)
 	// TODO: maybe move circle logic to status webook handler??
 	if (check.name && check.name.includes(CIRCLE_JOB_PREFIX)) {
-		const checkName = check.name.replace(CIRCLE_JOB_PREFIX, '');
-		console.log('check name', checkName)
 		check.type = 'ci-circleci';
 
-		// TODO: race conditions?; add transaction???
-		if (team.circlePersonalToken) {
-			// TODO: approval jobs return 404
-			const circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circlePersonalToken })
-			assert(circleCiData.raw_job_data.platform === '2.0', 'Unsupported CircleCI version')
-			// workflows(workflow_id), build_time_millis, lifecycle, status, previous(build_num, status, build_time_millis), fail_reason, steps(*)
-			// console.log(circleCiData.raw_job_data, circleCiData.workflow.raw_workflow_job_data.items)
-			// TODO: crate or update PR pipeline
+		const pipeline = await loadPipeline(pr, commit, check)
 
-			const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
-
-
-
-			// if we don't have the pipeline, download it and use its state (prolly more fresh than webhook data)
-				// populate the database with checks according to the pipeline data
-
-			const prPipeline = await Pipeline.findOne({ where: { pullRequest: pr } });
-
-			// TODO: query this on PR open
-			// TODO: race condition when we receive another check webhook?
-			if (!prPipeline) {
-				console.log('downloading pipeline')
-				const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw})
-				await newPipeline.save()
-				await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
-					const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
-					const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: check.status})
-					// upsert status
-					if (commitCheck.status !== check.status) {
-						commitCheck.status = check.status;
-						await commitCheck.save()
-					}
-				}))
-
-			// if we already have pipeline data, use the webhook check data to update the single check
-			} else {
-				console.log('updating check')
-				const singleCheck = await CommitCheck.updateOrCreate({commit, type: 'ci-circleci', name: check.name}, {status: check.status})
-			}
-
-			// then run the pipeline final status check
-
-
-
-			// const pl = await Pipeline.findOrCreate<Pipeline>({pullRequest: pr}, {rawData: pipelineRaw})
-			// // console.log(pl, pl.rawData.items)
-
-			// // build f847fe95-ba3b-4638-908f-9aa8521295b8 success build
-			// // approve-long-tests b5a7a5fc-7d0a-4007-9f46-caa1e02a1893 on_hold approval
-			// // chained-approval dd9d6ccd-f868-43e1-bde2-73b0ba3ae276 blocked approval
-			// // long-running-tests da6fb088-6477-4efc-a6cb-feb9c237edd5 blocked build
-			// await Promise.all(pipelineRaw.items.map(async step => {
-			// 	// console.log(step.name, step.id, step.status, step.type)
-
-			// 	const fullStepName = CIRCLE_JOB_PREFIX + step.name;
-
-			// 	// TODO: we prolly don't need this anymore
-			// 	// if (step.name === checkName) {
-			// 	// 	if (step.status !== check.status) {
-			// 	// 		console.log('status update', step.status, '->', check.status)
-			// 	// 	}
-			// 	// }
-
-			// 	// TODO: normalize step.status
-			// 	const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullStepName}, {status: step.status})
-			// 	console.log('commit check in db', commitCheck)
-			// 	// upsert
-			// 	if (commitCheck.status !== step.status) {
-			// 		commitCheck.status = step.status;
-			// 		await commitCheck.save()
-			// 	}
-			// }))
-
-			// TODO: raw data version; DEPRECATE
-			// const pipelineDone = pl.rawData.items.every(item => item.status === 'success')
-			// pipelineDone && console.log('pipe done!!')
-
-
-
-			// update data for next webhook
-			// TODO: different field order OMG
-			// console.log(JSON.stringify(pipelineRaw), JSON.stringify(pl.rawData))
-			// if (JSON.stringify(pipelineRaw) !== JSON.stringify(pl.rawData)) {
-			// 	console.log('updating pipeline')
-			// 	pl.rawData = pipelineRaw
-			// 	await pl.save()
-			// }
-
-			check.ci_data = {
-				estimate_ms: circleCiData.estimate_ms,
-				jobs_on_hold: circleCiData.workflow.jobs_on_hold
-			}
-		} else {
-			console.error('Team is missing Circld token')
-		}
+		// TODO:
+		// check.ci_data = {
+		// 	estimate_ms: circleCiData.estimate_ms,
+		// 	jobs_on_hold: circleCiData.workflow.jobs_on_hold
+		// }
 
 	// if the check is not circle, let's ignore downloading pipelines and just debounce the final status check
 	} else {
