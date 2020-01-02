@@ -3,9 +3,8 @@ import User from './User'
 import Commit from './Commit';
 import { bigInt } from './util';
 import PullRequestReview from './PullRequestReview';
-import { Repository, PullRequestReviewRequest } from '.'
-import CustomEntity from "./CustomEntity";
-
+import { Repository, PullRequestReviewRequest, Pipeline } from '.'
+import CustomEntity from './CustomEntity'
 
 @Entity()
 export default class PullRequest extends CustomEntity {
@@ -53,4 +52,7 @@ export default class PullRequest extends CustomEntity {
 
   @ManyToOne(type => Repository, repo => repo.pullRequests)
   repository: Repository;
+
+  @OneToMany(type => Pipeline, p => p.pullRequest)
+  pipelines: Pipeline[];
 }

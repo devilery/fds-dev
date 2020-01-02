@@ -9,7 +9,9 @@ function subscribe(eventName, callback) {
 
 async function emmit(eventName, data) {
 	if (process.env.LOG_EVENTS) {
-		console.log('[emit]', eventName, data)
+		process.env.LOG_EVENTS_DATA
+ 			? console.log('[emit]', eventName, data)
+ 			: console.log('[emit]', eventName);
 	}
 
 	let callbacks = events[eventName];

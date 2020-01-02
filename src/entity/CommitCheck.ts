@@ -1,14 +1,14 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from "typeorm";
-import Commit from './Commit';
+import { Commit } from '.';
+import CustomEntity from './CustomEntity'
 import { bigInt } from './util';
-import CustomEntity from "./CustomEntity";
 
 @Entity()
 export default class CommitCheck extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint', { transformer: [bigInt], unique: true })
+  @Column('bigint', { transformer: [bigInt], unique: true, nullable: true })
   githubId: number;
 
   @Column()
@@ -29,6 +29,6 @@ export default class CommitCheck extends CustomEntity {
   @Column()
   type: 'standard' | 'ci-circleci'
 
-  @Column('jsonb')
+  @Column('jsonb', {nullable: true})
   rawData: any;
 }

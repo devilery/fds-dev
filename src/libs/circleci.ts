@@ -48,7 +48,7 @@ async function workflowDetails({ workflowId, token}) {
 	const output = {};
 
 	if (wres.data) {
-		output.raw_workflow_job_data = wres;
+		output.raw_workflow_job_data = wres.data;
 		wres.data.items.forEach(i => console.log(i.name, i.status))
 		const allOnHold = wres.data.items.filter(i => i.status == 'on_hold');
 		output.jobs_on_hold = allOnHold;

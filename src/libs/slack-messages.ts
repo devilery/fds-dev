@@ -225,8 +225,8 @@ export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMess
 };
 
 export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
-	var blocks: IMessgeBlock[] = checks.map(item => {
-		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${item.rawData.context}>` : item.rawData.context;
+	var blocks: IMessgeBlock[] = checks.map(check => {
+		let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : check.name;
 
 		return {
 			type: "context",
@@ -254,7 +254,7 @@ export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
 }
 
 export function getCheckErrorMessage(check: CommitCheck): IMessageData {
-	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.rawData.context}>` : check.rawData.context;
+	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : check.name;
 
 	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
 

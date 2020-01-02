@@ -63,7 +63,6 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
       commit_sha: statusEvent.sha,
       name: statusEvent.context,
       target_url: statusEvent.target_url,
-      context: statusEvent.context,
       description: statusEvent.description,
       pull_request_id: pull.id,
       raw_data: statusEvent
@@ -97,7 +96,6 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
       commit_sha: checkRun.head_sha,
       name: checkRun.name,
       target_url: checkRun.details_url,
-      context: checkRun.name,
       pull_request_id: pull.id,
       raw_data: checkRun
     }

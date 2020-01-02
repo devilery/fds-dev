@@ -38,7 +38,7 @@ export default class CustomEntity extends BaseEntity {
 
     const constructor = this.constructor as any;
     const instance = await constructor.findOneOrFail((this as any).id, { relations: [...relations] })
-    
+
     const allowed = relations.filter(item => item.split('.').length === 1);
 
     const filtered = Object.keys(instance)
