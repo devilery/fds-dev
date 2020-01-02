@@ -165,15 +165,18 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	const assigneeUser = await User.findOneOrFail(reviewRequest.assignee_user_id, { relations: ['team'] })
 	const client = assigneeUser.team.getSlackClient()
 
-	const request = PullRequestReviewRequest.create({
-		pullRequest: pr,
-		assigneeUser: assigneeUser
-	})
+	let existing = true;
+	let request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, assigneeUser }, relations: ['pullRequest'] })
 
-	await request.save()
+	if (!request) {
+		existing = false;
+		request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser })
+	}
+
+	await request.reload()
 
 	const requesterUsername = await pr.user.getSlackUsername()
-	const notification = getReviewRequestNotification(request, requesterUsername)
+	const notification = getReviewRequestNotification(request, requesterUsername, existing)
 
 	await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
 }

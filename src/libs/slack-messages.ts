@@ -226,8 +226,14 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 	}
 }
 
-export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string): IMessageData {
+export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean): IMessageData {
+	let text = 'requested';
+
+	if (existing) {
+		text = 're-requested'
+	}
+
 	return {
-		'text': `@${requesterUsername} request review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
+		'text': `@${requesterUsername} ${text} review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
 	}
 }

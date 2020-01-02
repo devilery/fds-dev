@@ -10,7 +10,7 @@ import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
-import { IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
+import { IPullRequestReviewEvent, IPullRequestReviewRequest, IRequestGithubReviewLogin } from '../events/types';
 import { ReviewStateType } from '../entity/PullRequestReview';
 
 
@@ -107,6 +107,11 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
 }
 
 export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayloadPullRequestReview) {
+
+  if (reviewEvent.action !== 'submitted') {
+    return;
+  }
+
   const review  = reviewEvent.review;
   const pullRequest = await findPRByGithubId(reviewEvent.pull_request.id);
   const owner = await getOwnerByRepositoryId(reviewEvent.repository.id)
@@ -144,6 +149,38 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
   emmit('pr.reviewed', eventData)
 }
 
+// no type for this webhook :/
+export async function processPullRequestReviewRequest(requestReviewEvent: any) {
+  const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewEvent.requested_reviewer.id } })
+  const team = httpContext.get('team') as Team;
+  const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
+  const pr = await findPRByGithubId(requestReviewEvent.pull_request.id)
+
+  if (assignedUser && pr) {
+    let reviewRequest: IPullRequestReviewRequest = {
+      pull_request_id: pr.id,
+      assignee_user_id: assignedUser.id
+    }
+
+    emmit('pr.review.request', reviewRequest)
+  }
+}
+
+export async function processPullRequestReviewComment(commentEvent: Webhooks.WebhookPayloadPullRequestReviewComment) {
+  if (commentEvent.action !== 'created') {
+    return;
+  }
+
+  const team = httpContext.get('team') as Team;
+  const authorGHUser = await GithubUser.findOne({ where: { githubId: commentEvent.comment.user.id } })
+  const author = await User.findOne({ where: { githubUser: authorGHUser, team: team } })
+
+  if (author) {
+    console.log('no user for this comment')
+  }
+
+}
+
 export async function requestSlackUsersToReview(handles: string[], prNumber: number, author: User) {
   assert(handles.length > 0, 'No slack users to request review')
   assert(author, 'No github author passed during review request')
@@ -168,7 +205,11 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
 
         emmit('pr.review.request', reviewRequest)
       } else {
-        // TODO: send github login flow message
+        let data: IRequestGithubReviewLogin = {
+          user_id: user.id
+        }
+
+        emmit('github.user.request.review.create', data)
       }
     } else {
       // create new user without github token and
@@ -267,7 +308,7 @@ const avaibleStates: { [key: string]: string; }  = {
   'timed_out': 'error',
   'created': 'pending',
   'queued': 'pending'
-}
+} 
 
 function normalizeCheckState(status: string) {
   return avaibleStates[status]

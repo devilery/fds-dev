@@ -1,9 +1,10 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer, OneToMany, JoinTable } from "typeorm";
 import User from "./User";
 import PullRequest from "./PullRequest";
+import { CustomEntity } from '.';
 
 @Entity()
-export default class PullRequestReviewRequest extends BaseEntity {
+export default class PullRequestReviewRequest extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

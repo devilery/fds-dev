@@ -45,7 +45,7 @@ export default function (opts: any) {
     const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
     const appUser = await User.findOneOrFail({ where: { id: query.state } })
-    const githubUser = await GithubUser.findOrCreate<GithubUser>(
+    const [ githubUser, _ ] = await GithubUser.findOrCreate<GithubUser>(
       {githubId: user.id},
       { githubUsername: user.login, githubAccessToken: token.access_token, rawGithubUserData: user }
     )

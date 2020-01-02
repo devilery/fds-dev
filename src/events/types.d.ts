@@ -52,3 +52,8 @@ export interface IPullRequestReviewRequest {
   pull_request_id: number;
   assignee_user_id: number;
 }
+
+
+export interface IRequestGithubReviewLogin {
+  user_id: number;
+}
