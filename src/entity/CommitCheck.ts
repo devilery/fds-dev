@@ -31,4 +31,16 @@ export default class CommitCheck extends CustomEntity {
 
   @Column('jsonb', {nullable: true})
   rawData: any;
+
+  static async updateOrCreate(attributes: {}, updateAttributes: Partial<CommitCheck>): Promise<CommitCheck> {
+    let created;
+    const result = await CommitCheck.update(attributes, updateAttributes)
+
+    if (!result || typeof result.affected === 'undefined' || result.affected < 1){
+      created = this.create({...attributes, ...updateAttributes})
+      await created.save();
+    }
+
+    return await CommitCheck.findOneOrFail({where: attributes})
+  }
 }

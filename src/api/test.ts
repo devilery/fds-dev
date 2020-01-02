@@ -7,7 +7,7 @@ const { emmit } = require('../libs/event.js')
 const { retryBuild, jobDetails } = require('../libs/circleci')
 import { getPullRequestsForCommit, requestPullRequestReview, removePullRequestReview, mergePR } from '../libs/github-api'
 const { trackEvent } = require('../libs/honeycomb')
-import { User, Team, GithubUser } from '../entity';
+import { User, Team, GithubUser, CommitCheck } from '../entity';
 import { requestSlackUsersToReview } from '../libs/github'
 
 
@@ -123,6 +123,8 @@ router.get('/', async(req, res) => {
     // await requestSlackUsersToReview(['U079RBVST'], 51, await Team.findOneOrFail({where: {slackId: 'T072R1FNG'}}))
     // await mergePR('devilery', 'fds-dev', 57, 'token')
     // await GithubUser.findOrCreate({githubId: 1}, {githubUsername: 'fake', githubAccessToken: 'faketoken', rawGithubUserData: {}})
+    // await CommitCheck.updateOrCreate({name: 'test', type: 'test'}, {status: 'updated status 11111'}), // create
+    // await CommitCheck.updateOrCreate({name: 'test', type: 'test'}, {status: 'updated status XXXX'}) // and update
 	]
 
   console.log('TEST', output)

@@ -1,6 +1,5 @@
 import { strict as assert } from 'assert'
 import httpContext from 'express-http-context'
-import {Like} from "typeorm";
 const { Base64 } = require('js-base64');
 
 import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest, Repository, Pipeline } from '../entity';
@@ -80,6 +79,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 		// TODO: race conditions?; add transaction???
 		if (team.circlePersonalToken) {
+			// TODO: approval jobs return 404
 			const circleCiData = await jobDetails({ jobUrl: check.target_url, token: team.circlePersonalToken })
 			assert(circleCiData.raw_job_data.platform === '2.0', 'Unsupported CircleCI version')
 			// workflows(workflow_id), build_time_millis, lifecycle, status, previous(build_num, status, build_time_millis), fail_reason, steps(*)
@@ -88,38 +88,67 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 
 			const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
 
-			const pl = await Pipeline.findOrCreate<Pipeline>({pullRequest: pr}, {rawData: pipelineRaw})
-			// console.log(pl, pl.rawData.items)
-
-			// build f847fe95-ba3b-4638-908f-9aa8521295b8 success build
-			// approve-long-tests b5a7a5fc-7d0a-4007-9f46-caa1e02a1893 on_hold approval
-			// chained-approval dd9d6ccd-f868-43e1-bde2-73b0ba3ae276 blocked approval
-			// long-running-tests da6fb088-6477-4efc-a6cb-feb9c237edd5 blocked build
-			await Promise.all(pipelineRaw.items.map(async step => {
-				// console.log(step.name, step.id, step.status, step.type)
-
-				const fullStepName = CIRCLE_JOB_PREFIX + step.name;
-
-				// TODO: we prolly don't need this anymore
-				// if (step.name === checkName) {
-				// 	if (step.status !== check.status) {
-				// 		console.log('status update', step.status, '->', check.status)
-				// 	}
-				// }
 
 
-				// const loadedPosts = await connection.getRepository(Post).find({
-				//     title: Like("%out #%")
-				// });
-				// TODO: normalize check.status
-				const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullStepName}) //Like('% ' + step.name)
-				console.log('commit check in db', commitCheck)
-				// upsert
-				if (commitCheck.status !== step.status) {
-					commitCheck.status = step.status;
-					await commitCheck.save()
-				}
-			}))
+			// if we don't have the pipeline, download it and use its state (prolly more fresh than webhook data)
+				// populate the database with checks according to the pipeline data
+
+			const prPipeline = await Pipeline.findOne({ where: { pullRequest: pr } });
+
+			// TODO: query this on PR open
+			// TODO: race condition when we receive another check webhook?
+			if (!prPipeline) {
+				console.log('downloading pipeline')
+				const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw})
+				await newPipeline.save()
+				await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
+					const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
+					const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: check.status})
+					// upsert status
+					if (commitCheck.status !== check.status) {
+						commitCheck.status = check.status;
+						await commitCheck.save()
+					}
+				}))
+
+			// if we already have pipeline data, use the webhook check data to update the single check
+			} else {
+				console.log('updating check')
+				const singleCheck = await CommitCheck.updateOrCreate({commit, type: 'ci-circleci', name: check.name}, {status: check.status})
+			}
+
+			// then run the pipeline final status check
+
+
+
+			// const pl = await Pipeline.findOrCreate<Pipeline>({pullRequest: pr}, {rawData: pipelineRaw})
+			// // console.log(pl, pl.rawData.items)
+
+			// // build f847fe95-ba3b-4638-908f-9aa8521295b8 success build
+			// // approve-long-tests b5a7a5fc-7d0a-4007-9f46-caa1e02a1893 on_hold approval
+			// // chained-approval dd9d6ccd-f868-43e1-bde2-73b0ba3ae276 blocked approval
+			// // long-running-tests da6fb088-6477-4efc-a6cb-feb9c237edd5 blocked build
+			// await Promise.all(pipelineRaw.items.map(async step => {
+			// 	// console.log(step.name, step.id, step.status, step.type)
+
+			// 	const fullStepName = CIRCLE_JOB_PREFIX + step.name;
+
+			// 	// TODO: we prolly don't need this anymore
+			// 	// if (step.name === checkName) {
+			// 	// 	if (step.status !== check.status) {
+			// 	// 		console.log('status update', step.status, '->', check.status)
+			// 	// 	}
+			// 	// }
+
+			// 	// TODO: normalize step.status
+			// 	const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullStepName}, {status: step.status})
+			// 	console.log('commit check in db', commitCheck)
+			// 	// upsert
+			// 	if (commitCheck.status !== step.status) {
+			// 		commitCheck.status = step.status;
+			// 		await commitCheck.save()
+			// 	}
+			// }))
 
 			// TODO: raw data version; DEPRECATE
 			// const pipelineDone = pl.rawData.items.every(item => item.status === 'success')
@@ -136,8 +165,6 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 			// 	await pl.save()
 			// }
 
-			// TODO: connect pipeline to commitchecks????
-
 			check.ci_data = {
 				estimate_ms: circleCiData.estimate_ms,
 				jobs_on_hold: circleCiData.workflow.jobs_on_hold
@@ -145,53 +172,46 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		} else {
 			console.error('Team is missing Circld token')
 		}
-	}
 
-	// TODO: we are picking up the new set status value
-	let dbCheck = await CommitCheck.findOne({ where: { commitId: commit.id, type: check.type, name: check.name }})
-
-
-	console.log(dbCheck.status, check.status)
-	if (dbCheck) {
-		// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
-		if (dbCheck.status === 'pending' && check.status === 'success') {
-			// await sleep(CI_SLEEP) // wait for other events to start if exists
-		}
-
-		// TODO: fix for the circle CI set value in `commitCheck`
-		if (dbCheck.status === check.status) {
-			console.log('exiting function (status equals)')
-			return;
-		}
-
+	// if the check is not circle, let's ignore downloading pipelines and just debounce the final status check
 	} else {
-		dbCheck = new CommitCheck()
+
+		// TODO: we are picking up the new set status value
+		let dbCheck = await CommitCheck.findOne({ where: { commit, type: check.type, name: check.name }})
+
+		// console.log(dbCheck.status, check.status)
+		if (dbCheck) {
+			// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
+			if (dbCheck.status === 'pending' && check.status === 'success') {
+				await sleep(CI_SLEEP) // wait for other events to start if exists
+			}
+
+			if (dbCheck.status === check.status) {
+				console.log('exiting function (status equals)')
+				return;
+			}
+
+		} else {
+			// TODO: compact layer for normal VS circle code path
+			dbCheck = new CommitCheck()
+		}
+
+		// upsert info
+		dbCheck.githubId = check.id;
+		dbCheck.targetUrl = check.target_url;
+		dbCheck.rawData = check
+
+		dbCheck.name = check.name;
+		dbCheck.status = check.status;
+		dbCheck.type = check.type as any;
+		dbCheck.commit = commit
+
+		await dbCheck.save()
+		await dbCheck.reload()
 	}
 
-	// upsert info
-	dbCheck.githubId = check.id;
-	dbCheck.targetUrl = check.target_url;
-	dbCheck.rawData = check
+	// TODO: backfill the check from the current webhook data
 
-	dbCheck.name = check.name;
-	dbCheck.status = check.status;
-	dbCheck.type = check.type as any;
-	dbCheck.commit = commit
-
-	await dbCheck.save()
-	await dbCheck.reload()
-
-	// TODO: maybe we can remove this redundant query
-	// commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
-	// console.log(commit.checks)
-	// await commit.reload()
-	// console.log(commit.checks)
-	// commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
-	// console.log(commit.checks)
-
-	// commit.reload does not reload relations
-	const finalChecks = await CommitCheck.find({where: {commit}})
-	console.log(finalChecks.length)
 
 	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
 
@@ -199,11 +219,14 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return
 	}
 
-	const { checks } = commit
+	const finalSingleCheck = await CommitCheck.findOneOrFail({ where: {commit, type: check.type, name: check.name}})
 
-	await updatePrMessage(pr, checks)
+	// commit.reload does not reload relations
+	const finalChecks = await CommitCheck.find({where: {commit}})
 
-	await sendPipelineNotifiation(pr, checks, dbCheck)
+	await updatePrMessage(pr, finalChecks)
+
+	await sendPipelineNotifiation(pr, finalChecks, finalSingleCheck)
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
