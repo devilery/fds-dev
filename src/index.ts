@@ -2,7 +2,7 @@ require('dotenv').config();
 require('pretty-error').start();
 
 import dbConnect from './libs/db'
-import { Team, GithubOwner, Repository, GithubUser } from './entity'
+import { Team, GithubOwner, Repository, GithubUser, User } from './entity'
 
 import * as Sentry from '@sentry/node';
 

@@ -63,8 +63,49 @@ async function testDb() {
   const u2 = await User.findOne(user2.id, {relations: ['githubUser']})
   const gu = await GithubUser.findOne({where: {id: ghUser.id}, relations: ['user']})
 
+  const gu2 = await GithubUser.findOneOrFail({ where: { id: ghUser.id }});
+  console.log(gu2.users);
+
+  await gu2.relation('users')
+  console.log(gu2.users)
+  
+
   // await team.reload()
   await team.remove();
+}
+
+async function testRelation() {
+  const team = new Team();
+  team.githubConnected = true;
+  team.slackId = 'dfsdf';
+  team.slackBotAccessToken = 'adsasasd'
+  await team.save();
+
+  const user2 = new User();
+  user2.team = team;
+  user2.slackId = 'adfasdfasd';
+  user2.name = 'name'
+  user2.slackImChannelId = 'name'
+  await user2.save();
+  await user2.reload();
+
+  const ghUser = GithubUser.create({ githubId: 1, githubUsername: 'neco', githubAccessToken: 'asdasdasdasasdasd', rawGithubUserData: {} })
+  await ghUser.save();
+  await ghUser.reload();
+
+  user2.githubUser = ghUser;
+  await user2.save()
+  await user2.reload()
+
+  const gu2 = await GithubUser.findOneOrFail(ghUser.id);
+  console.log(gu2.users);
+
+  await gu2.relation('users')
+  gu2.githubAccessToken = 'sadasdas';
+  console.log(gu2.users)
+  await gu2.save()
+  await gu2.reload()
+  console.log(gu2)
 }
 
 router.get('/', async(req, res) => {
@@ -74,11 +115,12 @@ router.get('/', async(req, res) => {
 
 
 	const output = [
-	// await retryBuild({vcs: 'gh', username:'feature-delivery', project:'fds-dev', build_num: '90'})
-	// await jobDetails({jobUrl: 'https://circleci.com/gh/feature-delivery/fds-dev/102'})
-	// await getPullRequestsForCommit('feature-delivery', 'fds-dev', 'token')
-	// trackEvent('test_event', {test_prop:true})
-    // await testDb()
+    // await retryBuild({vcs: 'gh', username:'feature-delivery', project:'fds-dev', build_num: '90'})
+    // await jobDetails({jobUrl: 'https://circleci.com/gh/feature-delivery/fds-dev/102'})
+    // await getPullRequestsForCommit('feature-delivery', 'fds-dev', 'token')
+    // trackEvent('test_event', {test_prop:true})
+    // await testDb(),
+    await testRelation()
     // await requestPullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // await removePullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // U079RBVST marek, T072R1FNG 9roads
