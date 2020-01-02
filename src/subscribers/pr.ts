@@ -171,6 +171,7 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	if (!request) {
 		existing = false;
 		request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser })
+		await request.save()
 	}
 
 	await request.reload()

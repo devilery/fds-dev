@@ -29,7 +29,6 @@ const requestGithubReviewLogin = async function(event: IRequestGithubReviewLogin
   user.metadata = { reviewPR: event.pr_number, prAuthor: event.author_user_id } as any
   await user.save()
 
-  console.log('wtfff')
   await client.chat.postMessage({ channel: user.slackImChannelId, text: message.text, link_names: true })
 }
 requestGithubReviewLogin.eventType = 'github.user.request.review.create'
