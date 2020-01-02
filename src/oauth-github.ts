@@ -70,15 +70,20 @@ export default function (opts: any) {
 
       assert(author.githubUser, 'Missing github user relation')
 
-      requestPullRequestReview(
+      await requestPullRequestReview(
         repo.owner.login,
         repo.name,
         appUser.metadata.reviewPR,
         {reviewers:[githubUser.githubUsername]},
         author.githubUser!.githubAccessToken
       )
+  
       resp.set('Content-type', 'text/html')
       resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}">here</a>`)
+
+      appUser.metadata = null;
+      await appUser.save()
+
     } else {
       resp.end('Thanks, close the tab and create a new PR :)')
     }

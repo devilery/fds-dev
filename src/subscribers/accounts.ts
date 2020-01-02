@@ -1,5 +1,5 @@
 import { Team, User } from '../entity'
-import { getWelcomeMessage } from '../libs/slack-messages'
+import { getWelcomeMessage, getReviewRegisterMessage } from '../libs/slack-messages'
 import { IRequestGithubReviewLogin } from '../events/types'
 
 
@@ -18,10 +18,21 @@ const userCreated = async function(user: User) {
 }
 userCreated.eventType = 'user.created'
 
-const RequestGithubReviewLogin = async function(event: IRequestGithubReviewLogin) {
-  console.log('event');
+const requestGithubReviewLogin = async function(event: IRequestGithubReviewLogin) {
+  const user = await User.findOneOrFail(event.user_id, { relations: ['team'] });
+  const author = await User.findOneOrFail(event.author_user_id);
+  const authorUsername = await author.getSlackUsername();
+  const client = user.team.getSlackClient();
+
+  let message = getReviewRegisterMessage(user, authorUsername);
+
+  user.metadata = { reviewPR: event.pr_number, prAuthor: event.author_user_id } as any
+  await user.save()
+
+  console.log('wtfff')
+  await client.chat.postMessage({ channel: user.slackImChannelId, text: message.text, link_names: true })
 }
-RequestGithubReviewLogin.eventType = 'github.user.request.review.create'
+requestGithubReviewLogin.eventType = 'github.user.request.review.create'
 
 
-module.exports = [teamGhConnected, userCreated]
+module.exports = [teamGhConnected, userCreated, requestGithubReviewLogin]

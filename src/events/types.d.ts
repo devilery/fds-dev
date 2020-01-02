@@ -56,4 +56,6 @@ export interface IPullRequestReviewRequest {
 
 export interface IRequestGithubReviewLogin {
   user_id: number;
+  author_user_id: number;
+  pr_number: number;
 }

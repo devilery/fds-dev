@@ -178,7 +178,6 @@ export async function processPullRequestReviewComment(commentEvent: Webhooks.Web
   if (author) {
     console.log('no user for this comment')
   }
-
 }
 
 export async function requestSlackUsersToReview(handles: string[], prNumber: number, author: User) {
@@ -206,7 +205,9 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
         emmit('pr.review.request', reviewRequest)
       } else {
         let data: IRequestGithubReviewLogin = {
-          user_id: user.id
+          user_id: user.id,
+          author_user_id: author.id,
+          pr_number: prNumber
         }
 
         emmit('github.user.request.review.create', data)

@@ -32,6 +32,11 @@ export function getWelcomeMessage(user: User): IMessageData {
 	}
 }
 
+export function getReviewRegisterMessage(user: User, authorSlackUsername: string): IMessageData {
+	let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
+	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
+}
+
 function getBaseBlock(pr: PullRequest): IMessgeBlock {
 	return {
 		"type": "section",

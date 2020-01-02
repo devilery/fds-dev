@@ -24,7 +24,7 @@ export default class User extends BaseEntity {
   githubUser: GithubUser | null;
 
   @Column('jsonb', {nullable:true})
-  metadata: {reviewPR: number, prAuthor: GithubUser['id'], reviewRepo: Repository['id']};
+  metadata: {reviewPR: number, prAuthor: GithubUser['id'], reviewRepo: Repository['id']} | null;
 
   @OneToMany(type => PullRequestReviewRequest, request => request.assigneeUser)
   prReviewRequests: PullRequestReviewRequest[]
