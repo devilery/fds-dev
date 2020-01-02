@@ -4,10 +4,11 @@ import Commit from './Commit';
 import { bigInt } from './util';
 import PullRequestReview from './PullRequestReview';
 import { Repository, PullRequestReviewRequest } from '.'
+import CustomEntity from "./CustomEntity";
 
 
 @Entity()
-export default class PullRequest extends BaseEntity {
+export default class PullRequest extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

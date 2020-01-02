@@ -1,7 +1,7 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer, OneToMany, JoinTable } from "typeorm";
 import User from "./User";
 import PullRequest from "./PullRequest";
-import { CustomEntity } from '.';
+import CustomEntity from "./CustomEntity";
 
 @Entity()
 export default class PullRequestReviewRequest extends CustomEntity {

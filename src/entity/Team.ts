@@ -2,10 +2,11 @@ import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, OneToOne
 import User from './User'
 import GithubOwner from './GithubOwner';
 import { WebClient } from '@slack/web-api'
+import CustomEntity from "./CustomEntity";
 
 
 @Entity()
-export default class Team extends BaseEntity {
+export default class Team extends CustomEntity {
 
   @PrimaryGeneratedColumn()
   id: number;

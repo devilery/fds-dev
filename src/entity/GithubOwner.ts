@@ -1,9 +1,10 @@
-import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, ManyToOne, OneToOne } from "typeorm";
+import { BaseEntity, Entity, Column, OneToMany, PrimaryGeneratedColumn, CreateDateColumn, OneToOne, UpdateDateColumn } from "typeorm";
 import Team from './Team'
 import Repository from './Repository'
+import CustomEntity from "./CustomEntity";
 
 @Entity()
-export default class GithubOwner extends BaseEntity {
+export default class GithubOwner extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

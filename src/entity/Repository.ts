@@ -2,9 +2,10 @@ import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMan
 import GithubOwner from './GithubOwner'
 import { bigInt } from './util';
 import { PullRequest } from '.'
+import CustomEntity from "./CustomEntity";
 
 @Entity()
-export default class Repository extends BaseEntity {
+export default class Repository extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

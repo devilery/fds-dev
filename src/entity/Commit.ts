@@ -1,9 +1,10 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, OneToMany, ManyToMany, JoinTable } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, OneToMany, ManyToMany, JoinTable } from "typeorm";
 import PullRequest from './PullRequest';
 import CommitCheck from './CommitCheck';
+import CustomEntity from "./CustomEntity";
 
 @Entity()
-export default class Commit extends BaseEntity {
+export default class Commit extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

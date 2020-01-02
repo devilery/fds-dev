@@ -1,13 +1,14 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, ManyToMany, ValueTransformer, OneToMany } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn} from "typeorm";
 import { bigInt } from './util';
 import PullRequest from "./PullRequest";
 import User from "./User";
+import CustomEntity from "./CustomEntity";
 
 export type ReviewStateType = 'commented' | 'changes_requested' | 'approved';
 
 
 @Entity()
-export default class PullRequestReview extends BaseEntity {
+export default class PullRequestReview extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

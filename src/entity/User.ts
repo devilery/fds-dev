@@ -1,9 +1,10 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinTable, JoinColumn, OneToMany, ManyToMany } from "typeorm";
 import { Repository, Team, GithubUser, PullRequestReviewRequest } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
+import CustomEntity from "./CustomEntity";
 
 @Entity()
-export default class User extends BaseEntity {
+export default class User extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 

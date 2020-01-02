@@ -1,6 +1,8 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, OneToMany, ManyToOne } from 'typeorm';
-import { CustomEntity, User } from '.';
+import { User } from '.';
 import { bigInt } from './util';
+import CustomEntity from "./CustomEntity";
+
 
 @Entity()
 export default class GithubUser extends CustomEntity {
