@@ -10,11 +10,11 @@ router.post('/', async(req, res) => {
   // console.log(eventName, body);
   // prolly dont have permissions for that data
   if (!body) throw new Error('GitHub webhook missing payload body');
-  console.log(eventName, body)
   switch (eventName) {
     case 'pull_request':
       switch (body.action) {
         case 'review_requested':
+          console.log(body)
           processPullRequestReviewRequest(body)
           break;
         default:
@@ -29,6 +29,7 @@ router.post('/', async(req, res) => {
       processCheckRun(body)
       break;
     case 'pull_request_review':
+      console.log(body)
       processPullRequestReview(body)
       break;
     default:

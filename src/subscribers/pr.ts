@@ -134,6 +134,10 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 	const ghReviewUser = await GithubUser.findOne({ where: { githubId: reviewEvent.user.github_id } })
 	const reviewUser = await User.findOne({ where: { githubUser: ghReviewUser, team: team } })
 
+	// check if any empty review request exists for this user. If so fill it with this review.
+	// we use remote username as a key
+	const reviewRequest = await PullRequestReviewRequest.findOne({ where: { reviewUsername: reviewEvent.user.github_login, pullRequest: pr, review: null } })
+
 	const review = await PullRequestReview.create({
 		remoteId: reviewEvent.remoteId,
 		state: reviewEvent.state,
@@ -141,6 +145,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 		rawData: reviewEvent.raw_data,
 		reviewUserName: reviewEvent.user.github_login,
 		reviewUser: reviewUser,
+		reviewRequest: reviewRequest,
 		pullRequest: pr
 	})
 
@@ -154,7 +159,6 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 	}
 
 	const notification = getReviewMessage(review, username);
-
 	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
 }
 
@@ -162,24 +166,24 @@ pullRequestReviewed.eventType = 'pr.reviewed'
 
 const pullRequestReviewRequest = async function (reviewRequest: IPullRequestReviewRequest) {
 	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
-	const assigneeUser = await User.findOneOrFail(reviewRequest.assignee_user_id, { relations: ['team'] })
-	const client = assigneeUser.team.getSlackClient()
+	const assigneeUser = await User.findOne(reviewRequest.assignee_user_id, { relations: ['team'] })
 
-	let existing = true;
-	let request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, assigneeUser }, relations: ['pullRequest'] })
-
-	if (!request) {
-		existing = false;
-		request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser })
-		await request.save()
+	// one user can have only one *EMPTY* (without finished review) request for PR. Delete the old ones in case of network or DB errors / bugs
+	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username, review: null } })
+	for (let oldRequest of oldRequests) {
+		await oldRequest.remove()
 	}
 
-	await request.reload()
+	const request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
+	await request.save()
 
-	const requesterUsername = await pr.user.getSlackUsername()
-	const notification = getReviewRequestNotification(request, requesterUsername, existing)
-
-	await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
+	if (assigneeUser) {
+		await request.reload()
+		const requesterUsername = await pr.user.getSlackUsername()
+		const notification = getReviewRequestNotification(request, requesterUsername)
+		const client = assigneeUser.team.getSlackClient()
+		await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
+	}
 }
 
 pullRequestReviewRequest.eventType = 'pr.review.request'

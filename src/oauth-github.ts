@@ -1,6 +1,4 @@
 import { strict as assert } from 'assert';
-import request from 'request';
-import events from 'events';
 import url from 'url'
 import axios from 'axios';
 

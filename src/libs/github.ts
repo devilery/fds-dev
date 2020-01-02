@@ -156,10 +156,11 @@ export async function processPullRequestReviewRequest(requestReviewEvent: any) {
   const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
   const pr = await findPRByGithubId(requestReviewEvent.pull_request.id)
 
-  if (assignedUser && pr) {
+  if (pr) {
     let reviewRequest: IPullRequestReviewRequest = {
       pull_request_id: pr.id,
-      assignee_user_id: assignedUser.id
+      assignee_user_id: assignedUser ? assignedUser.id : undefined,
+      review_username: requestReviewEvent.requested_reviewer.login
     }
 
     emmit('pr.review.request', reviewRequest)
@@ -199,7 +200,8 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
 
         let reviewRequest: IPullRequestReviewRequest = {
           pull_request_id: pr.id,
-          assignee_user_id: user.id
+          assignee_user_id: user.id,
+          review_username: githubUser.githubUsername
         }
 
         emmit('pr.review.request', reviewRequest)

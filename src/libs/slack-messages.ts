@@ -231,7 +231,7 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 	}
 }
 
-export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean): IMessageData {
+export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean = false): IMessageData {
 	let text = 'requested';
 
 	if (existing) {
