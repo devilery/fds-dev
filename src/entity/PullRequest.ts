@@ -21,6 +21,9 @@ export default class PullRequest extends CustomEntity {
   @Column()
   prNumber: number;
 
+  @Column()
+  state: "open" | "closed" | "merged";
+
   @Column('varchar', { nullable: true })
   slackThreadId: string | null;
 

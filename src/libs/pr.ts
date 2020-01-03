@@ -19,6 +19,7 @@ export async function createOrUpdatePr(pullRequest: any) {
   pr.prNumber = pullRequest.pr_number;
   pr.headSha = pullRequest.head_sha;
   pr.githubId = pullRequest.id;
+  pr.state = pullRequest.state;
   pr.repository = await Repository.findOneOrFail({ where: { githubId: pullRequest.repository.id } })
 
   await pr.save()

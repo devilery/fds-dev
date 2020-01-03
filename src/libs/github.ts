@@ -323,6 +323,11 @@ function normalizeCheckState(status: string) {
 }
 
 function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem, userId: number) {
+  let state = pull_request.state;
+  if (pull_request.merged) {
+    state = 'merged';
+  }
+
   const data = {
     id: pull_request.id,
     from: 'github',
@@ -330,7 +335,7 @@ function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRe
     website_url: pull_request.html_url,
     title: pull_request.title,
     head_sha: pull_request.head.sha,
-    merged: pull_request.merged,
+    state: state,
     repository: {
       id: pull_request.head.repo.id,
       name: pull_request.head.repo.name,

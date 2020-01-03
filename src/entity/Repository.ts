@@ -18,6 +18,9 @@ export default class Repository extends CustomEntity {
   @ManyToOne(type => GithubOwner, owner => owner.repositories)
   owner: GithubOwner;
 
+  @Column()
+  websiteUrl: string;
+
   @Column({ type: 'jsonb' })
   rawData: any;
 

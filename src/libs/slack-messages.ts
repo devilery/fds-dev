@@ -1,5 +1,5 @@
 import { ICommitCheck } from '../events/types';
-import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest } from '../entity'
+import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository } from '../entity'
 
 export interface IMessageData {
 	text: string
@@ -37,12 +37,12 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
 }
 
-function getBaseBlock(pr: PullRequest): IMessgeBlock {
+function getBaseBlock(repo: Repository, pr: PullRequest): IMessgeBlock {
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `🧐 *PR*: #${pr.prNumber} | <${pr.websiteUrl}| ${pr.title}>`
+			"text": `*PR #${pr.prNumber} <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
 		}
 	}
 }
@@ -98,7 +98,6 @@ function getMergeBlock(pr: PullRequest): IMessgeBlock {
 					"text": "Abort merge",
 				}
 			},
-			// "value": `merge___${encodeURIComponent(JSON.stringify({'pr': pr.id}))}`
 			"value": encodeAction('merge', {pr: pr.id})
 		}
 	}
@@ -151,11 +150,18 @@ function getMergedBlock(mergedAt: string) {
 	}
 }
 
-export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
+function getDivider() {
+	return {
+		"type": "divider"
+	}
+}
+
+export function getPrMessage(repo: Repository, pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
 	const open = pr.rawData.raw_data.state === 'open';
 	const merged = !!pr.rawData.raw_data.merged_at;
 	let blocks = [
-		getBaseBlock(pr),
+		getBaseBlock(repo, pr),
+		open && getDivider(),
 		open && getReviewAssigneBlock(pr),
 		open && getMergeBlock(pr),
 		open && getCheckProgressBlock(checks),
