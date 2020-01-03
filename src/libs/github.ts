@@ -316,7 +316,7 @@ const avaibleStates: { [key: string]: string; }  = {
   'timed_out': 'error',
   'created': 'pending',
   'queued': 'pending'
-} 
+}
 
 function normalizeCheckState(status: string) {
   return avaibleStates[status]
@@ -324,7 +324,7 @@ function normalizeCheckState(status: string) {
 
 function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem, userId: number) {
   let state = pull_request.state;
-  if (pull_request.merged) {
+  if (pull_request.merged_at) {
     state = 'merged';
   }
 

@@ -7,15 +7,31 @@ export interface IMessageData {
 }
 
 interface IMessgeBlock {
-	type: 'section'| 'context',
+	type: 'section'| 'context' | "actions",
 	text?: string | { type: 'mrkdwn' | 'plain_text', text: string}
 	blocks?: []
 	accessory?: {
 		type: string
 		text: string | { type: 'mrkdwn' | 'plain_text', text: string, emoji: boolean}
 		value: string
-		confirm: {},
+		confirm?: any,
+		style?: "primary"
 	}
+	elements?: {
+		type: "button"| "users_select",
+		placeholder?: {
+			"type": "plain_text",
+			"text": string,
+			"emoji": boolean
+		}
+		text?: {
+			type: "plain_text",
+			text: string,
+			emoji: boolean
+		}
+		value?: string,
+		confirm?: any,
+	}[]
 }
 
 function encodeAction(actionName: string, actionData: {}) {
@@ -37,71 +53,106 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
 }
 
-function getBaseBlock(repo: Repository, pr: PullRequest): IMessgeBlock {
+function getBaseBlock(pr: PullRequest): IMessgeBlock {
+	pr.state
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*PR #${pr.prNumber} <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
+			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${pr.repository.websiteUrl} | ${pr.repository.name}>_`
+		},
+		"accessory": {
+			"type": "button",
+			"text": {
+				"type": "plain_text",
+				"text": "PR: Opened",
+				"emoji": true
+			},
+			"style": "primary",
+			"value": "null"
 		}
 	}
 }
 
 function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 	return {
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "Assign review"
-		},
-		"accessory": {
-			"type": "button",
-			"text": {
-				"type": "plain_text",
-				"text": "Assign review 📝",
-				"emoji": true
+		"type": "actions",
+		"elements": [
+			{
+				"type": "users_select",
+				"placeholder": {
+					"type": "plain_text",
+					"text": "Assign review",
+					"emoji": true
+				}
 			},
-			"value": `review_assigne_${pr.id}`
-		}
+			{
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": "Merge PR 🔥",
+					"emoji": true
+				},
+				"confirm": {
+					"title": {
+						"type": "plain_text",
+						"text": "confirm merge",
+					},
+					"text": {
+						"type": "plain_text",
+						"text": `Do you really want to merge PR #${pr.prNumber} ${pr.title}?`
+					},
+					"confirm": {
+						"type": "plain_text",
+						"text": "Merge please",
+					},
+					"deny": {
+						"type": "plain_text",
+						"text": "Abort merge",
+					}
+				},
+				"value": encodeAction('merge', {pr: pr.id})
+			},
+		]
 	}
 }
 
-function getMergeBlock(pr: PullRequest): IMessgeBlock {
-	return {
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": "Merge PR"
-		},
-		"accessory": {
-			"type": "button",
-			"text": {
-				"type": "plain_text",
-				"text": "Merge PR 💣",
-				"emoji": true
-			},
-			"confirm": {
-				"title": {
-					"type": "plain_text",
-					"text": "confirm merge",
-				},
-				"text": {
-					"type": "plain_text",
-					"text": `do you really want to merge PR #${pr.prNumber} ${pr.title}?`
-				},
-				"confirm": {
-					"type": "plain_text",
-					"text": "Merge please",
-				},
-				"deny": {
-					"type": "plain_text",
-					"text": "Abort merge",
-				}
-			},
-			"value": encodeAction('merge', {pr: pr.id})
-		}
-	}
-}
+// function getMergeBlock(pr: PullRequest): IMessgeBlock {
+// 	return {
+// 		"type": "section",
+// 		"text": {
+// 			"type": "mrkdwn",
+// 			"text": "Merge PR"
+// 		},
+// 		"accessory": {
+// 			"type": "button",
+// 			"text": {
+// 				"type": "plain_text",
+// 				"text": "Merge PR 💣",
+// 				"emoji": true
+// 			},
+// 			"confirm": {
+// 				"title": {
+// 					"type": "plain_text",
+// 					"text": "confirm merge",
+// 				},
+// 				"text": {
+// 					"type": "plain_text",
+// 					"text": `do you really want to merge PR #${pr.prNumber} ${pr.title}?`
+// 				},
+// 				"confirm": {
+// 					"type": "plain_text",
+// 					"text": "Merge please",
+// 				},
+// 				"deny": {
+// 					"type": "plain_text",
+// 					"text": "Abort merge",
+// 				}
+// 			},
+// 			"value": encodeAction('merge', {pr: pr.id})
+// 		}
+// 	}
+// }
 
 function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
 	if (checks.length === 0)
@@ -156,15 +207,15 @@ function getDivider() {
 	}
 }
 
-export function getPrMessage(repo: Repository, pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
-	const open = pr.rawData.raw_data.state === 'open';
+export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {	
+	const open = pr.state == 'open'
 	const merged = !!pr.rawData.raw_data.merged_at;
 	let blocks = [
-		getBaseBlock(repo, pr),
+		getBaseBlock(pr),
+		open && getCheckProgressBlock(checks),
 		open && getDivider(),
 		open && getReviewAssigneBlock(pr),
-		open && getMergeBlock(pr),
-		open && getCheckProgressBlock(checks),
+		// open && getMergeBlock(pr),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
@@ -237,7 +288,7 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 	}
 }
 
-export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean = false): IMessageData {
+export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean): IMessageData {
 	let text = 'requested';
 
 	if (existing) {
