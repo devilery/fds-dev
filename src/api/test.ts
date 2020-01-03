@@ -105,7 +105,13 @@ async function testRelation() {
   console.log(gu2.users)
   await gu2.save()
   await gu2.reload()
-  console.log(gu2)
+  console.log(gu2.users)
+  console.log('------------------------------')
+  user2.name = 'asdasdas dzxzcxzcxzcxzcxzcxzc xzcxz cz';
+  await user2.save()
+  await gu2.reload('users')
+  console.log(gu2.users);
+
 }
 
 router.get('/', async(req, res) => {
@@ -120,7 +126,7 @@ router.get('/', async(req, res) => {
     // await getPullRequestsForCommit('feature-delivery', 'fds-dev', 'token')
     // trackEvent('test_event', {test_prop:true})
     // await testDb(),
-    await testRelation()
+    // await testRelation(),
     // await requestPullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // await removePullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // U079RBVST marek, T072R1FNG 9roads

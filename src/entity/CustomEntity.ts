@@ -1,7 +1,7 @@
-import { BaseEntity, CreateDateColumn, UpdateDateColumn, ObjectType } from "typeorm";
+import { BaseEntity, CreateDateColumn, UpdateDateColumn, ObjectType, FindConditions, DeepPartial } from "typeorm";
 
 type KeysOfType<T, TProp> = { [P in keyof T]: T[P] extends TProp ? P : never }[keyof T];
-
+type GenericModel = CustomEntity | CustomEntity[] | undefined | null
 
 export default class CustomEntity extends BaseEntity {
   @CreateDateColumn({ type: "timestamp", default: () => "timezone('utc', now())" })
@@ -10,11 +10,13 @@ export default class CustomEntity extends BaseEntity {
   @UpdateDateColumn({ type: "timestamp", default: () => "timezone('utc', now())", onUpdate: "timezone('utc', now())" })
   updatedAt: Date;
 
-  static async findOrCreate<T extends CustomEntity>(this: typeof T, attributes: {}, createWithAttributes: {}): Promise<[T, boolean]> {
-    const model = await this.findOne({where: attributes})
+  static async findOrCreate<T extends BaseEntity>(this: ObjectType<T>, attributes: FindConditions<T>, createWithAttributes: DeepPartial<T>): Promise<[T, boolean]> {
+    const repository = (this as any).getRepository()
+
+    const model = await repository.findOne({where: attributes})
 
     if (!model) {
-    	const create = this.create({...attributes, ...createWithAttributes})
+      const create = repository.create({...attributes, ...createWithAttributes})
     	await create.save()
 
     	return [create, true];
@@ -23,7 +25,8 @@ export default class CustomEntity extends BaseEntity {
     return [model, false];
   }
 
-  async relation<T extends KeysOfType<this, CustomEntity | CustomEntity[] | undefined | null>>(...relations: T[]): Promise<void> {
+  // TODO: Add lazy cache
+  async relation<T extends KeysOfType<this, GenericModel>>(...relations: T[]): Promise<void> {
     let constructor = this.constructor as any;
     let instance = await constructor.findOneOrFail((this as any).id, { relations: [...relations] })
 
@@ -32,6 +35,16 @@ export default class CustomEntity extends BaseEntity {
     }
     
     return Promise.resolve()
+  }
+
+  async reload<T extends KeysOfType<this, GenericModel>>(...relations: T[]) {
+
+    let relationFetches = relations.map(async (item) => {
+      await this.relation(item)
+    })
+
+    await Promise.all(relationFetches)
+    await super.reload();
   }
 }
 
