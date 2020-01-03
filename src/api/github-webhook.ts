@@ -14,7 +14,6 @@ router.post('/', async(req, res) => {
     case 'pull_request':
       switch (body.action) {
         case 'review_requested':
-          console.log(body)
           processPullRequestReviewRequest(body)
           break;
         default:
@@ -29,7 +28,6 @@ router.post('/', async(req, res) => {
       processCheckRun(body)
       break;
     case 'pull_request_review':
-      console.log(body)
       processPullRequestReview(body)
       break;
     default:
