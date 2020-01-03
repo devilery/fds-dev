@@ -1,11 +1,12 @@
-import { strict as assert } from 'assert';
+// @ts-ignore
+import { strict as assert} from 'assert';
 import url from 'url'
 import axios from 'axios';
 
-import { GithubUser, User, Repository, PullRequest } from './entity';
-import { requestPullRequestReview } from './libs/github-api';
+import { GithubUser, User, PullRequest } from '../../../entity';
+import { requestPullRequestReview } from '../../../libs/github-api';
 
-export default function (opts: any) {
+function oAuth(this: any, opts: any) {
   if (!opts.callbackURI) opts.callbackURI = '/github/callback'
   if (!opts.loginURI) opts.loginURI = '/github/login'
   if (typeof opts.scope === 'undefined') opts.scope = 'user'
@@ -43,8 +44,8 @@ export default function (opts: any) {
     const user = userRes.data as Octokit.UsersGetAuthenticatedResponse
 
     const appUser = await User.findOneOrFail({ where: { id: query.state } })
-    const [ githubUser, _ ] = await GithubUser.findOrCreate(
-      {githubId: user.id},
+    const [githubUser, _] = await GithubUser.findOrCreate(
+      { githubId: user.id },
       { githubUsername: user.login, githubAccessToken: token.access_token, rawGithubUserData: user as any }
     )
 
@@ -61,10 +62,10 @@ export default function (opts: any) {
     // TODO: add repo info (multiple PRs can have same IDs)
     if (appUser.metadata && appUser.metadata.reviewPR) {
       // send request review
-      const pr = await PullRequest.findOneOrFail({where: {prNumber: appUser.metadata.reviewPR}, relations: ['repository', 'repository.owner']})
+      const pr = await PullRequest.findOneOrFail({ where: { prNumber: appUser.metadata.reviewPR }, relations: ['repository', 'repository.owner'] })
       const repo = pr.repository;
       // const repo = await Repository.findOneOrFail(appUser.metadata.reviewRepo);
-      const author = await User.findOneOrFail(appUser.metadata.prAuthor, {relations: ['githubUser']})
+      const author = await User.findOneOrFail(appUser.metadata.prAuthor, { relations: ['githubUser'] })
 
       assert(author.githubUser, 'Missing github user relation')
 
@@ -72,10 +73,10 @@ export default function (opts: any) {
         repo.owner.login,
         repo.name,
         appUser.metadata.reviewPR,
-        {reviewers:[githubUser.githubUsername]},
+        { reviewers: [githubUser.githubUsername] },
         author.githubUser!.githubAccessToken
       )
-  
+
       resp.set('Content-type', 'text/html')
       resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}">here</a>`)
 
@@ -92,3 +93,12 @@ export default function (opts: any) {
 
   return this
 }
+
+export default new (oAuth as any)({
+  githubClient: process.env.GITHUB_APP_PUBLIC_KEY,
+  githubSecret: process.env.GITHUB_APP_SECRET_KEY,
+  baseURL: process.env.GITHUB_OAUTH_BASE_URL,
+  loginURI: '/github-login',
+  callbackURI: '/github-callback',
+  scope: 'user' // optional, default scope is set to user
+}) 

@@ -31,10 +31,7 @@ export default class User extends CustomEntity {
   prReviewRequests: PullRequestReviewRequest[]
 
   async getSlackUsername() {
-    if (!this.team) {
-      this.team = await Team.findOneOrFail({ where: { users: { id: this.id } } })
-    }
-
+    await this.reload('team')
     const client = this.team.getSlackClient()
     const userInfo = await client.users.info({ user: this.slackId }) as UsersInfoResult;
     return userInfo.user.name

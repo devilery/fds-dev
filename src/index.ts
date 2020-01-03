@@ -2,7 +2,7 @@ require('dotenv').config();
 require('pretty-error').start();
 
 import dbConnect from './libs/db'
-import { Team, GithubOwner, Repository, GithubUser, User } from './entity'
+import { Team, GithubOwner } from './entity'
 
 import * as Sentry from '@sentry/node';
 
@@ -10,7 +10,7 @@ if (process.env.SENTRY_DSN) {
   Sentry.init({
     dsn: process.env.SENTRY_DSN,
     beforeSend(event, hint) {
-      const error = hint && hint.originalException;
+      const error = (hint && hint.originalException) as any;
       if (error && error.message && error.message.match(/Request failed with status code 40[134]/i)) {
         return null;
       }
@@ -26,15 +26,11 @@ import path from 'path';
 import fs from 'fs';
 import express from 'express';
 import morgan from 'morgan';
-import axios from 'axios';
 import httpContext from 'express-http-context';
+import setup from './auth/github/install'
+import githubOAuth from './auth/github/oauth';
 
-import githubOAuth from './oauth-github';
-
-
-import { createInstallationToken } from './libs/github-api';
-import { strict as assert } from 'assert';
-const { subscribe, emmit } = require('./libs/event.js');
+const { subscribe } = require('./libs/event.js');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
 import './libs/http-debug';
@@ -43,15 +39,6 @@ const app = express();
 
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
-
-let ghOAuth = githubOAuth({
-  githubClient: process.env.GITHUB_APP_PUBLIC_KEY,
-  githubSecret: process.env.GITHUB_APP_SECRET_KEY,
-  baseURL: process.env.GITHUB_OAUTH_BASE_URL,
-  loginURI: '/github-login',
-  callbackURI: '/github-callback',
-  scope: 'user' // optional, default scope is set to user
-})
 
 app.use(morgan('dev'));
 
@@ -77,11 +64,7 @@ app.use(async (req, res, next) => {
       console.log('[github]', req.headers['x-github-event'])
       const { body } = req;
       if (body.sender.id) {
-        // console.log('installation', body.installation.id)
-        // const ghUser = await GithubUser.findOneOrFail({where: {githubId: req.body.sender.id}, relations: ['users']})
         const ghOwner = await GithubOwner.findOneOrFail({where: {installationId: req.body.installation.id}, relations: ['team']})
-        // console.log(ghOwner.team)
-
         httpContext.set('team', ghOwner.team)
       }
     }
@@ -116,63 +99,15 @@ app.get('/test', async (req, res) => {
 // })
 
 app.get('/github/setup', async (req, res) => {
-  let query = url.parse(req.url, true).query
-  let installation_id = query.installation_id as string
-  let team_id = query.state
-  let setup_action = query.setup_action
-
-  const team = await Team.findOne({ where: { id: team_id } })
-
-  if (!team) {
-    res.end('Could not find team!')
-    return;
-  }
-
-  if (setup_action === 'install') {
-    team.githubConnected = true
-    await team.save()
-
-    const data = await createInstallationToken(installation_id)
-
-    // https://developer.github.com/v3/apps/installations/#list-repositories
-    let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` } })
-    let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
-
-    assert(repos.length > 0, 'Installation has no repos!')
-
-    const owner = GithubOwner.create({
-      githubAccessToken: data.token,
-      login: repos[0].owner.login,
-      installationId: installation_id,
-      team: team,
-      githubAccessTokenRaw: data as any
-    })
-
-    await owner.save()
-
-    for (let repo of repos) {
-      const repository = Repository.create({
-        githubId: repo.id,
-        name: repo.name,
-        rawData: repo as any,
-        owner: owner
-      })
-
-      await repository.save()
-    }
-    emmit('team.gh.connected', team)
-  }
-  res.end('done')
+  await setup(req, res)
 })
-
 
 app.get('/github-login', async (req, res) => {
   let query = url.parse(req.url, true).query
-  ghOAuth.login(req, res, query.userId)
+  githubOAuth.login(req, res, query.userId)
 })
 
-
-app.get('/github-callback', ghOAuth.callback)
+app.get('/github-callback', githubOAuth.callback)
 
 
 const apiPath = path.join(__dirname, 'api');

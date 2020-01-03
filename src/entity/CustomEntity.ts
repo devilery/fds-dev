@@ -1,7 +1,6 @@
 import { BaseEntity, CreateDateColumn, UpdateDateColumn, ObjectType, FindConditions, DeepPartial } from "typeorm";
 
 type KeysOfType<T, TProp> = { [P in keyof T]: T[P] extends TProp ? P : never }[keyof T];
-type GenericModel = CustomEntity | CustomEntity[] | undefined | null
 
 export default class CustomEntity extends BaseEntity {
   @CreateDateColumn({ type: "timestamp", default: () => "timezone('utc', now())" })
@@ -25,25 +24,35 @@ export default class CustomEntity extends BaseEntity {
     return [model, false];
   }
 
-  // TODO: Add lazy cache
-  async relation<T extends KeysOfType<this, GenericModel>>(...relations: T[]): Promise<void> {
+  /** Get relation by string. Does not update parent objects */
+  async relation<P extends CustomEntity, T extends KeysOfType<this, CustomEntity | CustomEntity[] | undefined | null>>(this: P, relation: T): Promise<T> {
     let constructor = this.constructor as any;
-    let instance = await constructor.findOneOrFail((this as any).id, { relations: [...relations] })
-
-    for (let relation of relations) {
-      this[relation] = instance[relation];
-    }
-    
-    return Promise.resolve()
+    let instance = await constructor.findOneOrFail((this as any).id, { relations: [relation] })
+    return Promise.resolve(instance[relation])
   }
 
-  async reload<T extends KeysOfType<this, GenericModel>>(...relations: T[]) {
+  async fetchRelations(...relations: string[]) {
+    if (relations.length === 0) {
+      return;
+    }
 
-    let relationFetches = relations.map(async (item) => {
-      await this.relation(item)
-    })
+    const constructor = this.constructor as any;
+    const instance = await constructor.findOneOrFail((this as any).id, { relations: [...relations] })
+    
+    const allowed = relations.filter(item => item.split('.').length === 1);
 
-    await Promise.all(relationFetches)
+    const filtered = Object.keys(instance)
+      .filter(key => allowed.includes(key))
+      .reduce((obj: any, key: any) => {
+        obj[key] = instance[key];
+        return obj;
+      }, {});
+
+    constructor.merge(this, filtered)
+  }
+
+  async reload(...relations: string[]) {
+    await this.fetchRelations(...relations)
     await super.reload();
   }
 }

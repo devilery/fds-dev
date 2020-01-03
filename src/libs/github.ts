@@ -218,10 +218,15 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       // create new user without github token and
       // send them oauth message to slack to authenticate
       // to populate the token column
-      // TODO: udpate the oauth flow finish to do request assign
+      const newUser = await createUser(handle, team, null, false);
 
-      // TODO: get dynamically
-      await createUser(handle, team, { reviewPR: prNumber, prAuthor: author.id})
+      let data: IRequestGithubReviewLogin = {
+        user_id: newUser.id,
+        author_user_id: author.id,
+        pr_number: prNumber
+      }
+
+      emmit('github.user.request.review.create', data)
     }
   })
 }

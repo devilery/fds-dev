@@ -21,6 +21,7 @@ userCreated.eventType = 'user.created'
 const requestGithubReviewLogin = async function(event: IRequestGithubReviewLogin) {
   const user = await User.findOneOrFail(event.user_id, { relations: ['team'] });
   const author = await User.findOneOrFail(event.author_user_id);
+
   const authorUsername = await author.getSlackUsername();
   const client = user.team.getSlackClient();
 
