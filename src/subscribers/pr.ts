@@ -18,7 +18,7 @@ const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
 	const client = pr.user.team.getSlackClient()
 
-	const messageData = getPrMessage(pr)
+	const messageData = await getPrMessage(pr)
 
 	// TODO: find correct check and pass it to updatePipeline; - prolly DEPRECATED
 	const headCommit = await Commit.findOneOrFail({where: {sha: pr.headSha}});
@@ -55,7 +55,7 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	const client = team.getSlackClient()
 	await client.chat.postMessage({ text, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true })
 
-	const messageData = getPrMessage(pr)
+	const messageData = await getPrMessage(pr)
 
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 }

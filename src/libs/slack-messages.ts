@@ -53,13 +53,12 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
 }
 
-function getBaseBlock(pr: PullRequest): IMessgeBlock {
-	pr.state
+function getBaseBlock(pr: PullRequest, repo: Repository): Promise<IMessgeBlock> {
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${pr.repository.websiteUrl} | ${pr.repository.name}>_`
+			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
 		},
 		"accessory": {
 			"type": "button",
@@ -207,11 +206,11 @@ function getDivider() {
 	}
 }
 
-export function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {	
+export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
 	const open = pr.state == 'open'
 	const merged = !!pr.rawData.raw_data.merged_at;
 	let blocks = [
-		getBaseBlock(pr),
+		getBaseBlock(pr, await pr.relation('repository')),
 		open && getCheckProgressBlock(checks),
 		open && getDivider(),
 		open && getReviewAssigneBlock(pr),

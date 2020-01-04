@@ -98,7 +98,7 @@ async function handleHomePage(event, payload, respond) {
   	return;
 
   	allPRs.forEach(async pr => {
-	   	const messageData = getPrMessage(pr)
+	   	const messageData = await getPrMessage(pr)
 
 		// client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
 	  	const res = await  client.views.publish({

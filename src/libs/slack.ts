@@ -9,7 +9,7 @@ export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitChe
 	// const client = pr.user.team.getSlackClient()
 	const team = httpContext.get('team');
 	const client = team.getSlackClient()
-	const messageData = getPrMessage(pr, prCommitChecks)
+	const messageData = await getPrMessage(pr, prCommitChecks)
 
 	await client.chat.update({...messageData, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 }
