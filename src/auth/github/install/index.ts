@@ -4,6 +4,7 @@ import url from 'url';
 import { Team, GithubOwner, Repository } from '../../../entity'
 import { createInstallationToken } from '../../../libs/github-api';
 import axios from 'axios';
+import config from '../../../config';
 const { emmit } = require('../../../libs/event.js');
 
 
@@ -54,5 +55,8 @@ export default async function setup(req: any, res: any) {
     }
     emmit('team.gh.connected', team)
   }
-  res.end('done')
+
+  res.statusCode = 302
+  res.setHeader('location', config.authRedirectUrls.githubInstall)
+  res.end()
 } 

@@ -2,6 +2,7 @@
 import { strict as assert} from 'assert';
 import url from 'url'
 import axios from 'axios';
+import config from '../../../config';
 
 import { GithubUser, User, PullRequest } from '../../../entity';
 import { requestPullRequestReview } from '../../../libs/github-api';
@@ -77,14 +78,18 @@ function oAuth(this: any, opts: any) {
         author.githubUser!.githubAccessToken
       )
 
-      resp.set('Content-type', 'text/html')
-      resp.end(`Thanks! You can now review the PR :) <a href="https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}">here</a>`)
+      resp.statusCode = 302
+      resp.setHeader('location', `${config.authRedirectUrls.githubOAuthReview}?pr=https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}`)
+      resp.end()
 
       appUser.metadata = null;
       await appUser.save()
 
     } else {
-      resp.end('Thanks, close the tab and create a new PR :)')
+
+      resp.statusCode = 302
+      resp.setHeader('location', config.authRedirectUrls.githubOAuthDone)
+      resp.end()
     }
   }
 
