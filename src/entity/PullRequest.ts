@@ -59,4 +59,8 @@ export default class PullRequest extends CustomEntity {
   async getHeadCommit() {
     return Commit.findOneOrFail({where: {sha: this.headSha}});
   }
+
+  async getHeadPipeline() {
+    return Pipeline.findOne({where: {pullRequest: this, sha: this.headSha}});
+  }
 }

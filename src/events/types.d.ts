@@ -8,6 +8,7 @@ export interface ICommitCheck {
   commit_sha: string;
   name: string;
   target_url: string;
+  description: string;
   // context: string;
   pull_request_id: number;
   raw_data: any;

@@ -6,7 +6,20 @@ import { jobDetails, workflowDetails } from '../libs/circleci-api';
 
 const CIRCLE_JOB_PREFIX = 'ci/circleci: ';
 
-export async function loadPipeline(pr: PullRequest, checkUrl: string) {
+export function isCircleCheck(check: ICommitCheck) {
+	assert(check.name, 'Check is missing name')
+	return check.name && check.name.includes(CIRCLE_JOB_PREFIX)
+}
+
+function isSameCheck(check: CommitCheck, githubCheck: ICommitCheck) {
+	// TODO: approval name syntax
+	// ci/circleci: build vs ci/circleci: ourpipeline/approve-long
+	// ci/circleci: approve-long vs ci/circleci: ourpipeline/approve-long
+	// ci/circleci: build2 vs ci/circleci: ourpipeline/approve-long
+	return check.name === githubCheck.name;
+}
+
+export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<Pipeline> {
 	const team = httpContext.get('team') as Team
 
 	// console.error('Team is missing Circle token')
@@ -19,28 +32,36 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string) {
 
 	const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
 
-	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw})
+	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw, sha: pr.headSha})
 	await newPipeline.save()
 	await newPipeline.reload()
 
+	// console.log('loaded', newPipeline)
 	return newPipeline
 }
 
 async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: ICommitCheck | null = null) {
+	// console.log('updateCommitChecks', pipelineRaw)
 	await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
 		const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
 		const [ commitCheck, _ ] = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: pipelineCheck.status})
+		// console.log(pipelineCheck, 'vs', commitCheck, 'hook check:', /*check*/)
 		// upsert status
 		if (commitCheck.status !== pipelineCheck.status) {
-			commitCheck.status = pipelineCheck.status;
+			// console.log('updaeting', commitCheck, commitCheck.status, 'to', pipelineCheck.status)
+			// commitCheck.status = pipelineCheck.status;
 
-			await commitCheck.save()
+			// await commitCheck.save()
+			await CommitCheck.update(commitCheck.id, {status: pipelineCheck.status})
 		}
 
-		if (check && fullCheckName === check.name) {
+		console.log(fullCheckName, 'vs', check.name)
+		// if (check && fullCheckName === check.name) {
+		if(check && isSameCheck(commitCheck, check)) {
 			commitCheck.rawData = check.raw_data;
 
-			await commitCheck.save()
+			// await commitCheck.save()
+			await CommitCheck.update(commitCheck.id, {rawData: check.raw_data})
 		}
 	}))
 }
@@ -52,7 +73,9 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 	// if we don't have the pipeline, download it and use its state (prolly more fresh than webhook data)
 		// populate the database with checks according to the pipeline data
 
-	const prPipeline = await Pipeline.findOne({ where: { pullRequest: pr } });
+	// const prPipeline = await Pipeline.findOne({ where: { commit, pullRequest: pr } });
+	const prPipeline = await pr.getHeadPipeline();
+	// const checks = await CommitCheck.find({where: { commit }})
 
 	// TODO: query this on PR open
 	// TODO: race conditions?; add transaction???
@@ -61,7 +84,7 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 		console.log('downloading pipeline')
 		const pipeline = await loadPipeline(pr, check.target_url)
 
-		await updateCommitChecks(pipeline.rawData, commit, check);
+		await updateCommitChecks(commit, pipeline.rawData, check);
 
 		// newPipeline.reload();
 		// return newPipeline;
@@ -97,7 +120,7 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 				await Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data}).save()
 			}
 
-			await updateCommitChecks(pipeData.raw_workflow_job_data, commit, check);
+			await updateCommitChecks(commit, pipeData.raw_workflow_job_data, check);
 		} else {
 			// singleCheck.status = check.status;
 			// singleCheck.rawData = check.raw_data;
@@ -108,7 +131,13 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 		// return prPipeline;
 	}
 
+	// const finalPipeline = await Pipeline.findOneOrFail({ where: { pullRequest: pr }})
+	const finalPipeline = await pr.getHeadPipeline()
+	assert(finalPipeline, 'Final pipeline not found')
+
 	// then run the pipeline final status check
+	const finalStatus = await detectPipelineMasterStatus(pr);
+	console.log('final status', finalStatus)
 
 
 	// 	// TODO: we prolly don't need this anymore
@@ -127,4 +156,26 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 	// 		await commitCheck.save()
 	// 	}
 	// }))
+}
+
+async function detectPipelineMasterStatus(pr: PullRequest) {
+	const pipeline = await pr.getHeadPipeline()
+	const commit = await pr.getHeadCommit()
+	const checks = await CommitCheck.find({where: { commit }})
+	// console.log(pr, pipeline, commit, checks)
+	assert(checks.length > 0, 'PRs last commit is missing checks')
+	console.log('pipe states', checks.map(ch => ch.status))
+
+	const inProgress = checks.some(ch => ch.status === 'queued' || ch.status === 'running' || ch.status === 'pending');
+	const failed = !inProgress && checks.some(ch => ch.status === 'failed');
+	const success = !inProgress && !failed;
+	const actionRequired = checks.some(ch => ch.status === 'on_hold')
+
+	const status = inProgress
+		? 'running'
+		: failed
+			? 'failed'
+			: 'success';
+
+	return [status, actionRequired];
 }

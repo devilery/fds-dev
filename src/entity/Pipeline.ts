@@ -6,6 +6,10 @@ export default class Pipeline extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  // TODO: maybe not unique ?
+  @Column({ unique: true })
+  sha: string;
+
   @ManyToOne(type => PullRequest, pr => pr.pipelines)
   pullRequest: PullRequest;
 

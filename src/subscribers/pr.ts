@@ -9,10 +9,9 @@ import { ChatPostMessageResult } from '../libs/slack-api'
 import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
 import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
-import { updatePipeline } from '../libs/circleci'
+import { updatePipeline, isCircleCheck } from '../libs/circleci'
 const { sleep } = require('../libs/util');
 
-const CIRCLE_JOB_PREFIX = 'ci/circleci: ';
 const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
 
 const opened = async function (data: IPullRequestEvent) {
@@ -83,9 +82,11 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	const { user } = pr
 	const { team } = user
 
+	httpContext.set('pr', pr);
+
 	// TODO: handle commit pipeline re-run (PR's pipelines status gets reset as new commits arrive)
 	// TODO: maybe move circle logic to status webook handler??
-	if (check.name && check.name.includes(CIRCLE_JOB_PREFIX)) {
+	if (isCircleCheck(check)) {
 		check.type = 'ci-circleci';
 
 		await updatePipeline(pr, commit, check)
@@ -142,19 +143,21 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 		return
 	}
 
-	const finalSingleCheck = await CommitCheck.findOne({ where: {commit, type: check.type, name: check.name}})
-
-	// if (!finalSingleCheck) {
-	// 	console.error('Final check ')
-	// 	return;
-	// }
-
-	assert(finalSingleCheck, 'Final check was not found')
-
 	// commit.reload does not reload relations
 	const finalChecks = await CommitCheck.find({where: {commit}})
 
 	await updatePrMessage(pr, finalChecks)
+
+	// TODO: fails with circle approval jobs
+	// if (check.status === 'pending' && check.target_url.includes('/workflow-run/') && check.description.includes('job is on hold'))
+	const finalSingleCheck = await CommitCheck.findOne({ where: {commit, type: check.type, name: check.name}})
+
+	if (!finalSingleCheck) {
+		console.error('Final check was not found', check)
+		return;
+	}
+
+	assert(finalSingleCheck, 'Final check was not found')
 
 	await sendPipelineNotifiation(pr, finalChecks, finalSingleCheck)
 }
