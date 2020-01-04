@@ -7,16 +7,10 @@ export interface IMessageData {
 }
 
 interface IMessgeBlock {
-	type: 'section'| 'context' | "actions",
-	text?: string | { type: 'mrkdwn' | 'plain_text', text: string}
+	type: 'section'| 'context' | "actions"
+	text?: string | { type: 'mrkdwn' | 'plain_text', text: string }
 	blocks?: []
-	accessory?: {
-		type: string
-		text: string | { type: 'mrkdwn' | 'plain_text', text: string, emoji: boolean}
-		value: string
-		confirm?: any,
-		style?: "primary"
-	}
+	accessory?: any
 	elements?: {
 		type: "button"| "users_select",
 		placeholder?: {
@@ -53,12 +47,20 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
 }
 
+<<<<<<< HEAD
 function getBaseBlock(pr: PullRequest, repo: Repository): Promise<IMessgeBlock> {
+=======
+function getBaseBlock(pr: PullRequest): IMessgeBlock {
+>>>>>>> improvements
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
+<<<<<<< HEAD
 			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
+=======
+			"text": `*<${pr.websiteUrl} | PR #${pr.prNumber}: ${pr.title}> * in <${pr.repository.websiteUrl} | ${pr.repository.name}>`
+>>>>>>> improvements
 		},
 		"accessory": {
 			"type": "button",
@@ -107,7 +109,7 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 					},
 					"deny": {
 						"type": "plain_text",
-						"text": "Abort merge",
+						"text": "Nope",
 					}
 				},
 				"value": encodeAction('merge', {pr: pr.id})
@@ -153,41 +155,95 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 // 	}
 // }
 
-function getCheckProgressBlock(checks: CommitCheck[]): IMessageData[] | [] {
-	if (checks.length === 0)
-		return []
+function getCheckProgressBlock(checks: CommitCheck[]): IMessgeBlock {
+	let pendingChecks = checks.filter(item => item.status === 'pending').length
+	let doneChecks = checks.length - pendingChecks
 
-	let pendingChecks = checks.filter(item => item.status === 'pending')
+	if (pendingChecks > 0) {
+		var text = `⚙️ Check are going well so far... _(${doneChecks} of ${pendingChecks + doneChecks} checks completed)_`
+	} else {
+		var text = `⚙️ Check are done! _(${doneChecks} of ${pendingChecks + doneChecks} checks completed)_`
+	}
 
-	return [
-		{
-			"type": "context",
-			"elements": [
+	return {
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": text
+		},
+		"accessory": {
+			"type": "overflow",
+			"options": [
 				{
-					"type": "mrkdwn",
-					"text": `*Pull request checks* (${checks.filter(item => item.status !== 'pending').length} complete out of ${checks.length})`
+					"text": {
+						"type": "plain_text",
+						"text": "Stop the pipe-line run",
+						"emoji": true
+					},
+					"value": "value-0"
+				},
+				{
+					"text": {
+						"type": "plain_text",
+						"text": "Re-run the estimation",
+						"emoji": true
+					},
+					"value": "value-1"
+				},
+				{
+					"text": {
+						"type": "plain_text",
+						"text": "Option 3",
+						"emoji": true
+					},
+					"value": "value-2"
+				},
+				{
+					"text": {
+						"type": "plain_text",
+						"text": "Option 4",
+						"emoji": true
+					},
+					"value": "value-3"
 				}
 			]
-		},
-		pendingChecks.map(item => {
-			let checkName = item.name;
+		}
+	}
 
-			let linkOrName = item.targetUrl ? `<${item.targetUrl}|${checkName}>` : checkName;
-			let text = `⏳Check ${linkOrName} in progress...`;
+	// if (checks.length === 0)
+	// 	return []
 
-			// if (item.ciData && item.ciData.estimate_ms) {
-			// 	text += ` ${item.ciData.estimate_ms / 1000}s est build time`
-			// }
+	// let pendingChecks = checks.filter(item => item.status === 'pending')
 
-			return {
-				"type": "section",
-				"text": {
-					"type": "mrkdwn",
-					"text": text
-				}
-			}
-		})
-	].flat()
+	// return [
+	// 	{
+	// 		"type": "context",
+	// 		"elements": [
+	// 			{
+	// 				"type": "mrkdwn",
+	// 				"text": `*Pull request checks* (${checks.filter(item => item.status !== 'pending').length} complete out of ${checks.length})`
+	// 			}
+	// 		]
+	// 	},
+	// 	pendingChecks.map(item => {
+	// 		let checkName = item.name;
+
+	// 		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${checkName}>` : checkName;
+	// 		let text = `⏳Check ${linkOrName} in progress...`;
+
+	// 		// if (item.ciData && item.ciData.estimate_ms) {
+	// 		// 	text += ` ${item.ciData.estimate_ms / 1000}s est build time`
+	// 		// }
+
+	// 		return {
+	// 			"type": "section",
+	// 			"text": {
+	// 				"type": "mrkdwn",
+	// 				"text": text
+	// 			}
+	// 		}
+	// 	})
+	// ].flat()
 }
 
 function getMergedBlock(mergedAt: string) {
@@ -208,11 +264,18 @@ function getDivider() {
 
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
 	const open = pr.state == 'open'
+	const showChecks = checks.length > 0
 	const merged = !!pr.rawData.raw_data.merged_at;
 	let blocks = [
+<<<<<<< HEAD
 		getBaseBlock(pr, await pr.relation('repository')),
 		open && getCheckProgressBlock(checks),
 		open && getDivider(),
+=======
+		getBaseBlock(pr),
+		open && showChecks && getCheckProgressBlock(checks),
+		open && showChecks && getDivider(),
+>>>>>>> improvements
 		open && getReviewAssigneBlock(pr),
 		// open && getMergeBlock(pr),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)

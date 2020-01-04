@@ -15,7 +15,7 @@ export default class CommitCheck extends CustomEntity {
   name: string;
 
   @Column()
-  status: 'pending' | 'success' | 'error' | 'failure'
+  status: 'pending' | 'in_progress' | 'waiting_for_manual_action' | 'success' | 'failure'
 
   @Column('varchar', {nullable: true})
   description: string | null;
