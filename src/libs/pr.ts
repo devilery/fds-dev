@@ -23,6 +23,7 @@ export async function createOrUpdatePr(pullRequest: any) {
   pr.repository = await Repository.findOneOrFail({ where: { githubId: pullRequest.repository.id } })
 
   await pr.save()
+  await pr.reload()
 
   return pr
 }

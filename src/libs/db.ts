@@ -7,7 +7,7 @@ const config = {
     'namingStrategy': new SnakeNamingStrategy(),
     "type": 'postgres',
     "synchronize": Boolean(process.env.PG_AUTO_DROP_DB),
-    "logging": 'error',
+    "logging": process.env.TYPEORM_LOG == 'true',
     "entities": Object.values(entities),
     "migrations": [
         "../migration/**/*.ts"

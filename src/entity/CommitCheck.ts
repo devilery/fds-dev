@@ -1,14 +1,14 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from "typeorm";
-import Commit from './Commit';
+import { Commit } from '.';
+import CustomEntity from './CustomEntity'
 import { bigInt } from './util';
-import CustomEntity from "./CustomEntity";
 
 @Entity()
 export default class CommitCheck extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('bigint', { transformer: [bigInt], unique: true })
+  @Column('bigint', { transformer: [bigInt], unique: true, nullable: true })
   githubId: number;
 
   @Column()
@@ -29,6 +29,18 @@ export default class CommitCheck extends CustomEntity {
   @Column()
   type: 'standard' | 'ci-circleci'
 
-  @Column('jsonb')
+  @Column('jsonb', {nullable: true})
   rawData: any;
+
+  static async updateOrCreate(attributes: {}, updateAttributes: Partial<CommitCheck>): Promise<CommitCheck> {
+    let created;
+    const result = await CommitCheck.update(attributes, updateAttributes)
+
+    if (!result || typeof result.affected === 'undefined' || result.affected < 1){
+      created = this.create({...attributes, ...updateAttributes})
+      await created.save();
+    }
+
+    return await CommitCheck.findOneOrFail({where: attributes})
+  }
 }

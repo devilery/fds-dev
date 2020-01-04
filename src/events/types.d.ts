@@ -2,13 +2,14 @@ import { ReviewStateType } from "../entity/PullRequestReview";
 
 export interface ICommitCheck {
   status: 'pending' | 'success' | 'error' | 'failure';
-  type: 'standard' | 'circleci';
+  type: 'standard' | 'check' | 'ci-circleci';
   from: string;
   id: number;
   commit_sha: string;
   name: string;
   target_url: string;
-  context: string;
+  description: string;
+  // context: string;
   pull_request_id: number;
   raw_data: any;
   ci_data: any;
