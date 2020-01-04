@@ -1,75 +1,130 @@
-const axios = require('axios')
-const CIRCLE_BASE = 'https://circleci.com/api/v1.1/project';
-const CIRCLE_BASE_v2 = 'https://circleci.com/api/v2';
-const CIRCLE_TOKEN = process.env.CIRCLE_TOKEN;
+import { strict as assert } from 'assert'
+import httpContext from 'express-http-context'
+import { ICommitCheck } from '../events/types'
+import {PullRequest,Team,Pipeline,Commit,CommitCheck} from '../entity'
+import { jobDetails, workflowDetails } from '../libs/circleci-api';
 
-async function retryBuild({vcs, username, project, build_num}) {
-	const url = `${CIRCLE_BASE}/${vcs}/${username}/${project}/${build_num}/retry?circle-token=${CIRCLE_TOKEN}`
-	let res = await axios.post(url)
-	// console.log(res);
-    // let data = await res.json()
-    // console.log(data);
-    return res;
+const CIRCLE_JOB_PREFIX = 'ci/circleci: ';
+
+export async function loadPipeline(pr: PullRequest, checkUrl: string) {
+	const team = httpContext.get('team') as Team
+
+	// console.error('Team is missing Circle token')
+	if (!team.circlePersonalToken) throw new Error('Team is missing Circle token');
+
+	// TODO: approval jobs return 404
+	const circleCiData = await jobDetails({ jobUrl: checkUrl, token: team.circlePersonalToken })
+	assert(circleCiData.raw_job_data.platform === '2.0', 'Unsupported CircleCI version')
+	// workflows(workflow_id), build_time_millis, lifecycle, status, previous(build_num, status, build_time_millis), fail_reason, steps(*)
+
+	const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
+
+	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw})
+	await newPipeline.save()
+	await newPipeline.reload()
+
+	return newPipeline
 }
 
-// https://circleci.com/gh/feature-delivery/fds-dev/86?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
-// job can be in any state: pending, success, fail
-async function jobDetails({jobUrl, token}) {
-	// const url = `https://circleci.com/api/v1.1/project/gh/feature-delivery/fds-dev/54`
-	const url = `${CIRCLE_BASE}/${jobUrl.replace('https://circleci.com/', '')}?circle-token=${token}`
-	const res = await axios.get(url)
+async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: ICommitCheck | null = null) {
+	await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
+		const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
+		const [ commitCheck, _ ] = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: pipelineCheck.status})
+		// upsert status
+		if (commitCheck.status !== pipelineCheck.status) {
+			commitCheck.status = pipelineCheck.status;
 
-	const output = {};
+			await commitCheck.save()
+		}
 
-	if (res.data) {
-		output.raw_job_data = res.data;
-		// previous_successful_build: { build_num: 53, status: 'success', build_time_millis: 3350 },
-		// TODO: prvioud build in workflows is just the previous job :facepalm:
-		const estimateMs = res.data.previous_successful_build.build_time_millis;
+		if (check && fullCheckName === check.name) {
+			commitCheck.rawData = check.raw_data;
 
-		output.estimate_ms = estimateMs;
+			await commitCheck.save()
+		}
+	}))
+}
 
-		// res.data.steps.forEach(s => console.log(s))
+export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICommitCheck): Promise<void> {
+	// const checkName = check.name.replace(CIRCLE_JOB_PREFIX, '');
+	// console.log('check name', checkName)
 
-		//   workflows: { job_name: 'track_end',     job_id: 'ba31d462-c692-45e2-afaa-0dfe4cd90c56',     workflow_id: 'e0fea775-1230-4aef-8f8b-7f2bd270bb7a',     workspace_id: 'c84f306c-2a06-4af9-bd53-c727d48ac07d',     upstream_job_ids:      [ '77cee595-ff1f-44f4-9525-d11c25f8e85d',        'eb576787-1ce1-4192-a059-edc35408abfc',        '481c6140-fee9-47fc-afbc-bbaea5e5da4f',        '9c9ad4eb-3b25-4b9c-92a9-e37adeb9ef0c' ],     upstream_concurrency_map: {},     workflow_name: 'pipeline' },
-		const wid = res.data.workflows.workflow_id;
-		//console.log(wid);
-		const wfData = await workflowDetails({workflowId: wid, token});
-		output.workflow = wfData;
+	// if we don't have the pipeline, download it and use its state (prolly more fresh than webhook data)
+		// populate the database with checks according to the pipeline data
+
+	const prPipeline = await Pipeline.findOne({ where: { pullRequest: pr } });
+
+	// TODO: query this on PR open
+	// TODO: race conditions?; add transaction???
+	// TODO: race condition when we receive another check webhook?
+	if (!prPipeline) {
+		console.log('downloading pipeline')
+		const pipeline = await loadPipeline(pr, check.target_url)
+
+		await updateCommitChecks(pipeline.rawData, commit, check);
+
+		// newPipeline.reload();
+		// return newPipeline;
+
+	// if we already have pipeline data, use the webhook check data to update the single check
+	} else {
+		console.log('updating check')
+		// const singleCheck = await CommitCheck.updateOrCreate({commit, type: 'ci-circleci', name: check.name}, {status: check.status, rawData: check.raw_data});
+
+		const singleCheck = await CommitCheck.findOne({commit, type: 'ci-circleci', name: check.name})
+
+		// approval steps will not be found
+		if (!singleCheck) {
+			// refresh pipeline
+			console.log('missing check', check.name, check.target_url, /*check*/)
+			// use target url to parse out workflow ID
+			// download workflow and save new pipeline data
+			const m = check.target_url.match(/\/workflow-run\/([a-f0-9-]+)/)
+			console.log('m', m)
+
+			assert(m && m[1], 'Check URL does not contain workflow')
+
+			const team = httpContext.get('team') as Team
+
+			// console.error('Team is missing Circle token')
+			if (!team.circlePersonalToken) throw new Error('Team is missing Circle token');
+
+			const pipeData = await workflowDetails({workflowId: m[1], token: team.circlePersonalToken})
+
+			// const pipeline = Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data})
+			const update = await Pipeline.update({pullRequest: pr}, {rawData: pipeData.raw_workflow_job_data})
+			if (!update || update.affected < 0) {
+				await Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data}).save()
+			}
+
+			await updateCommitChecks(pipeData.raw_workflow_job_data, commit, check);
+		} else {
+			// singleCheck.status = check.status;
+			// singleCheck.rawData = check.raw_data;
+			// await singleCheck.save();
+			await CommitCheck.update(singleCheck.id, {status: check.status, rawData: check.raw_data})
+		}
+
+		// return prPipeline;
 	}
 
-	return output;
-}
+	// then run the pipeline final status check
 
-async function workflowDetails({ workflowId, token}) {
-	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${token}`
-	const wres = await axios.get(wurl)
 
-	const output = {};
+	// 	// TODO: we prolly don't need this anymore
+	// 	// if (step.name === checkName) {
+	// 	// 	if (step.status !== check.status) {
+	// 	// 		console.log('status update', step.status, '->', check.status)
+	// 	// 	}
+	// 	// }
 
-	if (wres.data) {
-		output.raw_workflow_job_data = wres.data;
-		wres.data.items.forEach(i => console.log(i.name, i.status))
-		const allOnHold = wres.data.items.filter(i => i.status == 'on_hold');
-		output.jobs_on_hold = allOnHold;
-	}
-
-	return output;
-}
-
-async function getUserInfo(token) {
-	// { "enrolled_betas": ["top-bar-ui-v-1"], "in_beta_program": false, "selected_email": "...", "avatar_url": "https://avatars0.githubusercontent.com/u/140393?v=4", "trial_end": "2015-05-15T00:37:21.145Z", "admin": false, "basic_email_prefs": "none", "sign_in_count": 61, "github_oauth_scopes": ["user:email", "repo"], "analytics_id": "bb136cb4-ad4e-4a81-b04b-c6005afa48db", "name": "Tomas Ruzicka", "gravatar_id": null, "first_vcs_authorized_client_id": null, "days_left_in_trial": -1664, "privacy_optout": false, "parallelism": 1, "student": false, "bitbucket_authorized": false, "github_id": 140393, "web_ui_pipelines_optout": "opted-out", "bitbucket": null, "dev_admin": false, "all_emails": ["....", "...", "...", "...@gmail.com"], "created_at": "2015-05-01T00:37:21.145Z", "plan": null, "heroku_api_key": null, "identities": { "github": { "avatar_url": "https://avatars0.githubusercontent.com/u/140393?v=4", "external_id": 140393, "id": 140393, "name": "Tomas Ruzicka", "user?": true, "domain": "github.com", "type": "github", "authorized?": true, "provider_id": "bcc68be8-ef10-4dd6-9b76-34f19e0db930", "login": "LeZuse" } }, "projects": { "https://github.com/productboard/pb-backend": { "on_dashboard": true, "emails": "default" }, "https://github.com/productboard/pb-extension": { "on_dashboard": true, "emails": "default" }, "https://github.com/productboard/pb-integrations": { "on_dashboard": true, "emails": "default" }, "https://github.com/productboard/pb-frontend": { "on_dashboard": true, "emails": "default" }, "https://github.com/devilery/fds-dev": { "on_dashboard": true, "emails": "default" } }, "login": "LeZuse", "organization_prefs": {}, "containers": 1, "pusher_id": "7ed4403b6c5827056e228d2acf958dbac49ece45", "web_ui_pipelines_first_opt_in": true, "num_projects_followed": 5 }
-	const url = `https://circleci.com/api/v1.1/me?circle-token=${token}`
-	// console.log(url);
-	const res = await axios.get(url)
-
-	if (res.data) {
-		return res.data;
-	}
-}
-
-module.exports = {
-  retryBuild,
-  jobDetails,
-  getUserInfo,
+	// 	// TODO: normalize step.status
+	// 	const commitCheck = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullStepName}, {status: step.status})
+	// 	console.log('commit check in db', commitCheck)
+	// 	// upsert
+	// 	if (commitCheck.status !== step.status) {
+	// 		commitCheck.status = step.status;
+	// 		await commitCheck.save()
+	// 	}
+	// }))
 }

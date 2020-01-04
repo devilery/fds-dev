@@ -9,7 +9,7 @@ export default class CustomEntity extends BaseEntity {
   @UpdateDateColumn({ type: "timestamp", default: () => "timezone('utc', now())", onUpdate: "timezone('utc', now())" })
   updatedAt: Date;
 
-  static async findOrCreate<T extends BaseEntity>(this: ObjectType<T>, attributes: FindConditions<T>, createWithAttributes: DeepPartial<T>): Promise<[T, boolean]> {
+  static async findOrCreate<T extends BaseEntity>(this: ObjectType<T>, attributes: FindConditions<T>, createWithAttributes: DeepPartial<T> = {}): Promise<[T, boolean]> {
     const repository = (this as any).getRepository()
 
     const model = await repository.findOne({where: attributes})

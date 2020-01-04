@@ -1,4 +1,4 @@
-const { getUserInfo } = require('./circleci');
+import { getUserInfo } from './circleci-api'
 
 import { Team } from '../entity'
 

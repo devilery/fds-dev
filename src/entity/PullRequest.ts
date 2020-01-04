@@ -55,4 +55,8 @@ export default class PullRequest extends CustomEntity {
 
   @OneToMany(type => Pipeline, p => p.pullRequest)
   pipelines: Pipeline[];
+
+  async getHeadCommit() {
+    return Commit.findOneOrFail({where: {sha: this.headSha}});
+  }
 }

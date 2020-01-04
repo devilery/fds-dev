@@ -4,7 +4,7 @@ import { strict as assert } from 'assert';
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
 
-const { retryBuild, jobDetails } = require('../libs/circleci')
+import { retryBuild, jobDetails } from '../libs/circleci-api'
 import { getPullRequestsForCommit, requestPullRequestReview, removePullRequestReview, mergePR } from '../libs/github-api'
 const { trackEvent } = require('../libs/honeycomb')
 import { User, Team, GithubUser, CommitCheck } from '../entity';
