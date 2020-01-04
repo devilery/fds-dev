@@ -1,9 +1,9 @@
 const events = {};
 
 function subscribe(eventName, callback) {
-	let callbacks = events[eventName];
+	let callbacks = events[eventName]
 	if (callbacks === undefined) {
-		events[eventName] = [callback];
+		events[eventName] = [callback]
 	}
 };
 
@@ -17,9 +17,9 @@ async function emmit(eventName, data) {
 		callbacks = []
 	}
 
-	callbacks.forEach(callback => {
-		callback(data);
-	});
+	Promise.resolve(callbacks.map(async callback => {
+		await callback(data)
+	}))
 };
 
 module.exports = {
