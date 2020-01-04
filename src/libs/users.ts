@@ -1,10 +1,9 @@
 // @ts-ignore
 import { strict as assert } from 'assert';
-import { WebClient } from '@slack/web-api'
 
-import { emmit } from '../libs/event.js'
-import { Team, User } from '../entity'
-import { UsersInfoResult, ImOpenResult } from '../libs/slack-api'
+import { emmit } from '../libs/event.js';
+import { Team, User } from '../entity';
+import { UsersInfoResult, ImOpenResult } from '../libs/slack-api';
 
 export async function createUser(userSlackId: string, team: Team, metadata: any | null = null, sendEvent = true) {
 	const client = team.getSlackClient();
@@ -28,5 +27,6 @@ export async function createUser(userSlackId: string, team: Team, metadata: any 
 	if (sendEvent) {
 		emmit('user.created', user)
 	}
+
 	return user
 }

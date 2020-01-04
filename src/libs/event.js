@@ -20,7 +20,7 @@ async function emmit(eventName, data) {
 	}
 
 	Promise.resolve(callbacks.map(async callback => {
-		await callback(data)
+		await callback(data);
 	}))
 };
 

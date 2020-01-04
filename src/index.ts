@@ -69,8 +69,13 @@ app.use(async (req, res, next) => {
       console.log('[github]', req.headers['x-github-event'])
       const { body } = req;
       if (body.sender.id) {
-        const ghOwner = await GithubOwner.findOneOrFail({where: {installationId: req.body.installation.id}, relations: ['team']})
-        httpContext.set('team', ghOwner.team)
+        const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
+        if (ghOwner) {
+          httpContext.set('team', ghOwner.team)
+        } else {
+          res.status(404).send('owner not found')
+          return;
+        }
       }
     }
     else if (req.headers['x-slack-signature']) {

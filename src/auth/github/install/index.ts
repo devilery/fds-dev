@@ -48,6 +48,7 @@ export default async function setup(req: any, res: any) {
         githubId: repo.id,
         name: repo.name,
         rawData: repo as any,
+        websiteUrl: repo.html_url,
         owner: owner
       })
 
@@ -57,6 +58,6 @@ export default async function setup(req: any, res: any) {
   }
 
   res.statusCode = 302
-  res.setHeader('location', config.authRedirectUrls.githubInstall)
+  res.setHeader('location', `${config.authRedirectUrls.githubInstall}`)
   res.end()
 } 
