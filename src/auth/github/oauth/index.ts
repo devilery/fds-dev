@@ -78,7 +78,7 @@ function oAuth(this: any, opts: any) {
         author.githubUser!.githubAccessToken
       )
 
-      const buttonUrl = new Buffer(`https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}`).toString('base64')
+      const buttonUrl = Buffer.from(`https://github.com/${repo.owner.login}/${repo.name}/pull/${appUser.metadata.reviewPR}`).toString('base64')
       resp.statusCode = 302
       resp.setHeader('location', `${config.authRedirectUrls.githubOAuthReview}?pr=${buttonUrl}`)
       resp.end()

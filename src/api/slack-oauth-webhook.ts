@@ -30,10 +30,10 @@ router.get('/', async(req: any, res: any) => {
   res.statusCode = 302
 
   if (created) {
-    const authUrl = new Buffer(process.env.GH_APP_INSTAL_URL + `?state=${team.id}`).toString('base64')
+    const authUrl = Buffer.from(process.env.GH_APP_INSTAL_URL + `?state=${team.id}`).toString('base64')
     res.setHeader('location', `${config.authRedirectUrls.slackInstall}?install=${authUrl}`)
   } else {
-    const authUrl = new Buffer(process.env.GH_OAUTH_URL + `?userId=${user.id}`).toString('base64')
+    const authUrl = Buffer.from(process.env.GH_OAUTH_URL + `?userId=${user.id}`).toString('base64')
     res.setHeader('location', `${config.authRedirectUrls.slackAuth}?github=${authUrl}`)
   }
 
