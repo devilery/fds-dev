@@ -1,31 +1,20 @@
 import { ICommitCheck } from '../events/types';
 import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository } from '../entity'
+import { detectPipelineMasterStatus } from './circleci';
+import { pseudoRandomBytes } from 'crypto';
 
 export interface IMessageData {
 	text: string
 	blocks?: IMessgeBlock[]
 }
 
+
 interface IMessgeBlock {
-	type: 'section'| 'context' | "actions"
-	text?: string | { type: 'mrkdwn' | 'plain_text', text: string }
+	type: 'section'| 'context' | "actions" | "divider"
+	text?: string | { type: 'mrkdwn' | 'plain_text', text?: string, plain_text?: string }
 	blocks?: []
 	accessory?: any
-	elements?: {
-		type: "button"| "users_select",
-		placeholder?: {
-			"type": "plain_text",
-			"text": string,
-			"emoji": boolean
-		}
-		text?: {
-			type: "plain_text",
-			text: string,
-			emoji: boolean
-		}
-		value?: string,
-		confirm?: any,
-	}[]
+	elements?: any
 }
 
 function encodeAction(actionName: string, actionData: {}) {
@@ -67,13 +56,13 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 	}
 }
 
-function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
+function getActionBlocks(pr: PullRequest): IMessgeBlock {
 	return {
 		"type": "actions",
 		"elements": [
 			{
 				"type": "users_select",
-				"value": encodeAction('review_assign', { pr_id: pr.id }),
+				"action_id": encodeAction('review_assign', { pr_id: pr.id }),
 				"placeholder": {
 					"type": "plain_text",
 					"text": "Assign review",
@@ -111,58 +100,32 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 	}
 }
 
-// function getMergeBlock(pr: PullRequest): IMessgeBlock {
-// 	return {
-// 		"type": "section",
-// 		"text": {
-// 			"type": "mrkdwn",
-// 			"text": "Merge PR"
-// 		},
-// 		"accessory": {
-// 			"type": "button",
-// 			"text": {
-// 				"type": "plain_text",
-// 				"text": "Merge PR 💣",
-// 				"emoji": true
-// 			},
-// 			"confirm": {
-// 				"title": {
-// 					"type": "plain_text",
-// 					"text": "confirm merge",
-// 				},
-// 				"text": {
-// 					"type": "plain_text",
-// 					"text": `do you really want to merge PR #${pr.prNumber} ${pr.title}?`
-// 				},
-// 				"confirm": {
-// 					"type": "plain_text",
-// 					"text": "Merge please",
-// 				},
-// 				"deny": {
-// 					"type": "plain_text",
-// 					"text": "Abort merge",
-// 				}
-// 			},
-// 			"value": encodeAction('merge', {pr: pr.id})
-// 		}
-// 	}
-// }
-
-function getCheckProgressBlock(checks: CommitCheck[]): IMessgeBlock {
-	let pendingChecks = checks.filter(item => item.status === 'pending').length
-	let doneChecks = checks.length - pendingChecks
-
-	if (pendingChecks > 0) {
-		var text = `⚙️ Check are going well so far... _(${doneChecks} of ${pendingChecks + doneChecks} checks completed)_`
-	} else {
-		var text = `⚙️ Check are done! _(${doneChecks} of ${pendingChecks + doneChecks} checks completed)_`
+function getCheckLine(check: CommitCheck): string {
+	let emojiMapping = {
+		'pending': null,
+		'in_progress': '⚙️',
+		'waiting_for_manual_action': '👉',
+		'success': '✅',
+		'failure': '🚫',
 	}
 
+	let textMapping = {
+		'pending': null,
+		'in_progress': 'is in progres...',
+		'waiting_for_manual_action': 'needs your action 👈',
+		'success': 'is done',
+		'failure': 'failed',
+	}
+
+	return `${emojiMapping[check.status]} < ${check.targetUrl} | ${check.name} ${textMapping[check.status]} >`
+}
+
+function getPiplineCheckBlock(pr: PullRequest, pipeline: CommitCheck, pipelineStatus: string): IMessgeBlock {
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": text
+			"text": `*⚙️ <${pipeline.targetUrl} | ${pipeline.name}> is in progres...* \n        ✅ <https://google.com| Job #1> is done \n        ⚙️ <https://google.com| Job #1> is in progres... \n        🚫 <https://google.com| Job #1> failed \n        👉 <https://google.com| Job #1> needs your action 👈`
 		},
 		"accessory": {
 			"type": "overflow",
@@ -182,61 +145,20 @@ function getCheckProgressBlock(checks: CommitCheck[]): IMessgeBlock {
 						"emoji": true
 					},
 					"value": "value-1"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Option 3",
-						"emoji": true
-					},
-					"value": "value-2"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Option 4",
-						"emoji": true
-					},
-					"value": "value-3"
 				}
 			]
 		}
 	}
+}
 
-	// if (checks.length === 0)
-	// 	return []
-
-	// let pendingChecks = checks.filter(item => item.status === 'pending')
-
-	// return [
-	// 	{
-	// 		"type": "context",
-	// 		"elements": [
-	// 			{
-	// 				"type": "mrkdwn",
-	// 				"text": `*Pull request checks* (${checks.filter(item => item.status !== 'pending').length} complete out of ${checks.length})`
-	// 			}
-	// 		]
-	// 	},
-	// 	pendingChecks.map(item => {
-	// 		let checkName = item.name;
-
-	// 		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${checkName}>` : checkName;
-	// 		let text = `⏳Check ${linkOrName} in progress...`;
-
-	// 		// if (item.ciData && item.ciData.estimate_ms) {
-	// 		// 	text += ` ${item.ciData.estimate_ms / 1000}s est build time`
-	// 		// }
-
-	// 		return {
-	// 			"type": "section",
-	// 			"text": {
-	// 				"type": "mrkdwn",
-	// 				"text": text
-	// 			}
-	// 		}
-	// 	})
-	// ].flat()
+function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[] {
+	return [{
+		"type": "section",
+		"text": {
+			"type": "mrkdwn",
+			"text": `function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[]`
+		},
+	}]
 }
 
 function getMergedBlock(mergedAt: string) {
@@ -249,23 +171,73 @@ function getMergedBlock(mergedAt: string) {
 	}
 }
 
-function getDivider() {
+function getDivider(): IMessgeBlock {
 	return {
 		"type": "divider"
 	}
 }
 
-export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
+function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewRequest[], reviews: PullRequestReview[]): IMessgeBlock[] {
+	let blocks: IMessgeBlock[] = [{
+		"type": "context",
+		"elements": [
+			{
+				"type": "mrkdwn",
+				"text": "Review assigned to:"
+			}
+		]
+	}]
+
+	function buildBlock(status: string, reviewer: string, reviewerLink: string, link: string, actionData: {}): IMessgeBlock {
+		return {
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": `<${reviewerLink} | ${reviewer}> | ${status} | <https://google.com| link>`
+			},
+			"accessory": {
+				"type": "button",
+				"text": {
+					"type": "plain_text",
+					"text": "Re-request",
+					"emoji": true
+				},
+				"value": encodeAction('review_asigne', actionData)
+			}
+		}
+	}
+
+	reviews.forEach(item => {
+		const states = {
+			'commented': '💬 You got a comment', 
+			'changes_requested': '🤔 Changes requested',
+			'approved': '✅ Accepted',
+		}
+		blocks.push(buildBlock(states[item.state], item.reviewUserName, item.reviewUserName, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUserName}));
+	})
+
+	requests.forEach(item => {
+		blocks.push(buildBlock('⏳ _waiting..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername}));
+	})
+
+	return blocks
+}
+
+export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {	
 	const open = pr.state == 'open'
 	const showChecks = checks.length > 0
 	const merged = !!pr.rawData.raw_data.merged_at;
 	const repo = await pr.relation('repository')
+
+	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest']})
+	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr, review: null}})
+
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && getCheckProgressBlock(checks),
-		open && getDivider(),
-		open && getReviewAssigneBlock(pr),
-		// open && getMergeBlock(pr),
+		open && showChecks && getChecksBlocks(pr, checks),
+		open && showChecks && getDivider(),
+		open && getActionBlocks(pr),
+		open && getReviewsStatusBlock(pr, requests, reviews),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
@@ -275,8 +247,8 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 };
 
 export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
-	var blocks: IMessgeBlock[] = checks.map(check => {
-		let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : check.name;
+	var blocks: IMessgeBlock[] = checks.map(item => {
+		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${item.rawData.context}>` : item.rawData.context;
 
 		return {
 			type: "context",
@@ -304,7 +276,7 @@ export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
 }
 
 export function getCheckErrorMessage(check: CommitCheck): IMessageData {
-	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : check.name;
+	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.rawData.context}>` : check.rawData.context;
 
 	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
 

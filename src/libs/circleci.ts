@@ -158,7 +158,7 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 	// }))
 }
 
-async function detectPipelineMasterStatus(pr: PullRequest) {
+export async function detectPipelineMasterStatus(pr: PullRequest) {
 	const pipeline = await pr.getHeadPipeline()
 	const commit = await pr.getHeadCommit()
 	const checks = await CommitCheck.find({where: { commit }})

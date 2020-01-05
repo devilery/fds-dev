@@ -11,7 +11,7 @@ export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitChe
 	const client = team.getSlackClient()
 	const messageData = await getPrMessage(pr, prCommitChecks)
 
-	await client.chat.update({...messageData, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 }
 
 export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: CommitCheck[], check: CommitCheck) {
