@@ -47,7 +47,7 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<P
 
 async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: ICommitCheck | null = null) {
 	const statusMap = {
-		'pending': 'pending', 
+		'pending': 'in_progress', 
 		'blocked': 'pending',
 		'running': 'in_progress',
 		'queued': 'in_progress',
