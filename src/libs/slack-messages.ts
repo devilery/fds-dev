@@ -1,3 +1,4 @@
+import httpContext from 'express-http-context'
 import { ICommitCheck } from '../events/types';
 import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository } from '../entity'
 import { detectPipelineMasterStatus } from './circleci';
@@ -177,7 +178,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 			}
 		})
 	})
-	
+
 	return blocks
 }
 
@@ -249,8 +250,9 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 }
 
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
+	const team = httpContext.get('team');
 	const open = pr.state == 'open'
-	const showChecks = checks.length > 0
+	const showChecks = team && team.featureFlags.ci_checks && checks.length > 0
 	const merged = !!pr.rawData.raw_data.merged_at
 	const repo = await pr.relation('repository')
 

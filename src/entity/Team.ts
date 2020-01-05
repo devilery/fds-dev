@@ -30,6 +30,9 @@ export default class Team extends CustomEntity {
   @JoinColumn()
   githubOwner: GithubOwner | null;
 
+  @Column('jsonb', {default: {}})
+  featureFlags: {ci_checks?: boolean, merge_button?: boolean};
+
   getSlackClient(): WebClient {
     return new WebClient(this.slackBotAccessToken)
   }
