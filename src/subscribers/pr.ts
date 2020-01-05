@@ -31,7 +31,7 @@ const opened = async function (data: IPullRequestEvent) {
 	await pr.save()
 	await pr.reload('user')
 
-	const watchMessageText = `:face_with_monocle: @${await pr.user.getSlackUsername()} You are now watching this thread`
+	const watchMessageText = `Hey @${await pr.user.getSlackUsername()}, you are now watching this thread :face_with_monocle:`
 	await client.chat.postMessage({text: watchMessageText, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
 
 	// TODO: remove redundant Slack API call
