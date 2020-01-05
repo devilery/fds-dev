@@ -6,6 +6,9 @@ export default class Pipeline extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
+  @Column({nullable: false})
+  url: string;
+
   // TODO: maybe not unique ?
   @Column({ unique: true })
   sha: string;

@@ -6,6 +6,10 @@ import { jobDetails, workflowDetails } from '../libs/circleci-api';
 
 const CIRCLE_JOB_PREFIX = 'ci/circleci: ';
 
+function getWorkflowUrl(workflowId: string) {
+	return `https://circleci.com/workflow-run/${workflowId}`;
+}
+
 export function isCircleCheck(check: ICommitCheck) {
 	assert(check.name, 'Check is missing name')
 	return check.name && check.name.includes(CIRCLE_JOB_PREFIX)
@@ -31,8 +35,9 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<P
 	// workflows(workflow_id), build_time_millis, lifecycle, status, previous(build_num, status, build_time_millis), fail_reason, steps(*)
 
 	const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
+	const workflow = circleCiData.raw_job_data.workflows;
 
-	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw, sha: pr.headSha})
+	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw, sha: pr.headSha, url: getWorkflowUrl(workflow.workflow_id)})
 	await newPipeline.save()
 	await newPipeline.reload()
 
@@ -117,7 +122,7 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 			// const pipeline = Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data})
 			const update = await Pipeline.update({pullRequest: pr}, {rawData: pipeData.raw_workflow_job_data})
 			if (!update || update.affected < 0) {
-				await Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data}).save()
+				await Pipeline.create({pullRequest: pr, rawData: pipeData.raw_workflow_job_data, url: getWorkflowUrl(m[1])}).save()
 			}
 
 			await updateCommitChecks(commit, pipeData.raw_workflow_job_data, check);
