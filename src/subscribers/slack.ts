@@ -1,8 +1,8 @@
 // @ts-ignore
 import { strict as assert } from 'assert';
-import { Team, PullRequest } from '../entity'
+import { Team, PullRequest, User } from '../entity'
 import { mergePR } from '../libs/github-api'
-
+import { requestSlackUsersToReview } from '../libs/github'
 
 
 const actionMerge = async function(data: {pr: number, team: Team}) {
@@ -16,4 +16,24 @@ const actionMerge = async function(data: {pr: number, team: Team}) {
 }
 actionMerge.eventType = 'slack.action.merge'
 
-module.exports = [actionMerge]
+const actionReviewAssign = async function (data: { pr_id: number, team: Team, eventData: { selected_user: string }}) { 
+	const team = data.team
+	await team.reload()
+	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations: ['user'] })
+	const user = pr.user;
+
+	if (!user.githubUser) {
+		console.log('Author does not have github user')
+		return;
+	}
+
+	requestSlackUsersToReview(
+		[data.eventData.selected_user],
+		pr.prNumber,
+		user
+	)
+}
+
+actionMerge.eventType = 'slack.action.review_assign'
+
+module.exports = [actionMerge, actionReviewAssign]

@@ -76,59 +76,6 @@ router.post('/', async(req, res) => {
   const team = httpContext.get('team') as Team
   assert(team, 'No team found in context')
 
-  const client = team.getSlackClient()
-
-  if (payload.type === 'block_actions') {
-    const action = payload.actions[0]
-    let actionId = ''
-    if (action.value)
-      actionId = action.value
-    else
-      actionId = action.action_id
-
-    if (actionId.indexOf('review_assigne_') >= 0) {
-      const prId = actionId.replace('review_assigne_', '')
-      const modal = getModal(prId)
-      try {
-        await client.views.open({'trigger_id': payload.trigger_id, 'view': modal.view})
-      } catch (e) {
-        console.log(e)
-      }
-    }
-
-    if (actionId.indexOf('review_target_user_selected_') >= 0) {
-      const prId = actionId.replace('review_target_user_selected_', '')
-      const modal = getModal(prId)
-
-      const selectedUser = action.selected_user
-      const selectingUser = payload.user.id
-
-      client.views.update({'view': emptyView, 'view_id': payload.view.id})
-
-      const user = await User.findOneOrFail({where: {slackId: selectingUser}, relations: ['githubUser']})
-
-      const pr = await PullRequest.findOneOrFail(parseInt(prId))
-
-      if (!user.githubUser) {
-        console.log('Author does not have github user')
-        return;
-      }
-
-      requestSlackUsersToReview(
-        [selectedUser],
-        pr.prNumber,
-        user
-      )
-    }
-
-    return;
-  }
-
-  if (payload.type === 'view_submission') {
-    console.log(payload)
-    return;
-  }
-
   if (payload && payload.actions) {
     decodeAction(payload, team)
   }
@@ -144,6 +91,7 @@ function decodeAction(payload: {actions: Array<{}>}, team: Team) {
     const data = JSON.parse(decodeURIComponent(actionName.split('___', 2)[1]))
     // console.log('data', data);
     data['team'] = team;
+    data['eventData'] = action;
     emmit(`slack.action.${eventName}`, data)
   }
 }

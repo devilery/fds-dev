@@ -47,20 +47,12 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
 }
 
-<<<<<<< HEAD
-function getBaseBlock(pr: PullRequest, repo: Repository): Promise<IMessgeBlock> {
-=======
-function getBaseBlock(pr: PullRequest): IMessgeBlock {
->>>>>>> improvements
+function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 	return {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-<<<<<<< HEAD
 			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
-=======
-			"text": `*<${pr.websiteUrl} | PR #${pr.prNumber}: ${pr.title}> * in <${pr.repository.websiteUrl} | ${pr.repository.name}>`
->>>>>>> improvements
 		},
 		"accessory": {
 			"type": "button",
@@ -81,6 +73,7 @@ function getReviewAssigneBlock(pr: PullRequest): IMessgeBlock {
 		"elements": [
 			{
 				"type": "users_select",
+				"value": encodeAction('review_assign', { pr_id: pr.id }),
 				"placeholder": {
 					"type": "plain_text",
 					"text": "Assign review",
@@ -262,20 +255,15 @@ function getDivider() {
 	}
 }
 
-export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): IMessageData {
+export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
 	const open = pr.state == 'open'
 	const showChecks = checks.length > 0
 	const merged = !!pr.rawData.raw_data.merged_at;
+	const repo = await pr.relation('repository')
 	let blocks = [
-<<<<<<< HEAD
-		getBaseBlock(pr, await pr.relation('repository')),
+		getBaseBlock(pr, repo),
 		open && getCheckProgressBlock(checks),
 		open && getDivider(),
-=======
-		getBaseBlock(pr),
-		open && showChecks && getCheckProgressBlock(checks),
-		open && showChecks && getDivider(),
->>>>>>> improvements
 		open && getReviewAssigneBlock(pr),
 		// open && getMergeBlock(pr),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)

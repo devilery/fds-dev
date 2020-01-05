@@ -25,7 +25,7 @@ export default class CustomEntity extends BaseEntity {
   }
 
   /** Get relation by string. Does not update parent objects */
-  async relation<P extends CustomEntity, T extends KeysOfType<this, CustomEntity | CustomEntity[] | undefined | null>>(this: P, relation: T): Promise<T> {
+  async relation<P extends CustomEntity, T extends KeysOfType<this, CustomEntity | CustomEntity[] | undefined | null>>(this: P, relation: T): Promise<this[T]> {
     let constructor = this.constructor as any;
     let instance = await constructor.findOneOrFail((this as any).id, { relations: [relation] })
     return Promise.resolve(instance[relation])

@@ -29,7 +29,7 @@ export default class PullRequest extends CustomEntity {
   @Column()
   title: string;
 
-  @ManyToOne(type => User, { nullable: true })
+  @ManyToOne(type => User)
   user: User;
 
   @Column()
