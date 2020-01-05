@@ -227,7 +227,7 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 		const requesterUsername = await pr.user.getSlackUsername()
 		const notification = getReviewRequestNotification(request, requesterUsername, false)
 		const client = assigneeUser.team.getSlackClient()
-		await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
+		await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true })
 		request.notified = true;
 		await request.save()
 	}

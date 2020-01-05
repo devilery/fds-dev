@@ -2,72 +2,7 @@ import { strict as assert } from 'assert';
 import httpContext from 'express-http-context';
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
-import { Team, User, PullRequest } from '../entity'
-import { requestSlackUsersToReview } from '../libs/github'
-
-function getModal(prId) {
-  return {
-    "response_action": "push",
-    "view": {
-        "type": "modal",
-        "title": {
-          "type": "plain_text",
-          "text": "Review assign shit...",
-          "emoji": true
-        },
-        "close": {
-          "type": "plain_text",
-          "text": "Close",
-          "emoji": true
-        },
-        "blocks": [
-          {
-            "type": "section",
-            "text": {
-              "type": "plain_text",
-              "text": "...",
-              "emoji": true
-            }
-          },
-          {
-            "type": "section",
-            "block_id": "section678",
-            "text": {
-              "type": "mrkdwn",
-              "text": "Pick a user from the dropdown list"
-            },
-            "accessory": {
-              "action_id": "review_target_user_selected_" + prId,
-              "type": "users_select",
-              "placeholder": {
-                "type": "plain_text",
-                "text": "Select an item"
-              }
-            }
-          }
-        ]
-      }
-    }
-}
-
-const emptyView = {
-  "type": "modal",
-  "title": {
-    "type": "plain_text",
-    "text": "Review assign shit...",
-    "emoji": true
-  },
-  "blocks": [
-    {
-      "type": "section",
-      "text": {
-        "type": "plain_text",
-        "text": "assigned :) you can close the view now",
-        "emoji": true
-      }
-    }
-  ]
-}
+import { Team } from '../entity'
 
 router.post('/', async(req, res) => {
   const payload = JSON.parse(req.body.payload)
@@ -94,6 +29,7 @@ function decodeAction(payload: {actions: Array<{}>}, team: Team) {
     // console.log('data', data);
     data['team'] = team;
     data['eventData'] = action;
+    console.log(data);
     emmit(`slack.action.${eventName}`, data)
   }
 }

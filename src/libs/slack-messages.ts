@@ -192,7 +192,7 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 					"text": "Re-request",
 					"emoji": true
 				},
-				"value": encodeAction('review_asigne', actionData)
+				"value": encodeAction('review_reassign', actionData)
 			}
 		}
 	}
@@ -301,13 +301,30 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 }
 
 export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean): IMessageData {
-	let text = 'requested';
-
-	if (existing) {
-		text = 're-requested'
-	}
-
 	return {
-		'text': `@${requesterUsername} ${text} review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`
+		"text": `@${requesterUsername} requested review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`,
+		"blocks": [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": `👋 @${requesterUsername} requested review on *PR #${reviewRequest.pullRequest.prNumber} <${reviewRequest.pullRequest.websiteUrl}| ${reviewRequest.pullRequest.title}> *`
+				}
+			},
+			{
+				"type": "actions",
+				"elements": [
+					{
+						"type": "button",
+						"text": {
+							"type": "plain_text",
+							"text": "🔍  Review",
+							"emoji": true
+						},
+						"url": reviewRequest.pullRequest.websiteUrl
+					}
+				]
+			}
+		]
 	}
 }
