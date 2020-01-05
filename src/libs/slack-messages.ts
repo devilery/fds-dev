@@ -41,7 +41,7 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 		"type": "section",
 		"text": {
 			"type": "mrkdwn",
-			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl} | ${pr.title}> * _in <${repo.websiteUrl} | ${repo.name}>_`
+			"text": `*PR #${pr.prNumber}: <${pr.websiteUrl}|${pr.title}>* in _<${repo.websiteUrl}|${repo.name}>_`
 		},
 		"accessory": {
 			"type": "button",
@@ -87,11 +87,11 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 					},
 					"confirm": {
 						"type": "plain_text",
-						"text": "Merge please",
+						"text": "Yes",
 					},
 					"deny": {
 						"type": "plain_text",
-						"text": "Nope",
+						"text": "No",
 					}
 				},
 				"value": encodeAction('merge', {pr_id: pr.id})
@@ -152,6 +152,7 @@ function getPiplineCheckBlock(pr: PullRequest, pipeline: CommitCheck, pipelineSt
 }
 
 function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[] {
+	
 	return [{
 		"type": "section",
 		"text": {
