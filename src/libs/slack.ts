@@ -1,7 +1,7 @@
 import { strict as assert } from 'assert';
 import httpContext from 'express-http-context'
 
-import { PullRequest, CommitCheck } from '../entity'
+import { PullRequest, CommitCheck, Team } from '../entity'
 import { IMessageData, getPrMessage, getChecksSuccessMessage, getCheckErrorMessage } from './slack-messages'
 
 export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitCheck[]) {
@@ -15,6 +15,9 @@ export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitChe
 }
 
 export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: CommitCheck[], check: CommitCheck) {
+	const team = httpContext.get('team') as Team;
+	if (team && team.featureFlags && !team.featureFlags.ci_checks) return;
+
 	const allChecksPassed = prCommitChecks.every(check => check.status === 'success')
 
 	const notificationMessage = allChecksPassed

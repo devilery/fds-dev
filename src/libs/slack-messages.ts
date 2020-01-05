@@ -68,7 +68,8 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 	}
 }
 
-function getActionBlocks(pr: PullRequest): IMessgeBlock {
+function getActionBlocks(pr: PullRequest, team: Team): IMessgeBlock {
+	const mergeFlag = !!team.featureFlags.merge_button;
 	return {
 		"type": "actions",
 		"elements": [
@@ -81,7 +82,7 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 					"emoji": true
 				}
 			},
-			{
+			mergeFlag && {
 				"type": "button",
 				"text": {
 					"type": "plain_text",
@@ -108,7 +109,7 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 				},
 				"value": encodeAction('merge', {pr_id: pr.id})
 			},
-		]
+		].filter(Boolean)
 	}
 }
 
@@ -270,7 +271,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 		open && showChecks && getChecksBlocks(checks, ciStatus),
 		open && showChecks && getDivider(),
 		open && (reviews.length + requests.length > 0) && getReviewsStatusBlock(pr, requests, reviews),
-		open && getActionBlocks(pr),
+		open && getActionBlocks(pr, team),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
