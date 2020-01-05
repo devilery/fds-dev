@@ -174,7 +174,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 
 	// check if any empty review request exists for this user. If so fill it with this review.
 	// we use remote username as a key
-	const reviewRequest = await PullRequestReviewRequest.findOne({ where: { reviewUsername: reviewEvent.user.github_login, pullRequest: pr, review: null } })
+	const reviewRequests = await PullRequestReviewRequest.find({ where: { reviewUsername: reviewEvent.user.github_login, pullRequest: pr }, order: { id: 'DESC' } })
 
 	const review = await PullRequestReview.create({
 		remoteId: reviewEvent.remoteId,
@@ -183,7 +183,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 		rawData: reviewEvent.raw_data,
 		reviewUsername: reviewEvent.user.github_login,
 		reviewUser: reviewUser,
-		reviewRequest: reviewRequest,
+		reviewRequest: reviewRequests[0],
 		pullRequest: pr
 	})
 
@@ -212,8 +212,8 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	}
 
 	// one user can have only one *EMPTY* (without finished review) request for PR. Delete the old ones in case of network or DB errors / bugs
-	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, reviewUsername: reviewRequest.review_username}, relations: ['review'] })
-	for (let oldRequest of oldRequests.filter(item => item.review === null)) {
+	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, reviewUsername: reviewRequest.review_username}, relations: ['reviews'] })
+	for (let oldRequest of oldRequests.filter(item => item.reviews.length === 0)) {
 		await oldRequest.remove()
 	}
 
@@ -237,9 +237,10 @@ pullRequestReviewRequest.eventType = 'pr.review.request'
 
 const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPullRequestReviewRequestRemove) {
 	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })
-	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['review'] })
+	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['reviews'] })
 
-	if (request && request.review === null) {
+	console.log(request)
+	if (request && request.reviews.length === 0) {
 		request.remove();
 	}
 

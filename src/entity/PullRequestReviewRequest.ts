@@ -15,8 +15,8 @@ export default class PullRequestReviewRequest extends CustomEntity {
   @Column()
   reviewUsername: string;
 
-  @OneToOne(type => PullRequestReview, review => review.reviewRequest, { nullable: true })
-  review: PullRequestReview | null;
+  @OneToMany(type => PullRequestReview, review => review.reviewRequest)
+  reviews: PullRequestReview[];
 
   @Column({default: false})
   notified: boolean;

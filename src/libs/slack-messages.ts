@@ -217,11 +217,12 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 			'changes_requested': '🤔 Changes requested',
 			'approved': '✅ Approved',
 		}
+
 		assigneeBlocks[item.reviewUsername] = buildBlock(states[item.state], item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
 	})
 
 	requests.forEach(item => {
-		if (!item.review) {
+		if (item.reviews.length === 0) {
 			assigneeBlocks[item.reviewUsername] = buildBlock('⏳ _waiting..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
 		}
 	})
@@ -245,8 +246,9 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 	const merged = !!pr.rawData.raw_data.merged_at
 	const repo = await pr.relation('repository')
 
-	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: "DESC"}})
-	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['review']})
+	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: 'ASC'}})
+	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
+
 
 	let blocks = [
 		getBaseBlock(pr, repo),

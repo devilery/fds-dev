@@ -44,6 +44,12 @@ export async function getCommitInfo(owner: string, repo: string, commit_sha: str
   return res.data as Octokit.ReposGetCommitResponse
 }
 
+// https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
+export async function getCommitStatuses(owner: string, repo: string, commit_sha: string, token: string) {
+  let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` }})
+  return res.data as Octokit.ReposListStatusesForRefResponse
+}
+
 // https://developer.github.com/v3/apps/#create-a-new-installation-token
 export async function createInstallationToken(installation_id: string) {
 

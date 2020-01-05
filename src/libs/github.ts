@@ -297,7 +297,7 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
   return prs;
 }
 
-async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit | Octokit.ReposGetCommitResponse, pullRequests: PullRequest[] = []) {
+export async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit | Octokit.ReposGetCommitResponse, pullRequests: PullRequest[] = []) {
   let com = await Commit.findOne({where: {sha: commit.sha}, relations: ['pullRequests']});
 
   if (!com) {
@@ -317,6 +317,7 @@ async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit 
     }
   }
   await com.save()
+  return com;
 }
 
 const avaibleStates: { [key: string]: string; }  = {
