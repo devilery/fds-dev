@@ -13,6 +13,7 @@ router.post('/', async(req, res) => {
   console.log(eventName)
   switch (eventName) {
     case 'pull_request':
+      console.log(body.action)
       switch (body.action) {
         case 'review_requested':
           processPullRequestReviewRequest(body)

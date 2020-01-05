@@ -5,6 +5,7 @@ import { bigInt } from './util';
 import PullRequestReview from './PullRequestReview';
 import { Repository, PullRequestReviewRequest, Pipeline } from '.'
 import CustomEntity from './CustomEntity'
+import { updatePrMessage } from "../libs/slack";
 
 @Entity()
 export default class PullRequest extends CustomEntity {
@@ -62,5 +63,11 @@ export default class PullRequest extends CustomEntity {
 
   async getHeadPipeline() {
     return Pipeline.findOne({where: {pullRequest: this, sha: this.headSha}});
+  }
+
+  async updateMainMessage() {
+    const headCommit = await this.getHeadCommit();
+    const checks = await headCommit.relation('checks');
+    await updatePrMessage(this, checks);
   }
 }

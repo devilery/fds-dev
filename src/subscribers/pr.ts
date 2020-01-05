@@ -196,6 +196,8 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 		username = `@${slackUsername}`
 	}
 
+	await pr.updateMainMessage()
+
 	const notification = getReviewMessage(review, username);
 	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
 }
@@ -210,13 +212,15 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	}
 
 	// one user can have only one *EMPTY* (without finished review) request for PR. Delete the old ones in case of network or DB errors / bugs
-	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username}, relations: ['review'] })
+	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, reviewUsername: reviewRequest.review_username}, relations: ['review'] })
 	for (let oldRequest of oldRequests.filter(item => item.review === null)) {
 		await oldRequest.remove()
 	}
 
 	const request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
 	await request.save()
+
+	await pr.updateMainMessage()
 
 	if (assigneeUser && !request.notified) {
 		await request.reload()
@@ -233,16 +237,13 @@ pullRequestReviewRequest.eventType = 'pr.review.request'
 
 const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPullRequestReviewRequestRemove) {
 	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })
-	let assigneeUser: User | undefined;
-	if (reviewRequestRemove.assignee_user_id) {
-		assigneeUser = await User.findOne(reviewRequestRemove.assignee_user_id, { relations: ['team'] })
-	}
-
-	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequestRemove.review_username }, relations: ['review'] })
+	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['review'] })
 
 	if (request && request.review === null) {
 		request.remove();
 	}
+
+	await pr.updateMainMessage()
 }
 
 pullRequestReviewRequestRemove.eventType = 'pr.review.request.remove'
