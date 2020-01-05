@@ -19,7 +19,7 @@ actionMerge.eventType = 'slack.action.merge'
 const actionReviewAssign = async function (data: { pr_id: number, team: Team, eventData: { selected_user: string }}) { 
 	const team = data.team
 	await team.reload()
-	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations: ['user'] })
+	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations: ['user', 'user.githubUser'] })
 	const user = pr.user;
 
 	if (!user.githubUser) {
@@ -34,6 +34,6 @@ const actionReviewAssign = async function (data: { pr_id: number, team: Team, ev
 	)
 }
 
-actionMerge.eventType = 'slack.action.review_assign'
+actionReviewAssign.eventType = 'slack.action.review_assign'
 
 module.exports = [actionMerge, actionReviewAssign]

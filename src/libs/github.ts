@@ -10,7 +10,7 @@ import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
-import { IPullRequestReviewEvent, IPullRequestReviewRequest, IRequestGithubReviewLogin } from '../events/types';
+import { IPullRequestReviewEvent, IPullRequestReviewRequest, IRequestGithubReviewLogin, IPullRequestReviewRequestRemove } from '../events/types';
 import { ReviewStateType } from '../entity/PullRequestReview';
 
 
@@ -162,6 +162,23 @@ export async function processPullRequestReviewRequest(requestReviewEvent: any) {
     }
 
     emmit('pr.review.request', reviewRequest)
+  }
+}
+
+export async function processPullRequestReviewRequestRemove(requestReviewRemoveEvent: any) {
+  const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewRemoveEvent.requested_reviewer.id } })
+  const team = httpContext.get('team') as Team;
+  const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
+  const pr = await findPRByGithubId(requestReviewRemoveEvent.pull_request.id)
+
+  if (pr) {
+    let reviewRequest: IPullRequestReviewRequestRemove = {
+      pull_request_id: pr.id,
+      assignee_user_id: assignedUser ? assignedUser.id : undefined,
+      review_username: requestReviewRemoveEvent.requested_reviewer.login
+    }
+
+    emmit('pr.review.request.remove', reviewRequest)
   }
 }
 

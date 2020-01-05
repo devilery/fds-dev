@@ -76,6 +76,8 @@ router.post('/', async(req, res) => {
   const team = httpContext.get('team') as Team
   assert(team, 'No team found in context')
 
+  console.log(payload)
+
   if (payload && payload.actions) {
     decodeAction(payload, team)
   }

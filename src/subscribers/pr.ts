@@ -3,7 +3,7 @@ import httpContext from 'express-http-context'
 const { Base64 } = require('js-base64');
 
 import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest, Repository, Pipeline } from '../entity';
-import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest } from '../events/types';
+import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest, IPullRequestReviewRequestRemove } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
 import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
@@ -204,7 +204,10 @@ pullRequestReviewed.eventType = 'pr.reviewed'
 
 const pullRequestReviewRequest = async function (reviewRequest: IPullRequestReviewRequest) {
 	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
-	const assigneeUser = await User.findOne(reviewRequest.assignee_user_id, { relations: ['team'] })
+	let assigneeUser: User | undefined;
+	if (reviewRequest.assignee_user_id) {
+		assigneeUser = await User.findOne(reviewRequest.assignee_user_id, { relations: ['team'] })
+	}
 
 	// one user can have only one *EMPTY* (without finished review) request for PR. Delete the old ones in case of network or DB errors / bugs
 	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username}, relations: ['review'] })
@@ -215,15 +218,33 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	const request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
 	await request.save()
 
-	if (assigneeUser) {
+	if (assigneeUser && !request.notified) {
 		await request.reload()
 		const requesterUsername = await pr.user.getSlackUsername()
 		const notification = getReviewRequestNotification(request, requesterUsername, false)
 		const client = assigneeUser.team.getSlackClient()
 		await client.chat.postMessage({ text: notification.text, channel: assigneeUser.slackImChannelId, link_names: true })
+		request.notified = true;
+		await request.save()
 	}
 }
 
 pullRequestReviewRequest.eventType = 'pr.review.request'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed]
+const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPullRequestReviewRequestRemove) {
+	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })
+	let assigneeUser: User | undefined;
+	if (reviewRequestRemove.assignee_user_id) {
+		assigneeUser = await User.findOne(reviewRequestRemove.assignee_user_id, { relations: ['team'] })
+	}
+
+	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequestRemove.review_username }, relations: ['review'] })
+
+	if (request && request.review === null) {
+		request.remove();
+	}
+}
+
+pullRequestReviewRequestRemove.eventType = 'pr.review.request.remove'
+
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove]

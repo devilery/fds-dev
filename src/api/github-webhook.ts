@@ -1,6 +1,6 @@
 import express from 'express'
 
-import { processGithubPullRequest, processCommitStatus, processCheckRun, processPullRequestReview, processPullRequestReviewRequest } from '../libs/github'
+import { processGithubPullRequest, processCommitStatus, processCheckRun, processPullRequestReview, processPullRequestReviewRequest, processPullRequestReviewRequestRemove } from '../libs/github'
 
 const router = express.Router();
 
@@ -10,11 +10,15 @@ router.post('/', async(req, res) => {
   // console.log(eventName, body);
   // prolly dont have permissions for that data
   if (!body) throw new Error('GitHub webhook missing payload body');
+  console.log(eventName)
   switch (eventName) {
     case 'pull_request':
       switch (body.action) {
         case 'review_requested':
           processPullRequestReviewRequest(body)
+          break;
+        case 'review_request_removed':
+          processPullRequestReviewRequestRemove(body);
           break;
         default:
           processGithubPullRequest(body)
