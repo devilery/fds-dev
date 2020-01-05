@@ -52,7 +52,8 @@ async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: IComm
 		'running': 'in_progress',
 		'queued': 'in_progress',
 		'on_hold': 'waiting_for_manual_action',
-		'success': 'success'
+		'success': 'success',
+		'failed': 'failure',
 	}
 
 	// console.log('updateCommitChecks', pipelineRaw)
@@ -180,10 +181,10 @@ export async function detectPipelineMasterStatus(pr: PullRequest): Promise<['run
 	assert(checks.length > 0, 'PRs last commit is missing checks')
 	console.log('pipe states', checks.map(ch => ch.status))
 
-	const inProgress = checks.some(ch => ch.status === 'queued' || ch.status === 'running' || ch.status === 'pending');
-	const failed = !inProgress && checks.some(ch => ch.status === 'failed');
+	const inProgress = checks.some(ch => ch.status === 'in_progress' || ch.status === 'pending');
+	const failed = !inProgress && checks.some(ch => ch.status === 'failure');
 	const success = !inProgress && !failed;
-	const actionRequired = checks.some(ch => ch.status === 'on_hold')
+	const actionRequired = checks.some(ch => ch.status === 'pending')
 
 	const status = inProgress
 		? 'running'

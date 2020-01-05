@@ -168,7 +168,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 		})
 	}
 
-	checks.filter(item => (item.type != 'standard' && item.status != 'pending')).forEach(item => {
+	checks.filter(item => (item.type == 'standard' && item.status != 'pending')).forEach(item => {
 		blocks.push({
 			"type": "section",
 			"text": {
