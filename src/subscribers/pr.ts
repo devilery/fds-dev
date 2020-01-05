@@ -181,7 +181,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 		state: reviewEvent.state,
 		websiteUrl: reviewEvent.website_url,
 		rawData: reviewEvent.raw_data,
-		reviewUserName: reviewEvent.user.github_login,
+		reviewUsername: reviewEvent.user.github_login,
 		reviewUser: reviewUser,
 		reviewRequest: reviewRequest,
 		pullRequest: pr
@@ -189,7 +189,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 
 	await review.save()
 
-	let username = review.reviewUserName;
+	let username = review.reviewUsername;
 
 	if (reviewUser) {
 		const slackUsername = await reviewUser.getSlackUsername();

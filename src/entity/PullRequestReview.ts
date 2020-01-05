@@ -30,7 +30,7 @@ export default class PullRequestReview extends CustomEntity {
   websiteUrl: string;
 
   @Column()
-  reviewUserName: string;
+  reviewUsername: string;
 
   @ManyToOne(type => User, { nullable: true })
   reviewUser: User | null;

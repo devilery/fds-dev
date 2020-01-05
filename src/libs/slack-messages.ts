@@ -94,7 +94,7 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 						"text": "Nope",
 					}
 				},
-				"value": encodeAction('merge', {pr: pr.id})
+				"value": encodeAction('merge', {pr_id: pr.id})
 			},
 		]
 	}
@@ -178,22 +178,12 @@ function getDivider(): IMessgeBlock {
 }
 
 function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewRequest[], reviews: PullRequestReview[]): IMessgeBlock[] {
-	let blocks: IMessgeBlock[] = [{
-		"type": "context",
-		"elements": [
-			{
-				"type": "mrkdwn",
-				"text": "Review assigned to:"
-			}
-		]
-	}]
-
 	function buildBlock(status: string, reviewer: string, reviewerLink: string, link: string, actionData: {}): IMessgeBlock {
 		return {
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": `<${reviewerLink} | ${reviewer}> | ${status} | <https://google.com| link>`
+				"text": `<http://${reviewerLink}|${reviewer}> ${status}`
 			},
 			"accessory": {
 				"type": "button",
@@ -207,37 +197,51 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 		}
 	}
 
+	const assigneeBlocks: {[key: string]: IMessgeBlock} = {}
+
 	reviews.forEach(item => {
 		const states = {
-			'commented': '💬 You got a comment', 
+			'commented': '💬 Commented',
 			'changes_requested': '🤔 Changes requested',
-			'approved': '✅ Accepted',
+			'approved': '✅ Approved',
 		}
-		blocks.push(buildBlock(states[item.state], item.reviewUserName, item.reviewUserName, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUserName}));
+		assigneeBlocks[item.reviewUsername] = buildBlock(states[item.state], item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
 	})
 
 	requests.forEach(item => {
-		blocks.push(buildBlock('⏳ _waiting..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername}));
+		if (!item.review) {
+			assigneeBlocks[item.reviewUsername] = buildBlock('⏳ _waiting..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
+		}
 	})
 
+	const blocks = Object.values(assigneeBlocks)
+	blocks.unshift({
+		"type": "context",
+		"elements": [
+			{
+				"type": "mrkdwn",
+				"text": "Review assigned to:"
+			}
+		]
+	})
 	return blocks
 }
 
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {	
 	const open = pr.state == 'open'
 	const showChecks = checks.length > 0
-	const merged = !!pr.rawData.raw_data.merged_at;
+	const merged = !!pr.rawData.raw_data.merged_at
 	const repo = await pr.relation('repository')
 
-	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest']})
-	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr, review: null}})
+	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: "DESC"}})
+	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['review']})
 
 	let blocks = [
 		getBaseBlock(pr, repo),
 		open && showChecks && getChecksBlocks(pr, checks),
 		open && showChecks && getDivider(),
-		open && getActionBlocks(pr),
 		open && getReviewsStatusBlock(pr, requests, reviews),
+		open && getActionBlocks(pr),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
@@ -247,38 +251,24 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 };
 
 export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
-	var blocks: IMessgeBlock[] = checks.map(item => {
-		let linkOrName = item.targetUrl ? `<${item.targetUrl}|${item.rawData.context}>` : item.rawData.context;
-
-		return {
-			type: "context",
-			elements: [
-				{
-					"type": "mrkdwn",
-					"text": `✅ *The ${linkOrName} was successful!*`
-				}
-			]
-		}
-	})
-
 	return {
-		"text": "Build sucessful", // TODO: make this better
+		"text": "✅ All checks were sucessfull",
 		"blocks": [
 			{
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": "All your Checks passed! 🎉"
+					"text": "✅ All checks were sucessfull"
 				}
-			},
-			...blocks]
+			}
+		]
 	}
 }
 
 export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.rawData.context}>` : check.rawData.context;
 
-	let errorText = `⛔️ *There was an error with the ${linkOrName}.*`;
+	let errorText = `⛔️ *There was an error in the ${linkOrName}.*`;
 
 	return {
 		"text": errorText,

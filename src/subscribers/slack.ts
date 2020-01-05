@@ -5,10 +5,10 @@ import { mergePR } from '../libs/github-api'
 import { requestSlackUsersToReview } from '../libs/github'
 
 
-const actionMerge = async function(data: {pr: number, team: Team}) {
+const actionMerge = async function(data: {pr_id: number, team: Team}) {
 	console.log('event action Merge', data);
-	console.log('Merge PR number', data['pr']);
-	const pr = await PullRequest.findOneOrFail(data.pr, { relations:['user', 'user.githubUser'] });
+	console.log('Merge PR number', data['pr_id']);
+	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations:['user', 'user.githubUser'] });
 	// const user = await User.findOneOrFail(pr.user.id, {relations:['githubUser']});
 	console.log(pr.user.githubUser);
 	assert(pr.user.githubUser, 'Github User for PR not found')
