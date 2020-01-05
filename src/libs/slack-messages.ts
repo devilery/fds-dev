@@ -37,6 +37,16 @@ export function getReviewRegisterMessage(user: User, authorSlackUsername: string
 }
 
 function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
+	const state = pr.rawData.raw_data.state; //open, closed
+	const merged = pr.rawData.raw_data.merged;
+
+	const finalState = state === 'open'
+		? 'Opened'
+		: merged ? 'Merged' : 'Closed';
+	const finalStateColor = state === 'open'
+		? 'primary'
+		: merged ? undefined : 'danger';
+
 	return {
 		"type": "section",
 		"text": {
@@ -47,10 +57,11 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 			"type": "button",
 			"text": {
 				"type": "plain_text",
-				"text": "PR: Opened",
-				"emoji": true
+				"text": `PR: ${finalState}`,
+				"emoji": true,
 			},
-			"style": "primary",
+			"url": pr.websiteUrl,
+			"style": finalStateColor,
 			"value": "null"
 		}
 	}
@@ -152,7 +163,7 @@ function getPiplineCheckBlock(pr: PullRequest, pipeline: CommitCheck, pipelineSt
 }
 
 function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[] {
-	
+
 	return [{
 		"type": "section",
 		"text": {
@@ -228,7 +239,7 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 	return blocks
 }
 
-export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {	
+export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
 	const open = pr.state == 'open'
 	const showChecks = checks.length > 0
 	const merged = !!pr.rawData.raw_data.merged_at

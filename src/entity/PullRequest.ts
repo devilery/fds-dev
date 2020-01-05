@@ -46,7 +46,7 @@ export default class PullRequest extends CustomEntity {
   reviewRequests: PullRequestReviewRequest;
 
   @Column('jsonb')
-  rawData: any;
+  rawData: {raw_data: Webhooks.WebhookPayloadPullRequestPullRequest};
 
   @Column({default: 'github'})
   from: 'github';
