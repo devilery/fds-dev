@@ -24,6 +24,20 @@ export default class CustomEntity extends BaseEntity {
     return [model, false];
   }
 
+  static async updateOrCreate<T extends CustomEntity>(this: ObjectType<T>, searchAttributes: DeepPartial<T>, createAttributes: DeepPartial<T>): Promise<T> {
+    const repository = (this as typeof CustomEntity).getRepository()
+
+    let created;
+    const result = await repository.update(searchAttributes, createAttributes)
+
+    if (!result || typeof result.affected === 'undefined' || result.affected < 1){
+      created = repository.create({...searchAttributes, ...createAttributes})
+      await created.save();
+    }
+
+    return repository.findOneOrFail({where: searchAttributes}) as any
+  }
+
   /** Get relation by string. Does not update parent objects */
   async relation<P extends CustomEntity, T extends KeysOfType<this, CustomEntity | CustomEntity[] | undefined | null>>(this: P, relation: T): Promise<this[T]> {
     let constructor = this.constructor as any;

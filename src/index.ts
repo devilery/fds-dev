@@ -1,5 +1,6 @@
 require('dotenv').config();
 require('pretty-error').start();
+require('express-async-errors');
 
 import dbConnect from './libs/db'
 import { Team, GithubOwner } from './entity'
@@ -157,6 +158,10 @@ app.use(function onError(err: any, req: any, res: any, next: any) {
   // and optionally displayed to the user for support.
   res.statusCode = 500;
   res.end(res.sentry + "\n");
+});
+
+app.use((err: any, req: any, res: any, next: any) => {
+  res.end(500);
 });
 
 (async() => {

@@ -27,7 +27,7 @@ export default class CommitCheck extends CustomEntity {
   targetUrl: string | null;
 
   @Column()
-  type: 'standard' | 'ci-circleci'
+  type: 'standard' | 'ci-circleci' | 'check'
 
   @Column('jsonb', {nullable: true})
   rawData: any;

@@ -37,9 +37,7 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<P
 	const pipelineRaw = circleCiData.workflow.raw_workflow_job_data
 	const workflow = circleCiData.raw_job_data.workflows;
 
-	const newPipeline = Pipeline.create({pullRequest: pr, rawData: pipelineRaw, sha: pr.headSha, url: getWorkflowUrl(workflow.workflow_id)})
-	await newPipeline.save()
-	await newPipeline.reload()
+	const newPipeline = await Pipeline.updateOrCreate({pullRequest: pr, sha: pr.headSha}, {rawData: pipelineRaw, url: getWorkflowUrl(workflow.workflow_id)})
 
 	// console.log('loaded', newPipeline)
 	return newPipeline

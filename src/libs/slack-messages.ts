@@ -113,7 +113,7 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 
 function getCheckLine(check: CommitCheck): string {
 	const mapping = {
-		'pending': [null, null],
+		'pending': ['is pending...', '⏳'],
 		'in_progress': ['is running...', '⚙️'],
 		'waiting_for_manual_action': ['requires your action  👈', '👉'],
 		'success': ['is done', '✅'],
@@ -155,7 +155,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 			filter.push('failure')
 		}
 
-		checks.filter(item => (item.type == 'ci-circleci' && filter.includes(item.status))).forEach(item => {
+		checks.filter(item => (item.type == 'ci-circleci')).forEach(item => {
 			ciLines += `\n        ` + getCheckLine(item)
 		})
 
@@ -168,7 +168,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 		})
 	}
 
-	checks.filter(item => (item.type == 'standard' && item.status != 'pending')).forEach(item => {
+	checks.filter(item => (item.type != 'standard')).forEach(item => {
 		blocks.push({
 			"type": "section",
 			"text": {
