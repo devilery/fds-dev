@@ -46,7 +46,7 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	console.log('pr closed/merged')
 	console.log(reviewRequest.merged)
 
-	const text = reviewRequest.merged ? '✅ PR has been merged' : '🗑 PR has been closed';
+	const text = pr.state === 'merged' ? '✅ PR has been merged' : '🗑 PR has been closed';
 	// const repo = Repository.findOneOrFail({where: {githubId: reviewRequest.repository.id}})
 	// const pr = await PullRequest.findOneOrFail({where: {githubId: reviewRequest.id}, relations: ['user']})
 	assert(pr.user, 'PR doesnt have user relation')
