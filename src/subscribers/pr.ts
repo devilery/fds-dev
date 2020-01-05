@@ -7,7 +7,7 @@ import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestR
 import { ChatPostMessageResult } from '../libs/slack-api'
 
 import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
-import { createOrUpdatePr, isHeadCommitCheck } from '../libs/pr';
+import { createOrUpdatePr, isHeadCommitCheck, rebuildPullRequest } from '../libs/pr';
 import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
 import { updatePipeline, isCircleCheck } from '../libs/circleci'
 const { sleep } = require('../libs/util');
@@ -16,6 +16,7 @@ const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.
 
 const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data)
+	await rebuildPullRequest(pr);
 	const client = pr.user.team.getSlackClient()
 
 	const messageData = await getPrMessage(pr)

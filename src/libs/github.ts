@@ -334,7 +334,7 @@ const avaibleStates: { [key: string]: string; }  = {
   'queued': 'pending'
 }
 
-function normalizeCheckState(status: string) {
+export function normalizeCheckState(status: string) {
   return avaibleStates[status]
 }
 

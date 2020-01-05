@@ -16,7 +16,7 @@ export default class PullRequestReview extends CustomEntity {
   @Column('bigint', { transformer: [bigInt], unique: true })
   remoteId: number;
 
-  @ManyToOne(type => PullRequestReviewRequest, request => request.reviews, { nullable: true })
+  @ManyToOne(type => PullRequestReviewRequest, request => request.reviews, { nullable: true, onDelete: 'CASCADE' })
   @JoinColumn()
   reviewRequest: PullRequestReviewRequest | null;
 

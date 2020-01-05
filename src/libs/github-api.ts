@@ -47,7 +47,13 @@ export async function getCommitInfo(owner: string, repo: string, commit_sha: str
 // https://developer.github.com/v3/repos/statuses/#get-the-combined-status-for-a-specific-ref
 export async function getCommitStatuses(owner: string, repo: string, commit_sha: string, token: string) {
   let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` }})
-  return res.data as Octokit.ReposListStatusesForRefResponse
+  return res.data as any
+}
+
+// https://developer.github.com/v3/checks/runs/#list-check-runs-for-a-specific-ref
+export async function getCommitCheckRuns(owner: string, repo: string, commit_sha: string, token: string) {
+  let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/check-runs`, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.antiope-preview+json' }})
+  return res.data as Octokit.ChecksListForRefResponse
 }
 
 // https://developer.github.com/v3/apps/#create-a-new-installation-token
