@@ -112,65 +112,73 @@ function getActionBlocks(pr: PullRequest): IMessgeBlock {
 }
 
 function getCheckLine(check: CommitCheck): string {
-	let emojiMapping = {
-		'pending': null,
-		'in_progress': '⚙️',
-		'waiting_for_manual_action': '👉',
-		'success': '✅',
-		'failure': '🚫',
+	const mapping = {
+		'pending': [null, null],
+		'in_progress': ['is running...', '⚙️'],
+		'waiting_for_manual_action': ['requires your action  👈', '👉'],
+		'success': ['is done', '✅'],
+		'failure': ['failed', '🚫'],
 	}
 
-	let textMapping = {
-		'pending': null,
-		'in_progress': 'is in progres...',
-		'waiting_for_manual_action': 'needs your action 👈',
-		'success': 'is done',
-		'failure': 'failed',
+	let text = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : `${check.name}`
+
+	if (!Object.keys(mapping).includes(check.status)) {
+		console.log(`fuck: ${check.status}`)
 	}
 
-	return `${emojiMapping[check.status]} < ${check.targetUrl} | ${check.name} ${textMapping[check.status]} >`
+	return `${mapping[check.status][1]} ${text} ${mapping[check.status][0]}`
 }
 
-function getPiplineCheckBlock(pr: PullRequest, pipeline: CommitCheck, pipelineStatus: string): IMessgeBlock {
-	return {
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": `*⚙️ <${pipeline.targetUrl} | ${pipeline.name}> is in progres...* \n        ✅ <https://google.com| Job #1> is done \n        ⚙️ <https://google.com| Job #1> is in progres... \n        🚫 <https://google.com| Job #1> failed \n        👉 <https://google.com| Job #1> needs your action 👈`
-		},
-		"accessory": {
-			"type": "overflow",
-			"options": [
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Stop the pipe-line run",
-						"emoji": true
-					},
-					"value": "value-0"
-				},
-				{
-					"text": {
-						"type": "plain_text",
-						"text": "Re-run the estimation",
-						"emoji": true
-					},
-					"value": "value-1"
-				}
-			]
+function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
+	const blocks: IMessgeBlock[] = []
+	if (ciStatus) {
+		const messages = {
+			'running': ['is running...', '⚙️'],
+			'failed': ['failed', '🚫'],
+			'success': ['is done', '✅'],
 		}
+
+		let ciLines = `${messages[ciStatus][1]} CI Pipeline ${messages[ciStatus][0]}`
+
+		const filter: string[] = []
+		if (ciStatus == 'success') {
+			filter.push('waiting_for_manual_action')
+		}
+		if (ciStatus == 'failed') {
+			filter.push('waiting_for_manual_action')
+			filter.push('failure')
+		}
+		if (ciStatus == 'running') {
+			filter.push('in_progress')
+			filter.push('waiting_for_manual_action')
+			filter.push('success')
+			filter.push('failure')
+		}
+
+		checks.filter(item => (item.type == 'ci-circleci' && filter.includes(item.status))).forEach(item => {
+			ciLines += `\n        ` + getCheckLine(item)
+		})
+
+		blocks.push({
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": `${ciLines}`
+			}
+		})
 	}
-}
 
-function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[] {
-
-	return [{
-		"type": "section",
-		"text": {
-			"type": "mrkdwn",
-			"text": `function getChecksBlocks(pr: PullRequest, checks: CommitCheck[]): IMessgeBlock[]`
-		},
-	}]
+	checks.filter(item => (item.type != 'standard' && item.status != 'pending')).forEach(item => {
+		blocks.push({
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": getCheckLine(item)
+			}
+		})
+	})
+	
+	return blocks
 }
 
 function getMergedBlock(mergedAt: string) {
@@ -250,11 +258,16 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
 
 
+	let ciStatus: string | null = null
+	if (checks.filter(item => item.type == 'ci-circleci').length > 0) {
+		ciStatus = (await detectPipelineMasterStatus(pr))[0]
+	}
+
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && showChecks && getChecksBlocks(pr, checks),
+		open && showChecks && getChecksBlocks(checks, ciStatus),
 		open && showChecks && getDivider(),
-		open && getReviewsStatusBlock(pr, requests, reviews),
+		open && (reviews.length + requests.length > 0) && getReviewsStatusBlock(pr, requests, reviews),
 		open && getActionBlocks(pr),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]

@@ -46,10 +46,19 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<P
 }
 
 async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: ICommitCheck | null = null) {
+	const statusMap = {
+		'pending': 'pending', 
+		'blocked': 'pending',
+		'running': 'in_progress',
+		'queued': 'in_progress',
+		'on_hold': 'waiting_for_manual_action',
+		'success': 'success'
+	}
+
 	// console.log('updateCommitChecks', pipelineRaw)
 	await Promise.all(pipelineRaw.items.map(async (pipelineCheck: {name: string, id: string, status: string, type: string}) => {
 		const fullCheckName = CIRCLE_JOB_PREFIX + pipelineCheck.name;
-		const [ commitCheck, _ ] = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: pipelineCheck.status})
+		const [ commitCheck, _ ] = await CommitCheck.findOrCreate<CommitCheck>({commit, type: 'ci-circleci', name: fullCheckName}, {status: statusMap[pipelineCheck.status]})
 		// console.log(pipelineCheck, 'vs', commitCheck, 'hook check:', /*check*/)
 		// upsert status
 		if (commitCheck.status !== pipelineCheck.status) {
@@ -57,7 +66,7 @@ async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: IComm
 			// commitCheck.status = pipelineCheck.status;
 
 			// await commitCheck.save()
-			await CommitCheck.update(commitCheck.id, {status: pipelineCheck.status})
+			await CommitCheck.update(commitCheck.id, {status: statusMap[pipelineCheck.status]})
 		}
 
 		console.log(fullCheckName, 'vs', check.name)
@@ -163,7 +172,7 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 	// }))
 }
 
-export async function detectPipelineMasterStatus(pr: PullRequest) {
+export async function detectPipelineMasterStatus(pr: PullRequest): Promise<['running' | 'failed' | 'success', boolean]> {
 	const pipeline = await pr.getHeadPipeline()
 	const commit = await pr.getHeadCommit()
 	const checks = await CommitCheck.find({where: { commit }})
