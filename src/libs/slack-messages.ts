@@ -42,7 +42,7 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 	const merged = pr.rawData.raw_data.merged;
 
 	const finalState = state === 'open'
-		? 'Opened'
+		? 'Open'
 		: merged ? 'Merged' : 'Closed';
 	const finalStateColor = state === 'open'
 		? 'primary'
