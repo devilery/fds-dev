@@ -41,6 +41,8 @@ if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
   require('./libs/http-debug')
 }
 
+import { mixpanel, mixpanelMiddleware } from './mixpanel'
+
 const app = express();
 
 // The request handler must be the first middleware on the app
@@ -96,6 +98,8 @@ app.use(async (req, res, next) => {
 
   next(err)
 })
+
+app.use(mixpanelMiddleware)
 
 app.post('/slack/commands', async (req, res) => {
   handleCommands(req, res)
