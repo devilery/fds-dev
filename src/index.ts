@@ -50,8 +50,9 @@ app.use(Sentry.Handlers.requestHandler());
 
 app.use(morgan('dev'));
 
+// TODO: remove or reenable for home page handling
 // TODO: provide context to this handler as well
-app.use('/api/slack-events', eventMiddleware())
+// app.use('/api/slack-events', eventMiddleware())
 
 // these middlwares are breaking the slack event middleware above for some reason
 app.use(express.json());
@@ -82,11 +83,17 @@ app.use(async (req, res, next) => {
       }
     }
     else if (req.headers['x-slack-signature']) {
+      if (!req.body || !req.body.payload) {
+        // slack sends empty messages when we dont have necessary permission
+        // and other edge cases
+        next();
+        return;
+      }
       // TODO: slack auth
       const { body: { payload } } = req;
-      // console.log(req.headers, payload)
-      console.log('[slack]', '???')
+      // console.log(req.headers, body)
       const data = JSON.parse(payload)
+      console.log('[slack]', data.type || '???')
       const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
       // console.log(team)
       httpContext.set('team', team)

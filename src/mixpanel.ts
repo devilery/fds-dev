@@ -43,12 +43,22 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
       }
     }
     else if (req.headers['x-slack-signature']) {
+      // {
+      // type: 'block_actions',
+      // team: { id: 'T072R1FNG', domain: '9roads' },
+      // user: {
+      //   id: 'U072UCFH8',
+      //   username: 'tomas',
+      //   name: 'tomas',
+      //   team_id: 'T072R1FNG'
+      // },
       // TODO: slack auth
       const { body: { payload } } = req;
       // console.log(req.headers, payload)
-      console.log('[slack]', '???')
+      // console.log('[slack]', payload.type || '???')
       const data = JSON.parse(payload)
-      const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      user = await User.findOneOrFail({where: {slackId: data.user.id}})
       // console.log(team)
       // httpContext.set('team', team)
     }
@@ -75,7 +85,7 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
       ...teamProps,
     });
   } else {
-    console.log('Untracked request')
+    console.log('⚠️ Untracked request')
   }
 
   mixpanel.track('Test event', {
