@@ -16,8 +16,6 @@ const actionMerge = async function(data: {pr_id: number, team: Team}) {
 	console.log(pr.user.githubUser);
 	assert(pr.user.githubUser, 'Github User for PR not found')
 	mergePR(pr.rawData.repository.owner.login, pr.rawData.repository.name, pr.prNumber, pr.user.githubUser!.githubAccessToken)
-
-	trackEvent('PR merged')
 }
 actionMerge.eventType = 'slack.action.merge'
 

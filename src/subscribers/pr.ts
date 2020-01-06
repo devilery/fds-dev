@@ -66,7 +66,7 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
-	trackEvent('PR closed')
+	pr.state === 'merged' ? trackEvent('PR merged') : trackEvent('PR closed')
 }
 
 pullRequestClosed.eventType = 'pr.closed'
