@@ -26,41 +26,24 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
 
   try {
     if (req.headers['x-github-event']) {
-      console.log('[github]', req.headers['x-github-event'])
       const { body } = req;
+
       if (body.sender.id) {
         const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
-        if (ghOwner) {
-          // httpContext.set('team', ghOwner.team)
 
+        if (ghOwner) {
           team = ghOwner.team;
-          const githubUser = await GithubUser.findOne({where: { githubId: body.sender.id }})
-          user = await User.findOne({ where: { githubUser: githubUser, team } })
-        } else {
-          // res.status(404).send('owner not found')
-          // return;
+          const githubUser = await GithubUser.findOneOrFail({where: { githubId: body.sender.id }})
+          user = await User.findOneOrFail({ where: { githubUser: githubUser, team } })
         }
       }
     }
     else if (req.headers['x-slack-signature']) {
-      // {
-      // type: 'block_actions',
-      // team: { id: 'T072R1FNG', domain: '9roads' },
-      // user: {
-      //   id: 'U072UCFH8',
-      //   username: 'tomas',
-      //   name: 'tomas',
-      //   team_id: 'T072R1FNG'
-      // },
-      // TODO: slack auth
       const { body: { payload } } = req;
-      // console.log(req.headers, payload)
-      // console.log('[slack]', payload.type || '???')
+
       const data = JSON.parse(payload)
       team = await Team.findOneOrFail({where: {slackId: data.team.id}});
       user = await User.findOneOrFail({where: {slackId: data.user.id}})
-      // console.log(team)
-      // httpContext.set('team', team)
     }
   } catch(e) {
     console.error(e)
@@ -88,10 +71,10 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
     console.log('⚠️ Untracked request')
   }
 
-  mixpanel.track('Test event', {
-      distinct_id: user ? user.id : undefined,
-      // ip: '127.0.0.1'
-  });
+  // mixpanel.track('Test event', {
+  //     distinct_id: user ? user.id : undefined,
+  //     // ip: '127.0.0.1'
+  // });
 
   next(/*err*/);
 }
