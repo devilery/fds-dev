@@ -2,7 +2,7 @@ import * as express from 'express';
 import httpContext from 'express-http-context';
 import Mixpanel from 'mixpanel';
 
-import { GithubOwner, GithubUser, User, Team } from './entity'
+import { GithubOwner, GithubUser, User, Team } from '../entity'
 
 if (!process.env.MIXPANEL_TOKEN) {
   console.error('Missing MIXPANEL_TOKEN env var')
@@ -13,11 +13,8 @@ if (!process.env.MIXPANEL_TOKEN) {
 export const mixpanel = Mixpanel.init(process.env.MIXPANEL_TOKEN, {
     // test: true,
     debug: !!process.env.MIXPANEL_DEBUG,
-    // host: 'api.mixpanel.com',
-    // protocol: 'https'
+    protocol: 'https'
 })
-
-// console.log(mixpanel.config)
 
 export async function mixpanelMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
   let err: Error;
@@ -67,14 +64,21 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
       $created: user.createdAt.toISOString(),
       ...teamProps,
     });
+
+    httpContext.set('analyticsUser', user)
+    httpContext.set('analyticsTeam', team)
   } else {
     console.log('⚠️ Untracked request')
   }
 
-  // mixpanel.track('Test event', {
-  //     distinct_id: user ? user.id : undefined,
-  //     // ip: '127.0.0.1'
-  // });
-
   next(/*err*/);
+}
+
+export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {}) {
+  const user = httpContext.get('analyticsUser') as User;
+
+  mixpanel.track(name, {
+    distinct_id: ''+user.id,
+    ...properties
+  })
 }

@@ -41,7 +41,7 @@ if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
   require('./libs/http-debug')
 }
 
-import { mixpanel, mixpanelMiddleware } from './mixpanel'
+import { mixpanelMiddleware } from './libs/analytics'
 
 const app = express();
 

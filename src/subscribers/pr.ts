@@ -11,6 +11,7 @@ import { createOrUpdatePr, isHeadCommitCheck, rebuildPullRequest } from '../libs
 import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
 import { updatePipeline, isCircleCheck } from '../libs/circleci'
 const { sleep } = require('../libs/util');
+import { trackEvent } from '../libs/analytics'
 
 const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
 
@@ -40,6 +41,8 @@ const opened = async function (data: IPullRequestEvent) {
 	if (finalChecks && finalChecks.length > 0) {
 		await updatePrMessage(pr, finalChecks)
 	}
+
+	trackEvent('PR opened')
 };
 
 opened.eventType = 'pr.opened';
@@ -62,6 +65,8 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	const messageData = await getPrMessage(pr)
 
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+
+	trackEvent('PR closed')
 }
 
 pullRequestClosed.eventType = 'pr.closed'

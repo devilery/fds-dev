@@ -5,6 +5,7 @@ import { mergePR, requestPullRequestReview } from '../libs/github-api'
 import { requestSlackUsersToReview } from '../libs/github'
 import { IPullRequestReviewRequest } from '../events/types';
 import { emmit } from '../libs/event';
+import { trackEvent } from '../libs/analytics'
 
 
 const actionMerge = async function(data: {pr_id: number, team: Team}) {
@@ -15,10 +16,12 @@ const actionMerge = async function(data: {pr_id: number, team: Team}) {
 	console.log(pr.user.githubUser);
 	assert(pr.user.githubUser, 'Github User for PR not found')
 	mergePR(pr.rawData.repository.owner.login, pr.rawData.repository.name, pr.prNumber, pr.user.githubUser!.githubAccessToken)
+
+	trackEvent('PR merged')
 }
 actionMerge.eventType = 'slack.action.merge'
 
-const actionReviewAssign = async function (data: { pr_id: number, team: Team, eventData: { selected_user: string }}) { 
+const actionReviewAssign = async function (data: { pr_id: number, team: Team, eventData: { selected_user: string }}) {
 	const team = data.team
 	await team.reload()
 	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations: ['user', 'user.githubUser'] })
@@ -34,6 +37,8 @@ const actionReviewAssign = async function (data: { pr_id: number, team: Team, ev
 		pr.prNumber,
 		user
 	)
+
+	trackEvent('PR review requested')
 }
 
 actionReviewAssign.eventType = 'slack.action.review_assign'
@@ -58,6 +63,8 @@ const activeReviewReassign = async function (data: { pr_id: number, team: Team, 
 
 		emmit('pr.review.request', reviewRequest)
 	}
+
+	trackEvent('PR review rerequested')
 }
 
 activeReviewReassign.eventType = 'slack.action.review_reassign'
