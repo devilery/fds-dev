@@ -42,7 +42,7 @@ const opened = async function (data: IPullRequestEvent) {
 		await updatePrMessage(pr, finalChecks)
 	}
 
-	trackEvent('PR opened')
+	trackEvent('PR opened', {pr_id: pr.id})
 };
 
 opened.eventType = 'pr.opened';
@@ -66,7 +66,10 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
 
-	pr.state === 'merged' ? trackEvent('PR merged') : trackEvent('PR closed')
+	trackEvent(
+		pr.state === 'merged' ? 'PR merged' : 'PR closed',
+		{pr_id: pr.id}
+	)
 }
 
 pullRequestClosed.eventType = 'pr.closed'
@@ -209,6 +212,8 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 
 	const notification = getReviewMessage(review, username);
 	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
+
+	trackEvent('PR reviewed', {pr_id: pr.id})
 }
 
 pullRequestReviewed.eventType = 'pr.reviewed'

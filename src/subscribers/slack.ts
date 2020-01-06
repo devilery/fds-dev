@@ -36,7 +36,7 @@ const actionReviewAssign = async function (data: { pr_id: number, team: Team, ev
 		user
 	)
 
-	trackEvent('PR review requested')
+	trackEvent('PR review requested', {pr_id: pr.id})
 }
 
 actionReviewAssign.eventType = 'slack.action.review_assign'
@@ -62,7 +62,7 @@ const activeReviewReassign = async function (data: { pr_id: number, team: Team, 
 		emmit('pr.review.request', reviewRequest)
 	}
 
-	trackEvent('PR review rerequested')
+	trackEvent('PR review rerequested', {pr_id: pr.id})
 }
 
 activeReviewReassign.eventType = 'slack.action.review_reassign'
