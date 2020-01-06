@@ -85,3 +85,7 @@ export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {})
     ...properties
   })
 }
+
+export function updateUser(distinctId: User['id'], properties: Mixpanel.PropertyDict) {
+  mixpanel.people.set(''+distinctId, properties);
+}

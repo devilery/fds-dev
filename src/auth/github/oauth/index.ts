@@ -6,6 +6,7 @@ import config from '../../../config';
 
 import { GithubUser, User, PullRequest } from '../../../entity';
 import { requestPullRequestReview } from '../../../libs/github-api';
+import { updateUser } from '../../../libs/analytics'
 
 function oAuth(this: any, opts: any) {
   if (!opts.callbackURI) opts.callbackURI = '/github/callback'
@@ -60,6 +61,10 @@ function oAuth(this: any, opts: any) {
 
     await appUser.reload()
 
+    if (user.email) {
+      updateUser(appUser.id, {$email: user.email})
+    }
+
     // TODO: add repo info (multiple PRs can have same IDs)
     if (appUser.metadata && appUser.metadata.reviewPR) {
       // send request review
@@ -107,4 +112,4 @@ export default new (oAuth as any)({
   loginURI: '/github-login',
   callbackURI: '/github-callback',
   scope: 'user' // optional, default scope is set to user
-}) 
+})
