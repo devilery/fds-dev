@@ -23,7 +23,7 @@ function httpDebug(proto) {
 
         if (!!(http.debug)) {
             // debug messaging for initial request
-            console.log('[outgoing]', `${options.method.toUpperCase()} ${proto}://${options.hostname}${options.path}`)
+            console.log('[outgoing]', `${options.method.toUpperCase()} ${proto}://${options.hostname || options.host}${options.path}`)
             // console.error(util.inspect(options));
 
             // handle debug messaging for request methods
