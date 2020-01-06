@@ -171,3 +171,6 @@ app.use((err: any, req: any, res: any, next: any) => {
     console.log(`> Ready on server http://localhost:${port}`)
   });
 })();
+
+
+process.on('unhandledRejection', r => console.error(r.message, r.stack, r));

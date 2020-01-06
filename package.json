@@ -7,7 +7,7 @@
    "author": "Tomas Ruzicka <me@tomasr.com>",
    "license": "MIT",
    "scripts": {
-      "dev": "ts-node-dev --trace-warnings --async-stack-traces --respawn --transpileOnly ./src/index.ts",
+      "dev": "ts-node-dev --respawn --transpileOnly --trace-warnings --async-stack-traces -- ./src/index.ts",
       "start": "ts-node --log-error --transpile-only ./src/index.ts",
       "test": "echo nothing here"
    },
