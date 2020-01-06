@@ -89,6 +89,12 @@ function oAuth(this: any, opts: any) {
       resp.end()
 
       appUser.metadata = null;
+      const invites = await appUser.relation('reviewInvites');
+
+      for (let invite of invites) {
+        invite.remove()
+      }
+
       await appUser.save()
 
     } else {

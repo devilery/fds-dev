@@ -1,6 +1,6 @@
 import httpContext from 'express-http-context'
 import { ICommitCheck } from '../events/types';
-import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository } from '../entity'
+import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository, ReviewInvite } from '../entity'
 import { detectPipelineMasterStatus } from './circleci';
 import { pseudoRandomBytes } from 'crypto';
 
@@ -199,7 +199,7 @@ function getDivider(): IMessgeBlock {
 	}
 }
 
-function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewRequest[], reviews: PullRequestReview[]): IMessgeBlock[] {
+async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewRequest[], reviews: PullRequestReview[], invites: ReviewInvite[]): Promise<IMessgeBlock[]> {
 	function buildBlock(status: string, reviewer: string, reviewerLink: string, link: string, actionData: {}): IMessgeBlock {
 		return {
 			"type": "section",
@@ -237,6 +237,18 @@ function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestReviewReque
 		}
 	})
 
+	for (let invite of invites) {
+		let username = await invite.user.getSlackUsername()
+
+		assigneeBlocks[username] = {
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": `@${username} ⏳ _waiting..._`
+			},
+		}
+	}
+
 	const blocks = Object.values(assigneeBlocks)
 	blocks.unshift({
 		"type": "context",
@@ -259,7 +271,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: 'ASC'}})
 	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
-
+	const invites =  await ReviewInvite.find({ where: { pullRequest: pr }, relations: ['user']})
 
 	let ciStatus: string | null = null
 	if (checks.filter(item => item.type == 'ci-circleci').length > 0) {
@@ -270,7 +282,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 		getBaseBlock(pr, repo),
 		open && showChecks && getChecksBlocks(checks, ciStatus),
 		open && showChecks && getDivider(),
-		open && (reviews.length + requests.length > 0) && getReviewsStatusBlock(pr, requests, reviews),
+		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, team),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]

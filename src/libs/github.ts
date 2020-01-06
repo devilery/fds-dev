@@ -227,7 +227,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
           pr_number: prNumber
         }
 
-        emmit('github.user.request.review.create', data)
+        emmit('github.user.create.request.review', data)
       }
     } else {
       // create new user without github token and
@@ -241,7 +241,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
         pr_number: prNumber
       }
 
-      emmit('github.user.request.review.create', data)
+      emmit('github.user.create.request.review', data)
     }
   })
 }

@@ -10,5 +10,6 @@ import GithubUser from './GithubUser'
 import Pipeline from './Pipeline';
 import PullRequestReview from './PullRequestReview';
 import PullRequestReviewRequest from './PullRequestReviewRequest';
+import ReviewInvite from './ReviewInvite';
 
-export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User, GithubUser, Pipeline, PullRequestReview, PullRequestReviewRequest, CustomEntity }
+export { Commit, CommitCheck, GithubOwner, PullRequest, Repository, Team, User, GithubUser, Pipeline, PullRequestReview, PullRequestReviewRequest, ReviewInvite, CustomEntity }

@@ -1,5 +1,5 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinTable, JoinColumn, OneToMany, ManyToMany } from "typeorm";
-import { Repository, Team, GithubUser, PullRequestReviewRequest } from '.'
+import { Repository, Team, GithubUser, PullRequestReviewRequest, ReviewInvite } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
 import CustomEntity from "./CustomEntity";
 
@@ -26,6 +26,9 @@ export default class User extends CustomEntity {
 
   @Column('jsonb', {nullable:true})
   metadata: {reviewPR: number, prAuthor: GithubUser['id'], reviewRepo: Repository['id']} | null;
+
+  @OneToMany(type => ReviewInvite, invite => invite.user)
+  reviewInvites: ReviewInvite[]
 
   @OneToMany(type => PullRequestReviewRequest, request => request.assigneeUser)
   prReviewRequests: PullRequestReviewRequest[]

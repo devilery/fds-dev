@@ -6,6 +6,7 @@ import PullRequestReview from './PullRequestReview';
 import { Repository, PullRequestReviewRequest, Pipeline } from '.'
 import CustomEntity from './CustomEntity'
 import { updatePrMessage } from "../libs/slack";
+import ReviewInvite from "./ReviewInvite";
 
 @Entity()
 export default class PullRequest extends CustomEntity {
@@ -44,6 +45,9 @@ export default class PullRequest extends CustomEntity {
 
   @OneToMany(type => PullRequestReviewRequest, reviewRequest => reviewRequest.pullRequest)
   reviewRequests: PullRequestReviewRequest;
+
+  @OneToMany(type => ReviewInvite, invite => invite.pullRequest)
+  invites: ReviewInvite[] 
 
   @Column('jsonb')
   rawData: {raw_data: Webhooks.WebhookPayloadPullRequestPullRequest};
