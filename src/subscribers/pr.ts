@@ -220,19 +220,24 @@ pullRequestReviewed.eventType = 'pr.reviewed'
 
 const pullRequestReviewRequest = async function (reviewRequest: IPullRequestReviewRequest) {
 	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
-	let assigneeUser: User | undefined;
+	let assigneeUser: User | null = null;
 	if (reviewRequest.assignee_user_id) {
-		assigneeUser = await User.findOne(reviewRequest.assignee_user_id, { relations: ['team'] })
+		assigneeUser = await User.findOneOrFail(reviewRequest.assignee_user_id, { relations: ['team'] })
 	}
+
+	const requests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username }, order: { id: 'ASC' }, relations: ['reviews'] })
+	const noReviews = requests.filter(item => item.reviews.length === 0)
+	let request = noReviews.pop();
 
 	// one user can have only one *EMPTY* (without finished review) request for PR. Delete the old ones in case of network or DB errors / bugs
-	const oldRequests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, reviewUsername: reviewRequest.review_username}, relations: ['reviews'] })
-	for (let oldRequest of oldRequests.filter(item => item.reviews.length === 0)) {
-		await oldRequest.remove()
+	for (let requestNoReview of noReviews) {
+		await requestNoReview.remove()
 	}
 
-	const request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
-	await request.save()
+	if (!request) {
+		request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
+		await request.save();
+	}
 
 	await pr.updateMainMessage()
 
@@ -253,9 +258,8 @@ const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPul
 	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })
 	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['reviews'] })
 
-	console.log(request)
 	if (request && request.reviews.length === 0) {
-		request.remove();
+		await request.remove();
 	}
 
 	await pr.updateMainMessage()
