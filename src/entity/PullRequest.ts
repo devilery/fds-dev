@@ -47,7 +47,7 @@ export default class PullRequest extends CustomEntity {
   reviewRequests: PullRequestReviewRequest;
 
   @OneToMany(type => ReviewInvite, invite => invite.pullRequest)
-  invites: ReviewInvite[] 
+  invites: ReviewInvite[]
 
   @Column('jsonb')
   rawData: {raw_data: Webhooks.WebhookPayloadPullRequestPullRequest};

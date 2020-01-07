@@ -1,6 +1,6 @@
 import httpContext from 'express-http-context'
 import { ICommitCheck } from '../events/types';
-import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository, ReviewInvite } from '../entity'
+import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository, ReviewInvite, Pipeline, Team } from '../entity'
 import { detectPipelineMasterStatus } from './circleci';
 import { pseudoRandomBytes } from 'crypto';
 
@@ -113,11 +113,11 @@ function getActionBlocks(pr: PullRequest, team: Team): IMessgeBlock {
 	}
 }
 
-function getCheckLine(check: CommitCheck): string {
+function getCheckLine(pipeline: Pipeline, check: CommitCheck): string {
 	const mapping = {
 		'pending': ['is pending...', '⏳'],
 		'in_progress': ['is running...', '⚙️'],
-		'waiting_for_manual_action': ['requires your action  👈', '👉'],
+		'waiting_for_manual_action': [`<${pipeline.url}|requires your action>  👈`, '👉'],
 		'success': ['is done', '✅'],
 		'failure': ['failed', '🚫'],
 	}
@@ -131,7 +131,7 @@ function getCheckLine(check: CommitCheck): string {
 	return `${mapping[check.status][1]} ${text} ${mapping[check.status][0]}`
 }
 
-function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
+function getChecksBlocks(pipeline: Pipeline, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
 	const blocks: IMessgeBlock[] = []
 	if (ciStatus) {
 		const messages = {
@@ -140,7 +140,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 			'success': ['is done', '✅'],
 		}
 
-		let ciLines = `${messages[ciStatus][1]} CI Pipeline ${messages[ciStatus][0]}`
+		let ciLines = `${messages[ciStatus][1]} <${pipeline.url}|CI Pipeline> ${messages[ciStatus][0]}`
 
 		const filter: string[] = []
 		if (ciStatus == 'success') {
@@ -158,7 +158,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 		}
 
 		checks.filter(item => (item.type == 'ci-circleci')).forEach(item => {
-			ciLines += `\n        ` + getCheckLine(item)
+			ciLines += `\n        ` + getCheckLine(pipeline, item)
 		})
 
 		blocks.push({
@@ -175,7 +175,7 @@ function getChecksBlocks(checks: CommitCheck[], ciStatus: 'running' | 'failed' |
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": getCheckLine(item)
+				"text": getCheckLine(pipeline, item)
 			}
 		})
 	})
@@ -272,6 +272,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: 'ASC'}})
 	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
 	const invites =  await ReviewInvite.find({ where: { pullRequest: pr }, relations: ['user']})
+	const pipeline = await pr.getHeadPipeline();
 
 	let ciStatus: string | null = null
 	if (checks.filter(item => item.type == 'ci-circleci').length > 0) {
@@ -280,7 +281,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && showChecks && getChecksBlocks(checks, ciStatus),
+		open && showChecks && getChecksBlocks(pipeline, checks, ciStatus),
 		open && showChecks && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, team),
