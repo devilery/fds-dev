@@ -11,7 +11,6 @@
       "module": "commonjs",
       "moduleResolution": "node",
       // "outDir": "./build",
-      "noEmit": true,
       "emitDecoratorMetadata": true,
       "experimentalDecorators": true,
       "sourceMap": true,
