@@ -3,8 +3,9 @@ import { strict as assert } from 'assert'
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
-
 import { GithubOwner } from '../entity'
+import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
+import axiosRetry from 'axios-retry';
 
 const GITHUB_API_URL = 'https://api.github.com'
 
@@ -14,7 +15,17 @@ const session = axios.create({
 
 const refreshAuthLogic = async (failedRequest: any) => {
   const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
-  const owner = await GithubOwner.findOneOrFail({where: {githubAccessToken: token}})
+
+  try {
+    var owner = await GithubOwner.findOneOrFail({ where: { githubAccessToken: token } })
+  } catch (error) {
+    if (error instanceof EntityNotFoundError) {
+      throw new GithubApiError(`Error fetching github owner using api endpoint: ${failedRequest.config.url}`, error);
+    }
+
+    throw new GithubApiError(`Error with ORM github api fetch: ${failedRequest.config.url}`, error)
+  }
+
   const acessToken = await createInstallationToken(owner.installationId)
 
   owner.githubAccessToken = acessToken.token;
@@ -25,6 +36,7 @@ const refreshAuthLogic = async (failedRequest: any) => {
 };
 
 createAuthRefreshInterceptor(session, refreshAuthLogic);
+axiosRetry(session, { retries: 3 })
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
@@ -96,4 +108,27 @@ export async function mergePR(owner: string, repo: string, prNumber: number, tok
   )
 
   return res.data
+}
+
+
+class GithubApiError extends Error {
+  original?: Error;
+  new_stack?: string;
+
+  constructor(message: string, error?: Error) {
+    super(message);
+    this.name = this.constructor.name;
+    if (typeof Error.captureStackTrace === 'function') {
+      Error.captureStackTrace(this, this.constructor);
+    } else {
+      this.stack = (new Error(message)).stack;
+    }
+
+    if (error && this.stack) {
+      this.original = error;
+      this.new_stack = this.stack
+      let message_lines = (this.message.match(/\n/g) || []).length + 1
+      this.stack = this.stack.split('\n').slice(0, message_lines + 1).join('\n') + '\n' + error.stack
+    }
+  }
 }
