@@ -48,6 +48,9 @@ const app = express();
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
 
+// The error handler must be before any other error middleware
+app.use(Sentry.Handlers.errorHandler());
+
 app.use(morgan('dev'));
 
 // TODO: remove or reenable for home page handling
@@ -76,6 +79,12 @@ app.use(async (req, res, next) => {
         const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
         if (ghOwner) {
           httpContext.set('team', ghOwner.team)
+
+          Sentry.configureScope(function (scope) {
+            scope.setTag('team', ghOwner.team.id.toString());
+            scope.setTag('origin', 'github_event')
+            scope.setTag('event_name', req.headers['x-github-event'] as any)
+          });
         } else {
           res.status(404).send('owner not found')
           return;
@@ -93,8 +102,12 @@ app.use(async (req, res, next) => {
       const { body: { payload } } = req;
       // console.log(req.headers, body)
       const data = JSON.parse(payload)
-      console.log('[slack]', data.type || '???')
       const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      Sentry.configureScope(function (scope) {
+        scope.setTag('team', team.id.toString());
+        scope.setTag('origin', 'slack_event')
+        scope.setTag('event_name', data.type || '???')
+      });
       // console.log(team)
       httpContext.set('team', team)
     }
