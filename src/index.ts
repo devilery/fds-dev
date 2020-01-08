@@ -1,5 +1,10 @@
 require('dotenv').config();
-require('pretty-error').start();
+
+if (process.env.NODE_ENV === 'development') {
+  console.log('Turning on pretty errors')
+  require('pretty-error').start();
+}
+
 require('express-async-errors');
 
 import dbConnect from './libs/db'
