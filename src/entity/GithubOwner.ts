@@ -3,6 +3,7 @@ import Team from './Team'
 import Repository from './Repository'
 import CustomEntity from "./CustomEntity";
 
+
 @Entity()
 export default class GithubOwner extends CustomEntity {
   @PrimaryGeneratedColumn()
@@ -13,6 +14,9 @@ export default class GithubOwner extends CustomEntity {
 
   @Column()
   githubAccessToken: string;
+
+  @Column({ type: 'simple-array', default: '' })
+  oldAcessTokens: string[];
 
   @Column({ unique: true })
   installationId: string;

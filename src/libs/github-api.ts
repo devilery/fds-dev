@@ -4,9 +4,6 @@ import axios from 'axios';
 import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
 import { GithubOwner } from '../entity'
-import { EntityNotFoundError } from 'typeorm/error/EntityNotFoundError'
-import axiosRetry from 'axios-retry';
-
 const GITHUB_API_URL = 'https://api.github.com'
 
 const session = axios.create({
@@ -17,18 +14,26 @@ const refreshAuthLogic = async (failedRequest: any) => {
   const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
 
   try {
-    var owner = await GithubOwner.findOneOrFail({ where: { githubAccessToken: token } })
-  } catch (error) {
-    if (error instanceof EntityNotFoundError) {
-      throw new GithubApiError(`Error fetching github owner using api endpoint: ${failedRequest.config.url}`, error);
-    }
+    var owner = await GithubOwner
+      .createQueryBuilder('owner')
+      .where('owner.githubAccessToken = :token')
+      .orWhere("owner.oldAcessTokens like :likeToken")
+      .setParameters({ token: token, likeToken: `%${token}%` })
+      .getOne()
 
+
+    if (!owner) {
+      throw new GithubApiError(`Could not find owner with token: ${token}`);
+    }
+  
+  } catch (error) {
     throw new GithubApiError(`Error with ORM github api fetch: ${failedRequest.config.url}`, error)
   }
 
   const acessToken = await createInstallationToken(owner.installationId)
 
   owner.githubAccessToken = acessToken.token;
+  owner.oldAcessTokens.push(acessToken.token);
   await owner.save()
 
   failedRequest.config.headers.Authorization = `token ${acessToken.token}`
@@ -36,7 +41,7 @@ const refreshAuthLogic = async (failedRequest: any) => {
 };
 
 createAuthRefreshInterceptor(session, refreshAuthLogic);
-axiosRetry(session, { retries: 3 })
+// axiosRetry(session, { retries: 3 })
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
@@ -84,10 +89,12 @@ export async function createInstallationToken(installation_id: string) {
 }
 
 export async function requestPullRequestReview(owner: string, repo: string, pr_number: number, data: { reviewers: string[] }, token: string) {
+  console.log('wtffffffffff')
   assert(data.reviewers, 'No reviewers specified for review')
   const res = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
     { headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
   )
+  console.log('done');
   return res.data as Octokit.PullsCreateReviewRequestResponse
 }
 
