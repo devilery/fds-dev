@@ -139,14 +139,6 @@ app.post('/slack/commands', async (req, res) => {
 })
 
 app.get('/test', async (req, res) => {
-
-  try {
-    let ghOwner = await GithubOwner.findOneOrFail(3123213)
-    console.log(ghOwner)
-  } catch (error) {
-    console.error(error);
-  }
-
   res.send(200)
 })
 
