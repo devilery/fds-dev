@@ -257,10 +257,12 @@ pullRequestReviewRequest.eventType = 'pr.review.request'
 
 const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPullRequestReviewRequestRemove) {
 	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })
-	const request = await PullRequestReviewRequest.findOne({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['reviews'] })
+	const requests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, reviewUsername: reviewRequestRemove.review_username }, relations: ['reviews'] })
 
-	if (request && request.reviews.length === 0) {
-		await request.remove();
+	for (let request of requests) {
+		if (request.reviews.length === 0) {
+			await request.remove();
+		}
 	}
 
 	await pr.updateMainMessage()

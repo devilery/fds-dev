@@ -166,6 +166,7 @@ export async function processPullRequestReviewRequest(requestReviewEvent: any) {
 }
 
 export async function processPullRequestReviewRequestRemove(requestReviewRemoveEvent: any) {
+  console.log(requestReviewRemoveEvent)
   const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewRemoveEvent.requested_reviewer.id } })
   const team = httpContext.get('team') as Team;
   const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
