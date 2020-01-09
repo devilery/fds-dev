@@ -7,7 +7,7 @@
          "es6",
          "ESNext"
       ],
-      "target": "es6",
+      "target": "ES2018",
       "module": "commonjs",
       "moduleResolution": "node",
       "noEmit": true,
