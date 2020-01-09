@@ -13,21 +13,17 @@ const session = axios.create({
 const refreshAuthLogic = async (failedRequest: any) => {
   const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
 
-  try {
-    var owner = await GithubOwner
-      .createQueryBuilder('owner')
-      .where('owner.githubAccessToken = :token')
-      .orWhere("owner.oldAcessTokens like :likeToken")
-      .setParameters({ token: token, likeToken: `%${token}%` })
-      .getOne()
+
+  var owner = await GithubOwner
+    .createQueryBuilder('owner')
+    .where('owner.githubAccessToken = :token')
+    .orWhere("owner.oldAcessTokens like :likeToken")
+    .setParameters({ token: token, likeToken: `%${token}%` })
+    .getOne()
 
 
-    if (!owner) {
-      throw new GithubApiError(`Could not find owner with token: ${token}`);
-    }
-  
-  } catch (error) {
-    throw new GithubApiError(`Error with ORM github api fetch: ${failedRequest.config.url}`, error)
+  if (!owner) {
+    throw new GithubApiError(`Could not find owner with token: ${token}`);
   }
 
   const acessToken = await createInstallationToken(owner.installationId)
