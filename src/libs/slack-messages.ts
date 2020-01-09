@@ -68,8 +68,12 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 	}
 }
 
-function getActionBlocks(pr: PullRequest, team: Team): IMessgeBlock {
-	const mergeFlag = !!team.featureFlags.merge_button;
+function isFeatureFlagEnabled(user, team, flagName) {
+	return Boolean(team && team.featureFlags[flagName] || user && user.featureFlags[flagName]);
+}
+
+function getActionBlocks(pr: PullRequest, user: User, team: Team): IMessgeBlock {
+	const mergeFlag = isFeatureFlagEnabled(user, team, 'merge_button');
 	return {
 		"type": "actions",
 		"elements": [
@@ -263,9 +267,10 @@ async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestRevie
 }
 
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
+	const user = httpContext.get('user');
 	const team = httpContext.get('team');
 	const open = pr.state == 'open'
-	const showChecks = team && team.featureFlags.ci_checks && checks.length > 0
+	const showChecks = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
 	const merged = !!pr.rawData.raw_data.merged_at
 	const repo = await pr.relation('repository')
 
@@ -284,7 +289,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 		open && showChecks && getChecksBlocks(pipeline, checks, ciStatus),
 		open && showChecks && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
-		open && getActionBlocks(pr, team),
+		open && getActionBlocks(pr, user, team),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {

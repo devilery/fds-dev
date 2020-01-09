@@ -8,7 +8,7 @@ if (process.env.NODE_ENV === 'development') {
 require('express-async-errors');
 
 import dbConnect from './libs/db'
-import { Team, GithubOwner } from './entity'
+import { Team, GithubOwner, User, GithubUser } from './entity'
 
 import * as Sentry from '@sentry/node';
 
@@ -68,6 +68,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(httpContext.middleware)
 
+// TODO: unify with analytics middlware
 app.use(async (req, res, next) => {
   // console.log(req.url, req.headers['x-github-event'], req.body);
 
@@ -84,6 +85,10 @@ app.use(async (req, res, next) => {
         const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
         if (ghOwner) {
           httpContext.set('team', ghOwner.team)
+
+          const githubUser = await GithubUser.findOne({where: { githubId: body.sender.id }})
+          const user = await User.findOne({ where: { githubUser: githubUser, team: ghOwner.team } })
+          user && httpContext.set('user', user)
 
           Sentry.configureScope(function (scope) {
             scope.setTag('team', ghOwner.team.id.toString());
@@ -108,6 +113,9 @@ app.use(async (req, res, next) => {
       // console.log(req.headers, body)
       const data = JSON.parse(payload)
       const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      const user = await User.findOneOrFail({where: {slackId: data.user.id}})
+      user && httpContext.set('user', user)
+
       Sentry.configureScope(function (scope) {
         scope.setTag('team', team.id.toString());
         scope.setTag('origin', 'slack_event')

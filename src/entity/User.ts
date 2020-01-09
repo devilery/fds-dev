@@ -33,6 +33,9 @@ export default class User extends CustomEntity {
   @OneToMany(type => PullRequestReviewRequest, request => request.assigneeUser)
   prReviewRequests: PullRequestReviewRequest[]
 
+  @Column('jsonb', {default: {}})
+  featureFlags: {ci_checks?: boolean, merge_button?: boolean};
+
   async getSlackUsername() {
     await this.reload('team')
     const client = this.team.getSlackClient()

@@ -51,6 +51,7 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
   if (user) {
     const teamProps = team ? {
       team_id: team.id,
+      user_feature_flags: JSON.stringify(user.featureFlags),
       team_feature_flags: JSON.stringify(team.featureFlags),
       // ...Object.keys(team.featureFlags).reduce((props, flag) => {
       //   if (team.featureFlags[flag]) {
