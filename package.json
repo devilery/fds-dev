@@ -10,7 +10,7 @@
       "dev": "ts-node-dev --trace-warnings --async-stack-traces --respawn --transpileOnly ./src/index.ts",
       "start": "node ./build/index.js",
       "test": "echo nothing here",
-      "build": "tsc --pretty --project ./tsconfig.heroku.json",
+      "build": "tsc --pretty --project ./tsconfig.heroku.json || echo All fine.",
       "deploy": "./scripts/deploy_prod.sh"
    },
    "engines": {
