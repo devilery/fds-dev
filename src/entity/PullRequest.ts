@@ -70,6 +70,11 @@ export default class PullRequest extends CustomEntity {
   }
 
   async updateMainMessage() {
+    if (this.state === 'closed' || this.state === 'merged') {
+      console.log('PR is closed or merged. Will not update main message');
+      return;
+    }
+
     const headCommit = await this.getHeadCommit();
     const checks = await headCommit.relation('checks');
     await updatePrMessage(this, checks);

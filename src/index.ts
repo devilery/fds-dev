@@ -104,6 +104,7 @@ app.use(async (req, res, next) => {
         const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
         if (ghOwner) {
           httpContext.set('team', ghOwner.team)
+          httpContext.set('owner', ghOwner);
 
           const githubUser = await GithubUser.findOne({where: { githubId: body.sender.id }})
           user = await User.findOne({ where: { githubUser: githubUser, team: ghOwner.team } })

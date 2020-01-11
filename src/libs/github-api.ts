@@ -10,9 +10,15 @@ const session = axios.create({
   baseURL: GITHUB_API_URL
 })
 
+session.interceptors.response.use(function (response) {
+  return response;
+}, function (error) {
+  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request.config.url}`, error)
+  return Promise.reject(apiError);
+});
+
 const refreshAuthLogic = async (failedRequest: any) => {
   const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
-
 
   var owner = await GithubOwner
     .createQueryBuilder('owner')
@@ -79,13 +85,13 @@ export async function createInstallationToken(installation_id: string) {
     iss: process.env.APP_ID
   }, privateKey.key, { algorithm: 'RS256' });
 
-  var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+  var res = await axios.post(`/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
   return res.data as Octokit.AppsCreateInstallationTokenResponse
 }
 
 export async function requestPullRequestReview(owner: string, repo: string, pr_number: number, data: { reviewers: string[] }, token: string) {
   assert(data.reviewers, 'No reviewers specified for review')
-  const res = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
+  const res = await session.post(`/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
     { headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
   )
   return res.data as Octokit.PullsCreateReviewRequestResponse
@@ -93,7 +99,7 @@ export async function requestPullRequestReview(owner: string, repo: string, pr_n
 
 export async function removePullRequestReview(owner: string, repo: string, pr_number: number, data: Octokit.PullsDeleteReviewRequestParams, token: string) {
   assert(data.reviewers, 'No reviewers specified for review removal')
-  const res = await axios.delete(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`,
+  const res = await session.delete(`/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`,
     { data, headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
   )
   return res.data
@@ -103,7 +109,7 @@ export async function removePullRequestReview(owner: string, repo: string, pr_nu
 export async function mergePR(owner: string, repo: string, prNumber: number, token: string) {
   console.log('Log message', arguments);
   // TODO: consider merge_method parameter to support all merge modes
-  const res = await axios.put(`https://api.github.com/repos/${owner}/${repo}/pulls/${prNumber.toString()}/merge`, {},
+  const res = await session.put(`/repos/${owner}/${repo}/pulls/${prNumber.toString()}/merge`, {},
     { headers: { 'Authorization': `token ${token}` }}
   )
 

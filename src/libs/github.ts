@@ -15,10 +15,10 @@ import { ReviewStateType } from '../entity/PullRequestReview';
 
 
 export async function processGithubPullRequest(pullRequestEvent: Webhooks.WebhookPayloadPullRequest) {
-  const { action, repository } = pullRequestEvent;
+  const { action } = pullRequestEvent;
   const { user } = pullRequestEvent.pull_request;
 
-  const owner = await getOwnerByRepositoryId(repository.id)
+  const owner = httpContext.get('owner') as GithubOwner;
   const userId = await findUserIdByGithubId(user.id, owner)
 
   if (!userId) {
@@ -44,11 +44,7 @@ export async function processGithubPullRequest(pullRequestEvent: Webhooks.Webhoo
 
 export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadStatus) {
   const { repository } = statusEvent;
-
-  // const repo = await Repository.findOneOrFail({where: {id: repository.id.toString()}})
-  // assert(repo, `Could not find repo id ${repository.id.toString()}`)
-
-  const owner = await getOwnerByRepositoryId(repository.id);
+  const owner = httpContext.get('owner') as GithubOwner;
 
   const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, statusEvent.sha, owner.githubAccessToken);
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
@@ -59,7 +55,6 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
       status: normalizeCheckState(statusEvent.state),
       type: 'standard',
       from: 'github',
-      id: statusEvent.id,
       commit_sha: statusEvent.sha,
       name: statusEvent.context,
       target_url: statusEvent.target_url,
@@ -74,16 +69,14 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
 
 export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
   const checkStatus = normalizeCheckState(checkRunEvent.check_run.status)
-
   const { repository } = checkRunEvent;
 
-  const owner = await getOwnerByRepositoryId(repository.id);
-
+  const owner = httpContext.get('owner') as GithubOwner;
   const checkRun = checkRunEvent.check_run
 
-  const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken);
+  const commitPullRequests = await getPullRequestsForCommit(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken);
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
-  const commitInfo = await getCommitInfo(repository.owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
+  const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
   await createOrUpdateCommit(commitInfo, pullRequests)
 
@@ -112,7 +105,7 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
 
   const review  = reviewEvent.review;
   const pullRequest = await findPRByGithubId(reviewEvent.pull_request.id);
-  const owner = await getOwnerByRepositoryId(reviewEvent.repository.id)
+  const owner = httpContext.get('owner') as GithubOwner;
   const reviewUserId = await findUserIdByGithubId(reviewEvent.review.user.id, owner)
 
   if (!pullRequest) {
@@ -256,12 +249,6 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
   })
 }
 
-async function getOwnerByRepositoryId(repoId: number) {
-  const repo = await Repository.findOneOrFail({ where: { githubId: repoId }, relations: ['owner'] })
-  const owner = repo.owner
-  return owner;
-}
-
 async function findUserIdByGithubId(ghUserId: number, owner: GithubOwner) {
   const team = httpContext.get('team')
   const githubUser = await GithubUser.findOne({where: { githubId: ghUserId }})
@@ -308,18 +295,13 @@ async function findAndUpdatePRsById(GHPullRequests: Octokit.ReposListPullRequest
 }
 
 export async function createOrUpdateCommit(commit: Webhooks.WebhookPayloadStatusCommit | Octokit.ReposGetCommitResponse, pullRequests: PullRequest[] = []) {
-  let com = await Commit.findOne({where: {sha: commit.sha}, relations: ['pullRequests']});
+  const [com, _] = await Commit.findOrCreate({sha: commit.sha}, {
+    rawData: commit,
+    websiteUrl: commit.html_url,
+  })
 
-  if (!com) {
-    com = new Commit()
-    com.pullRequests = []
-  }
+  await com.reload('pullRequests')
 
-  com.rawData = commit;
-  com.websiteUrl = commit.html_url;
-  com.sha = commit.sha
-
-  await com.save();
   for (let pull of pullRequests) {
     let exists = com.pullRequests.find(item => item.id === pull.id);
     if (!exists) {
