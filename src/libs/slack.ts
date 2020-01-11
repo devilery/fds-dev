@@ -1,4 +1,4 @@
-import { strict as assert } from 'assert';
+import assert from './assert';
 import httpContext from 'express-http-context'
 
 import { PullRequest, CommitCheck, Team, User } from '../entity'

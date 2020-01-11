@@ -1,5 +1,5 @@
 // @ts-ignore
-import { strict as assert } from 'assert';
+import assert from '../libs/assert';
 import { Team, PullRequest, User } from '../entity'
 import { mergePR, requestPullRequestReview } from '../libs/github-api'
 import { requestSlackUsersToReview } from '../libs/github'

@@ -1,5 +1,5 @@
 // @ts-ignore
-import { strict as assert } from 'assert';
+import assert from '../libs/assert';
 import url from 'url';
 import { Team, GithubOwner, Repository } from '../../../entity'
 import { createInstallationToken } from '../../../libs/github-api';
@@ -60,4 +60,4 @@ export default async function setup(req: any, res: any) {
   res.statusCode = 302
   res.setHeader('location', `${config.authRedirectUrls.githubInstall}`)
   res.end()
-} 
+}

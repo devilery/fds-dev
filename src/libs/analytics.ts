@@ -1,4 +1,4 @@
-import { strict as assert } from 'assert';
+import assert from './assert';
 import * as express from 'express';
 import httpContext from 'express-http-context';
 import Mixpanel from 'mixpanel';
@@ -77,7 +77,7 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
 }
 
 export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {}) {
-  const user = httpContext.get('analyticsUser') as User;
+  const user = httpContext.get('analyticsUser') as User | undefined;
 
   assert(user, 'Missing user for event tracking')
 

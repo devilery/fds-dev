@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { strict as assert } from 'assert';
+import assert from '../libs/assert';
 
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')

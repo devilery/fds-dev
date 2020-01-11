@@ -1,5 +1,5 @@
 // @ts-ignore
-import { strict as assert } from 'assert';
+import assert from './assert';
 
 import { emmit } from '../libs/event.js';
 import { Team, User } from '../entity';
