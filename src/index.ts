@@ -33,6 +33,8 @@ import fs from 'fs';
 import express from 'express';
 import morgan from 'morgan';
 import httpContext from 'express-http-context';
+const moesifExpress = require('moesif-express');
+
 import setup from './auth/github/install'
 import githubOAuth from './auth/github/oauth';
 
@@ -49,6 +51,21 @@ if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
 import { mixpanelMiddleware } from './libs/analytics'
 
 const app = express();
+
+if (process.env.MOESIF_APPLICATION_ID) {
+  const moesifMiddleware = moesifExpress({
+    applicationId: process.env.MOESIF_APPLICATION_ID,
+
+    logBody: true,
+
+    // identifyUser: function (req, res) {
+    //   return req.user ? req.user.id : undefined;
+    // },
+  });
+
+  app.use(moesifMiddleware);
+}
+
 
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
