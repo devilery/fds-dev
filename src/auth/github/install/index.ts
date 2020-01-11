@@ -1,5 +1,5 @@
 // @ts-ignore
-import assert from '../libs/assert';
+import assert from '../../../libs/assert';
 import url from 'url';
 import { Team, GithubOwner, Repository } from '../../../entity'
 import { createInstallationToken } from '../../../libs/github-api';
