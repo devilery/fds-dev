@@ -52,20 +52,25 @@ import { mixpanelMiddleware } from './libs/analytics'
 
 const app = express();
 
-if (process.env.MOESIF_APPLICATION_ID) {
-  const moesifMiddleware = moesifExpress({
+const moesifMiddleware = process.env.MOESIF_APPLICATION_ID
+  ? moesifExpress({
     applicationId: process.env.MOESIF_APPLICATION_ID,
 
     logBody: true,
 
-    // identifyUser: function (req, res) {
-    //   return req.user ? req.user.id : undefined;
-    // },
-  });
+    identifyUser: function identifyUser(req: express.Request, res: express.Response) {
+      return req.user ? req.user.id : undefined;
+    },
 
-  app.use(moesifMiddleware);
-}
+    identifyCompany: function identifyCompany(req: express.Request, res: express.Response) {
+      return req.team ? req.team.id : undefined;
+    },
 
+    skip: function skipMoesif(req: express.Request, res: express.Response) {
+      return req.path === '/test' || req.path === '/api/test'
+    }
+  })
+  : undefined;
 
 // The request handler must be the first middleware on the app
 app.use(Sentry.Handlers.requestHandler());
@@ -90,7 +95,7 @@ app.use(async (req, res, next) => {
   //   id: 5874996,
   //   node_id: 'MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNTg3NDk5Ng=='
   // }
-  let err;
+  let err, user: User | undefined, team: Team | undefined;
   try {
     if (req.headers['x-github-event']) {
       console.log('[github]', req.headers['x-github-event'])
@@ -101,11 +106,12 @@ app.use(async (req, res, next) => {
           httpContext.set('team', ghOwner.team)
 
           const githubUser = await GithubUser.findOne({where: { githubId: body.sender.id }})
-          const user = await User.findOne({ where: { githubUser: githubUser, team: ghOwner.team } })
+          user = await User.findOne({ where: { githubUser: githubUser, team: ghOwner.team } })
           user && httpContext.set('user', user)
+          team = ghOwner.team;
 
           Sentry.configureScope(function (scope) {
-            scope.setTag('team', ghOwner.team.id.toString());
+            scope.setTag('team', team.id.toString());
             scope.setTag('origin', 'github_event')
             scope.setTag('event_name', req.headers['x-github-event'] as any)
           });
@@ -126,8 +132,8 @@ app.use(async (req, res, next) => {
       const { body: { payload } } = req;
       // console.log(req.headers, body)
       const data = JSON.parse(payload)
-      const team = await Team.findOneOrFail({where: {slackId: data.team.id}});
-      const user = await User.findOneOrFail({where: {slackId: data.user.id}})
+      team = await Team.findOneOrFail({where: {slackId: data.team.id}});
+      user = await User.findOneOrFail({where: {slackId: data.user.id}})
       user && httpContext.set('user', user)
 
       Sentry.configureScope(function (scope) {
@@ -143,8 +149,75 @@ app.use(async (req, res, next) => {
     err = e;
   }
 
+  if (user) {
+    req.user = user;
+
+    var userProps = {
+      userId: ''+user.id,
+      companyId: team ? ''+team.id : undefined, // If set, associate user with a company object
+      // campaign: {
+      //   utmSource: 'google',
+      //   utmMedium: 'cpc',
+      //   utmCampaign: 'adwords',
+      //   utmTerm: 'api+tooling',
+      //   utmContent: 'landing'
+      // },
+      metadata: {
+        slackId: user.slackId,
+        // firstName: 'John',
+        // lastName: 'Doe',
+        name: user.name,
+        // title: 'Software Engineer',
+        // salesInfo: {
+        //     stage: 'Customer',
+        //     lifetimeValue: 24000,
+        //     accountOwner: 'mary@contoso.com'
+        // }
+      }
+    };
+
+    moesifMiddleware.updateUser(userProps, console.log);
+  }
+
+  if (team) {
+    req.team = team
+
+    // Only companyId is required.
+    // Campaign object is optional, but useful if you want to track ROI of acquisition channels
+    // See https://www.moesif.com/docs/api#update-a-company for campaign schema
+    // metadata can be any custom object
+    var companyProps = {
+      companyId: ''+team.id,
+      // TODO: get from slack webhooks
+      // companyDomain: 'acmeinc.com', // If domain is set, Moesif will enrich your profiles with publicly available info
+      // campaign: {
+      //   utmSource: 'google',
+      //   utmMedium: 'cpc',
+      //   utmCampaign: 'adwords',
+      //   utmTerm: 'api+tooling',
+      //   utmContent: 'landing'
+      // },
+      metadata: {
+        // orgName: 'Acme, Inc',
+        // planName: 'Free Plan',
+        // dealStage: 'Lead',
+        // mrr: 24000,
+        // demographics: {
+        //   alexaRanking: 500000,
+        //   employeeCount: 47
+        // }
+      }
+    };
+
+    moesifMiddleware.updateCompany(companyProps, console.log);
+  }
+
   next(err)
 })
+
+if (moesifMiddleware) {
+  app.use(moesifMiddleware);
+}
 
 app.use(mixpanelMiddleware)
 
