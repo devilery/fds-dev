@@ -117,26 +117,44 @@ function getActionBlocks(pr: PullRequest, user: User, team: Team): IMessgeBlock 
 	}
 }
 
-function getCheckLine(pipeline: Pipeline, check: CommitCheck): string {
-	const mapping = {
+function getCheckLine(check: CommitCheck, pipeline: Pipeline | null): string {
+	let mapping = {
 		'pending': ['is pending...', '⏳'],
+		'blocked': ['is blocked...', '🚧'],
 		'in_progress': ['is running...', '⚙️'],
-		'waiting_for_manual_action': [`<${pipeline.url}|requires your action>  👈`, '👉'],
+		'waiting_for_manual_action': [`requires your action  👈`, '👉'],
 		'success': ['is done', '✅'],
 		'failure': ['failed', '🚫'],
 	}
+	if (pipeline) {
+		mapping['waiting_for_manual_action'] = [`<${pipeline.url}|requires your action>  👈`, '👉']
+	}
 
-	let text = check.targetUrl ? `<${check.targetUrl}|${check.name}>` : `${check.name}`
+	const name = check.name.replace('ci/circleci: ', '')
+	let text = check.targetUrl ? `<${check.targetUrl}|${name}>` : `${name}`
 
 	if (!Object.keys(mapping).includes(check.status)) {
 		console.log(`fuck: ${check.status}`)
 	}
 
-	return `${mapping[check.status][1]} ${text} ${mapping[check.status][0]}`
+	return `${mapping[check.status][1]} ${text} _${mapping[check.status][0]}_`
 }
 
 function getChecksBlocks(pipeline: Pipeline, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
 	const blocks: IMessgeBlock[] = []
+
+	// All checks passed, show just "All check were successful" message
+	if (checks.every(check => check.status == 'success')) {
+		return [{
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": '✅ All check were successful'
+			}
+		}]
+	}
+
+	// CI Pipline checks are present, group them
 	if (ciStatus) {
 		const messages = {
 			'running': ['is running...', '⚙️'],
@@ -162,24 +180,25 @@ function getChecksBlocks(pipeline: Pipeline, checks: CommitCheck[], ciStatus: 'r
 		}
 
 		checks.filter(item => (item.type == 'ci-circleci')).forEach(item => {
-			ciLines += `\n        ` + getCheckLine(pipeline, item)
+			ciLines += `\n        ` + getCheckLine(item, pipeline)
 		})
 
 		blocks.push({
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": `${ciLines}`
+				"text": ciLines
 			}
 		})
 	}
 
+	// write out ther (non CI) checks
 	checks.filter(item => (item.type != 'ci-circleci')).forEach(item => {
 		blocks.push({
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": getCheckLine(pipeline, item)
+				"text": getCheckLine(item, null)
 			}
 		})
 	})

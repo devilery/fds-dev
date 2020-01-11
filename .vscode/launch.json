@@ -12,6 +12,8 @@
             "cwd":"${workspaceRoot}",
             "runtimeExecutable":"${workspaceRoot}/node_modules/.bin/ts-node-dev",
             "args":[
+                "--trace-warnings",
+                "--async-stack-traces",
                 "--transpileOnly",
                 "./src/index.ts"
             ],

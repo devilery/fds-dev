@@ -1,9 +1,10 @@
-import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, CreateDateColumn, UpdateDateColumn, Unique } from "typeorm";
 import { Commit } from '.';
 import CustomEntity from './CustomEntity'
 import { bigInt } from './util';
 
 @Entity()
+@Unique(["commit", "name"])
 export default class CommitCheck extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
@@ -15,7 +16,7 @@ export default class CommitCheck extends CustomEntity {
   name: string;
 
   @Column()
-  status: 'pending' | 'in_progress' | 'waiting_for_manual_action' | 'success' | 'failure'
+  status: 'blocked' | 'pending' | 'in_progress' | 'waiting_for_manual_action' | 'success' | 'failure'
 
   @Column('varchar', {nullable: true})
   description: string | null;

@@ -45,8 +45,8 @@ export async function loadPipeline(pr: PullRequest, checkUrl: string): Promise<P
 
 async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: ICommitCheck | null = null) {
 	const statusMap = {
-		'pending': 'in_progress', 
-		'blocked': 'pending',
+		'pending': 'in_progress',
+		'blocked': 'blocked',
 		'running': 'in_progress',
 		'queued': 'in_progress',
 		'on_hold': 'waiting_for_manual_action',
@@ -181,8 +181,8 @@ export async function detectPipelineMasterStatus(pr: PullRequest): Promise<['run
 
 	const inProgress = checks.some(ch => ch.status === 'in_progress' || ch.status === 'pending');
 	const failed = !inProgress && checks.some(ch => ch.status === 'failure');
-	const success = !inProgress && !failed;
-	const actionRequired = checks.some(ch => ch.status === 'pending')
+	
+	const actionRequired = checks.some(ch => ch.status === 'blocked')
 
 	const status = inProgress
 		? 'running'
