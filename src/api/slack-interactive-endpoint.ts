@@ -1,4 +1,4 @@
-import { strict as assert } from 'assert';
+import assert from '../libs/assert'
 import httpContext from 'express-http-context';
 const router = require('express').Router();
 const { emmit } = require('../libs/event.js')
@@ -8,7 +8,7 @@ router.post('/', async(req, res) => {
   const payload = JSON.parse(req.body.payload)
   res.send('ok')
 
-  const team = httpContext.get('team') as Team
+  const team = httpContext.get('team') as Team | undefined
   assert(team, 'No team found in context')
 
   // console.log(payload)

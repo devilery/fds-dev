@@ -197,10 +197,6 @@ app.use(function onError(err: any, req: any, res: any, next: any) {
   res.end(res.sentry + "\n");
 });
 
-app.use((err: any, req: any, res: any, next: any) => {
-  res.end(500);
-});
-
 (async() => {
   var db = await dbConnect();
   await db.synchronize();

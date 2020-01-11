@@ -1,4 +1,3 @@
-import { strict as assert } from 'assert'
 import httpContext from 'express-http-context'
 const { Base64 } = require('js-base64');
 
@@ -12,6 +11,7 @@ import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
 import { updatePipeline, isCircleCheck } from '../libs/circleci'
 const { sleep } = require('../libs/util');
 import { trackEvent } from '../libs/analytics'
+import assert from '../libs/assert'
 
 const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
 
@@ -164,11 +164,6 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	// TODO: fails with circle approval jobs
 	// if (check.status === 'pending' && check.target_url.includes('/workflow-run/') && check.description.includes('job is on hold'))
 	const finalSingleCheck = await CommitCheck.findOne({ where: {commit, type: check.type, name: check.name}})
-
-	if (!finalSingleCheck) {
-		console.error('Final check was not found', check)
-		return;
-	}
 
 	assert(finalSingleCheck, 'Final check was not found')
 

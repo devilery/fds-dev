@@ -15,7 +15,8 @@
       "experimentalDecorators": true,
       "sourceMap": true,
       "allowJs": true,
-      "strictPropertyInitialization": false
+      "strictPropertyInitialization": false,
+      "incremental": true
    },
    "include": [
     "typings",
