@@ -21,7 +21,6 @@ const refreshAuthLogic = async (failedRequest: any) => {
     .setParameters({ token: token, likeToken: `%${token}%` })
     .getOne()
 
-
   if (!owner) {
     throw new GithubApiError(`Could not find owner with token: ${token}`);
   }
@@ -85,12 +84,10 @@ export async function createInstallationToken(installation_id: string) {
 }
 
 export async function requestPullRequestReview(owner: string, repo: string, pr_number: number, data: { reviewers: string[] }, token: string) {
-  console.log('wtffffffffff')
   assert(data.reviewers, 'No reviewers specified for review')
   const res = await axios.post(`https://api.github.com/repos/${owner}/${repo}/pulls/${pr_number.toString()}/requested_reviewers`, data,
     { headers: { 'Accept': 'application/vnd.github.symmetra-preview+json', 'Authorization': `token ${token}` } }
   )
-  console.log('done');
   return res.data as Octokit.PullsCreateReviewRequestResponse
 }
 

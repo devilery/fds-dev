@@ -149,6 +149,11 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
 
 // no type for this webhook :/
 export async function processPullRequestReviewRequest(requestReviewEvent: any) {
+  if (requestReviewEvent.requested_reviewer) {
+    console.log('team review request', requestReviewEvent);
+    return;
+  }
+
   const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewEvent.requested_reviewer.id } })
   const team = httpContext.get('team') as Team;
   const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
@@ -166,7 +171,11 @@ export async function processPullRequestReviewRequest(requestReviewEvent: any) {
 }
 
 export async function processPullRequestReviewRequestRemove(requestReviewRemoveEvent: any) {
-  console.log(requestReviewRemoveEvent)
+  if (requestReviewRemoveEvent.requested_reviewer) {
+    console.log('team review request');
+    return;
+  }
+
   const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewRemoveEvent.requested_reviewer.id } })
   const team = httpContext.get('team') as Team;
   const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
