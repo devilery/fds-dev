@@ -16,7 +16,9 @@
       "sourceMap": true,
       "allowJs": true,
       "strictPropertyInitialization": false,
-      "incremental": true
+      "incremental": true,
+      "noEmitHelpers": true,
+      "importHelpers": true
    },
    "include": [
     "typings",

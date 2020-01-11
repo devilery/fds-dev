@@ -13,7 +13,7 @@ const session = axios.create({
 session.interceptors.response.use(function (response) {
   return response;
 }, function (error) {
-  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request.config.url}`, error)
+  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
   return Promise.reject(apiError);
 });
 

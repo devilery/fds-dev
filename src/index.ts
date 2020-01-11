@@ -1,3 +1,4 @@
+
 require('dotenv').config();
 
 if (process.env.NODE_ENV === 'development') {
@@ -5,12 +6,21 @@ if (process.env.NODE_ENV === 'development') {
   require('pretty-error').start();
 }
 
-require('express-async-errors');
+// This allows TypeScript to detect our global value
+declare global {
+  namespace NodeJS {
+    interface Global {
+      __rootdir__: string;
+    }
+  }
+}
 
+require('express-async-errors');
+import { RewriteFrames } from '@sentry/integrations';
 import dbConnect from './libs/db'
 import { Team, GithubOwner, User, GithubUser } from './entity'
-
 import * as Sentry from '@sentry/node';
+global.__rootdir__ = __dirname || process.cwd();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
@@ -21,7 +31,10 @@ if (process.env.SENTRY_DSN) {
         return null;
       }
       return event;
-    }
+    },
+    integrations: [new RewriteFrames({
+      root: global.__rootdir__
+    })]
   });
 }
 

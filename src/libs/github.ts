@@ -142,7 +142,7 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
 
 // no type for this webhook :/
 export async function processPullRequestReviewRequest(requestReviewEvent: any) {
-  if (requestReviewEvent.requested_reviewer) {
+  if (!requestReviewEvent.requested_reviewer) {
     console.log('team review request', requestReviewEvent);
     return;
   }

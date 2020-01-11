@@ -3,6 +3,9 @@
    "compilerOptions": {
       "outDir": "./build",
       "noEmit": false,
-      "incremental": false
+      "incremental": false,
+      "sourceMap": true,
+      "inlineSources": true,
+      "sourceRoot": "/"
    },
 }
