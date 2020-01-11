@@ -11,7 +11,8 @@
       "start": "node ./build/index.js",
       "test": "echo nothing here",
       "build": "tsc --pretty --project ./tsconfig.heroku.json || echo All fine.",
-      "deploy": "./scripts/deploy_prod.sh"
+      "deploy": "./scripts/deploy_prod.sh",
+      "stage": "git push staging master:master"
    },
    "engines": {
       "node": "12"
