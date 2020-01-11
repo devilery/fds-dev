@@ -69,7 +69,7 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
 
     httpContext.set('analyticsUser', user)
     httpContext.set('analyticsTeam', team)
-  } else {
+  } else if (req.path !== '/test') {
     console.log('⚠️ Untracked request')
   }
 
