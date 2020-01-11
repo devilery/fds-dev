@@ -68,7 +68,7 @@ async function testDb() {
 
   await gu2.relation('users')
   console.log(gu2.users)
-  
+
 
   // await team.reload()
   await team.remove();
@@ -104,11 +104,11 @@ async function testRelation() {
   console.log(ahoj)
 }
 
-router.get('/', async(req, res) => {
+router.get('/', async(req, res, next) => {
 	// const { body } = req;
 	// emmit(body.type, body);
 
-
+  if (process.env.NODE_ENV !== 'development') return next();
 
 	const output = [
     // await retryBuild({vcs: 'gh', username:'feature-delivery', project:'fds-dev', build_num: '90'})
@@ -116,7 +116,7 @@ router.get('/', async(req, res) => {
     // await getPullRequestsForCommit('feature-delivery', 'fds-dev', 'token')
     // trackEvent('test_event', {test_prop:true})
     // await testDb(),
-    await testRelation(),
+    // await testRelation(),
     // await requestPullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // await removePullRequestReview('devilery', 'fds-dev', 51, {reviewers:['LeZuse']}, 'xx')
     // U079RBVST marek, T072R1FNG 9roads
