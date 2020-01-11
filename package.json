@@ -10,7 +10,8 @@
       "dev": "ts-node-dev --trace-warnings --async-stack-traces --respawn --transpileOnly ./src/index.ts",
       "start": "node ./build/index.js",
       "test": "echo nothing here",
-      "build": "tsc -p ./tsconfig.heroku.json"
+      "build": "tsc -p ./tsconfig.heroku.json",
+      "deploy": "./scripts/deploy_prod.sh"
    },
    "dependencies": {
       "@sentry/integrations": "^5.11.0",
