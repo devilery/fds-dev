@@ -12,12 +12,17 @@ const router = express.Router()
 
 
 router.get('/', async(req: any, res: any) => {
-  const authInfo = await (new WebClient()).oauth.access({
-    client_id: process.env.SLACK_CLIENT_ID,
-    client_secret: process.env.SLACK_CLIENT_SECRET,
-    redirect_uri: process.env.SLACK_OAUTH_REDIRECT_URI,
-    code: req.query.code
-  }) as OauthAccessResult;
+  try {
+    var authInfo = await (new WebClient()).oauth.access({
+      client_id: process.env.SLACK_CLIENT_ID,
+      client_secret: process.env.SLACK_CLIENT_SECRET,
+      redirect_uri: process.env.SLACK_OAUTH_REDIRECT_URI,
+      code: req.query.code
+    }) as OauthAccessResult;
+  } catch(e) {
+    console.log(e)
+    throw e
+  }
 
   const client = new WebClient(authInfo.bot.bot_access_token)
   const teamInfo = await client.team.info() as TeamInfoResult
