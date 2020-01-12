@@ -140,7 +140,7 @@ function getCheckLine(check: CommitCheck, pipeline: Pipeline | null): string {
 	return `${mapping[check.status][1]} ${text} _${mapping[check.status][0]}_`
 }
 
-function getChecksBlocks(pipeline: Pipeline, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
+function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
 	const blocks: IMessgeBlock[] = []
 
 	// All checks passed, show just "All check were successful" message
