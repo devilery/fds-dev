@@ -56,11 +56,11 @@ const { subscribe } = require('./libs/event.js');
 const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
 
-if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
+// if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
   require('log-that-http')
-} else {
-  require('./libs/http-debug')
-}
+// } else {
+//   require('./libs/http-debug')
+// }
 
 import { mixpanelMiddleware } from './libs/analytics'
 
