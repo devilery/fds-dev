@@ -193,7 +193,7 @@ app.use(async (req, res, next) => {
     moesifMiddleware.updateUser(userProps, console.log);
   }
 
-  if (team) {
+  if (moesifMiddleware && team) {
     req.team = team
 
     // Only companyId is required.
