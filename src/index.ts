@@ -24,6 +24,7 @@ global.__rootdir__ = __dirname || process.cwd();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
+    environment: process.env.NODE_ENV === 'development' ? 'development' : undefined,
     dsn: process.env.SENTRY_DSN,
     beforeSend(event, hint) {
       const error = (hint && hint.originalException) as any;
@@ -295,7 +296,7 @@ app.use(function onError(err: any, req: any, res: any, next: any) {
   // The error id is attached to `res.sentry` to be returned
   // and optionally displayed to the user for support.
   res.statusCode = 500;
-  res.end(res.sentry + "\n");
+  res.end('Error #' + res.sentry + "\n");
 });
 
 (async() => {
