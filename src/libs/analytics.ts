@@ -5,17 +5,26 @@ import Mixpanel from 'mixpanel';
 
 import { GithubOwner, GithubUser, User, Team } from '../entity'
 
-if (!process.env.MIXPANEL_TOKEN) {
-  console.error('Missing MIXPANEL_TOKEN env var')
-}
+export let mixpanel: Mixpanel.Mixpanel
 
-// TODO: exceptin when no token???
-// https://help.mixpanel.com/hc/en-us/articles/115004497803
-export const mixpanel = Mixpanel.init(process.env.MIXPANEL_TOKEN, {
+if (process.env.MIXPANEL_TOKEN) {
+  // https://help.mixpanel.com/hc/en-us/articles/115004497803
+  mixpanel = Mixpanel.init(process.env.MIXPANEL_TOKEN, {
     // test: true,
     debug: !!process.env.MIXPANEL_DEBUG,
+    test: !!process.env.MIXPANEL_DEBUG,
     protocol: 'https'
-})
+  })
+} else {
+  console.error('Missing MIXPANEL_TOKEN env var')
+  mixpanel = new Proxy({}, {get: (target, name) => {
+    if (['groups', 'people'].includes(name.toString())) {
+      return new Proxy({}, {get: (target, name) => {}})
+    }
+  }}) as Mixpanel.Mixpanel
+}
+
+
 
 export async function mixpanelMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
   let err: Error;
