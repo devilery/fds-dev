@@ -50,7 +50,7 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
       user = await User.findOneOrFail({where: {slackId: data.user.id}})
     }
   } catch(e) {
-    console.error(e)
+    // console.error(e)
     err = e;
   }
 

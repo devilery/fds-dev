@@ -83,7 +83,7 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   for (let pull of pullRequests) {
     const statusData = {
       status: checkStatus,
-      type: 'check',
+      type: 'standard',
       from: 'github',
       id: checkRun.id,
       commit_sha: checkRun.head_sha,
