@@ -24,7 +24,7 @@ global.__rootdir__ = __dirname || process.cwd();
 
 if (process.env.SENTRY_DSN) {
   Sentry.init({
-    environment: process.env.NODE_ENV === 'development' ? 'development' : undefined,
+    environment: process.env.NODE_ENV === 'development' ? 'development' : process.env.STAGE || undefined,
     dsn: process.env.SENTRY_DSN,
     beforeSend(event, hint) {
       const error = (hint && hint.originalException) as any;
