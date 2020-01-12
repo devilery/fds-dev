@@ -3,8 +3,10 @@ import config from '../config';
 import { emmit } from '../libs/event'
 import { Team, User } from '../entity';
 import { WebClient } from '@slack/web-api';
-import { OauthAccessResult, TeamInfoResult } from '../libs/slack-api';
+import { OauthAccessResult, TeamInfoResult, UsersInfoResult } from '../libs/slack-api';
 import { createUser } from '../libs/users';
+import { updateUser } from '../libs/analytics'
+
 
 const router = express.Router()
 
@@ -25,6 +27,20 @@ router.get('/', async(req: any, res: any) => {
   let user = await User.findOne({ where: { slackId: authInfo.user_id } })
   if (!user) {
     user = await createUser(authInfo.user_id, team)
+    user.trackEvent('User created')
+  }
+
+  const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult
+
+  if (userInfo && userInfo.user) {
+    const data = {}
+    if (userInfo.user.profile.email) {
+      data['$email'] = userInfo.user.profile.email;
+    }
+    if (userInfo.user.profile.image_512) {
+      data['$avatar'] = userInfo.user.profile.image_512;
+    }
+    updateUser(user.id, data)
   }
 
   res.statusCode = 302

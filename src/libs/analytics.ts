@@ -88,10 +88,12 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
 export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {}) {
   const user = httpContext.get('analyticsUser') as User | undefined;
 
-  assert(user, 'Missing user for event tracking')
+  if (!properties.distinct_id) {
+    assert(user, 'Missing user for event tracking')
+  }
 
   mixpanel.track(name, {
-    distinct_id: ''+user.id,
+    distinct_id: user ? ''+user.id : undefined,
     ...properties
   })
 }

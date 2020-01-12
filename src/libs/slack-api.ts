@@ -16,6 +16,12 @@ export interface UsersInfoResult extends WebAPICallResult {
 		id: string
 		real_name: string
 		name: string
+		tz: string,
+		profile: {
+			phone: string,
+			email: string,
+			image_512: string,
+		}
 	}
 }
 

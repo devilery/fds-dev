@@ -5,13 +5,13 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name":"Debug Shit",
-            "type":"node",
-            "request":"launch",
-            "protocol":"inspector",
-            "cwd":"${workspaceRoot}",
-            "runtimeExecutable":"${workspaceRoot}/node_modules/.bin/ts-node-dev",
-            "args":[
+            "name": "Debug Shit",
+            "type": "node",
+            "request": "launch",
+            "protocol": "inspector",
+            "cwd": "${workspaceRoot}",
+            "runtimeExecutable": "${workspaceRoot}/node_modules/.bin/ts-node-dev",
+            "args": [
                 "--trace-warnings",
                 "--async-stack-traces",
                 "--transpileOnly",
@@ -21,7 +21,7 @@
                 "${workspaceFolder}/node_modules/**/*.js",
                 "<node_internals>/**/*.js"
             ],
-            "restart":true
-         }
+            "restart": true
+        }
     ]
 }

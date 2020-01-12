@@ -1,9 +1,10 @@
 // @ts-ignore
 import assert from './assert';
 
-import { emmit } from '../libs/event.js';
 import { Team, User } from '../entity';
-import { UsersInfoResult, ImOpenResult } from '../libs/slack-api';
+import { emmit } from './event.js';
+import { UsersInfoResult, ImOpenResult } from './slack-api';
+import { updateUser } from './analytics'
 
 export async function createUser(userSlackId: string, team: Team, metadata: any | null = null, sendEvent = true) {
 	const client = team.getSlackClient();
@@ -23,6 +24,23 @@ export async function createUser(userSlackId: string, team: Team, metadata: any 
 
 	await user.save()
 	await user.reload()
+
+	const userProps = {};
+	if (userInfo.user.profile.phone) {
+		userProps['$phone'] = userInfo.user.profile.phone;
+	}
+	if (userInfo.user.tz) {
+		userProps['$timezone'] = userInfo.user.tz
+	}
+	if (userInfo.user.profile.email) {
+		userProps['$email'] = userInfo.user.profile.email;
+	}
+	updateUser(user.id, {
+		$name: user.name,
+		$created: user.createdAt.toISOString(),
+		...userProps,
+		team_id: team.id,
+	})
 
 	if (sendEvent) {
 		emmit('user.created', user)

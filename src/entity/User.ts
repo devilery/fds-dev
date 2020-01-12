@@ -1,7 +1,10 @@
 import { BaseEntity, Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinTable, JoinColumn, OneToMany, ManyToMany } from "typeorm";
+import mixpanel from 'mixpanel'
+
 import { Repository, Team, GithubUser, PullRequestReviewRequest, ReviewInvite } from '.'
 import { UsersInfoResult } from "../libs/slack-api";
-import CustomEntity from "./CustomEntity";
+import * as analytics from '../libs/analytics'
+import CustomEntity from './CustomEntity'
 
 @Entity()
 export default class User extends CustomEntity {
@@ -41,5 +44,9 @@ export default class User extends CustomEntity {
     const client = this.team.getSlackClient()
     const userInfo = await client.users.info({ user: this.slackId }) as UsersInfoResult;
     return userInfo.user.name
+  }
+
+  trackEvent(eventName: string, props: mixpanel.PropertyDict = {}): void {
+    analytics.trackEvent(eventName, {distinct_id: ''+this.id, ...props})
   }
 }
