@@ -163,7 +163,7 @@ app.use(async (req, res, next) => {
     err = e;
   }
 
-  if (user) {
+  if (moesifMiddleware && user) {
     req.user = user;
 
     var userProps = {
