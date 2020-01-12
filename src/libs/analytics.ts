@@ -5,7 +5,7 @@ import Mixpanel from 'mixpanel';
 
 import { GithubOwner, GithubUser, User, Team } from '../entity'
 
-export let mixpanel: Mixpanel.Mixpanel
+export let mixpanel: Mixpanel.Mixpanel | undefined;
 
 if (process.env.MIXPANEL_TOKEN) {
   // https://help.mixpanel.com/hc/en-us/articles/115004497803
@@ -17,16 +17,13 @@ if (process.env.MIXPANEL_TOKEN) {
   })
 } else {
   console.error('Missing MIXPANEL_TOKEN env var')
-  mixpanel = new Proxy({}, {get: (target, name) => {
-    if (['groups', 'people'].includes(name.toString())) {
-      return new Proxy({}, {get: (target, name) => {}})
-    }
-  }}) as Mixpanel.Mixpanel
 }
 
 
 
 export async function mixpanelMiddleware(req: express.Request, res: express.Response, next: express.NextFunction) {
+  if (!mixpanel) return next();
+
   let err: Error;
   let user: User | undefined;
   let team: Team | undefined;
@@ -86,6 +83,8 @@ export async function mixpanelMiddleware(req: express.Request, res: express.Resp
 }
 
 export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {}) {
+  if (!mixpanel) return;
+
   const user = httpContext.get('analyticsUser') as User | undefined;
 
   if (!properties.distinct_id) {
@@ -99,5 +98,7 @@ export function trackEvent(name: string, properties: Mixpanel.PropertyDict = {})
 }
 
 export function updateUser(distinctId: User['id'], properties: Mixpanel.PropertyDict) {
+  if (!mixpanel) return;
+
   mixpanel.people.set(''+distinctId, properties);
 }
