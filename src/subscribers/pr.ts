@@ -51,12 +51,7 @@ opened.eventType = 'pr.opened';
 async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(reviewRequest)
 	const team = httpContext.get('team')
-	console.log('pr closed/merged')
-	console.log(reviewRequest.merged)
-
 	const text = pr.state === 'merged' ? '✅ PR has been merged' : '🗑 PR has been closed';
-	// const repo = Repository.findOneOrFail({where: {githubId: reviewRequest.repository.id}})
-	// const pr = await PullRequest.findOneOrFail({where: {githubId: reviewRequest.id}, relations: ['user']})
 	assert(pr.user, 'PR doesnt have user relation')
 	assert(pr.slackThreadId, 'PR does not have slack thread id')
 

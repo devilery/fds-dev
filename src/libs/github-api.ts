@@ -10,13 +10,6 @@ const session = axios.create({
   baseURL: GITHUB_API_URL
 })
 
-session.interceptors.response.use(function (response) {
-  return response;
-}, function (error) {
-  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
-  return Promise.reject(apiError);
-});
-
 const refreshAuthLogic = async (failedRequest: any) => {
   const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
 
@@ -30,7 +23,6 @@ const refreshAuthLogic = async (failedRequest: any) => {
   if (!owner) {
     throw new GithubApiError(`Could not find owner with token: ${token}`);
   }
-
   const acessToken = await createInstallationToken(owner.installationId)
 
   owner.githubAccessToken = acessToken.token;
@@ -42,7 +34,13 @@ const refreshAuthLogic = async (failedRequest: any) => {
 };
 
 createAuthRefreshInterceptor(session, refreshAuthLogic);
-// axiosRetry(session, { retries: 3 })
+
+// session.interceptors.response.use(function (response) {
+//   return response;
+// }, function (error) {
+//   const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
+//   return Promise.reject(apiError);
+// });
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
@@ -85,7 +83,7 @@ export async function createInstallationToken(installation_id: string) {
     iss: process.env.APP_ID
   }, privateKey.key, { algorithm: 'RS256' });
 
-  var res = await axios.post(`/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+  var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
   return res.data as Octokit.AppsCreateInstallationTokenResponse
 }
 

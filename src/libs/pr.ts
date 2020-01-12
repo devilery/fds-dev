@@ -15,7 +15,7 @@ export async function createOrUpdatePr(pullRequest: any) {
   pr.rawData = pullRequest;
   pr.websiteUrl = pullRequest.website_url;
   if (pullRequest.user_id) {
-  	const user = await User.findOne({where: {id: pullRequest.user_id}, relations: ['team']})
+    const user = await User.findOne({where: {id: pullRequest.user_id}, relations: ['team']})
   	if (user) {
       pr.user = user;
     }
@@ -58,6 +58,7 @@ export async function rebuildPullRequest(pr: PullRequest) {
     }
 
     for (let circleCheck of circleCiStatuses) {
+
       let data: ICommitCheck = {
         status: normalizeCheckState(circleCheck.state) as any,
         type: 'ci-circleci',
