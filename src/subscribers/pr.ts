@@ -16,32 +16,18 @@ import assert from '../libs/assert'
 const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
 
 const opened = async function (data: IPullRequestEvent) {
-	const pr = await createOrUpdatePr(data)
-	await rebuildPullRequest(pr);
-	const client = pr.user.team.getSlackClient()
-
-	const messageData = await getPrMessage(pr)
-
-	// TODO: find correct check and pass it to updatePipeline; - prolly DEPRECATED
-	const headCommit = await Commit.findOneOrFail({where: {sha: pr.headSha}});
-	// const headCommit = await pr.getHeadCommit();
-	// await updatePipeline(pr, headCommit,)
+	const pr = await createOrUpdatePr(data);
+	const client = pr.user.team.getSlackClient();
+	const messageData = await getPrMessage(pr);
 
 	const res = await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
 	pr.slackThreadId = res.message.ts
 	await pr.save()
 	await pr.reload('user')
 
-	// TODO: fix
-	// const watchMessageText = `Hey @${await pr.user.getSlackUsername()}, you are now watching this thread :face_with_monocle:`
-	// await client.chat.postMessage({text: watchMessageText, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
-
-	// TODO: remove redundant Slack API call
-	// udpate with previously run checks as well
-	const finalChecks = await CommitCheck.find({where: {commit: headCommit}})
-	if (finalChecks && finalChecks.length > 0) {
-		await updatePrMessage(pr, finalChecks)
-	}
+	// update main msg with checks etc...
+	await rebuildPullRequest(pr);
+	await pr.updateMainMessage();	
 
 	trackEvent('PR opened', {pr_id: pr.id})
 };
@@ -154,7 +140,7 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	// commit.reload does not reload relations
 	const finalChecks = await CommitCheck.find({where: {commit}})
 
-	await updatePrMessage(pr, finalChecks)
+	await pr.updateMainMessage();
 
 	// TODO: fails with circle approval jobs
 	// if (check.status === 'pending' && check.target_url.includes('/workflow-run/') && check.description.includes('job is on hold'))

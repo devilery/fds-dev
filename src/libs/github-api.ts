@@ -35,12 +35,16 @@ const refreshAuthLogic = async (failedRequest: any) => {
 
 createAuthRefreshInterceptor(session, refreshAuthLogic);
 
-// session.interceptors.response.use(function (response) {
-//   return response;
-// }, function (error) {
-//   const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
-//   return Promise.reject(apiError);
-// });
+session.interceptors.response.use(function (response) {
+  return response;
+}, function (error) {
+  if (error.message.match(/Request failed with status code 40[134]/i)) {
+    return Promise.reject();
+  }
+
+  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
+  return Promise.reject(apiError);
+});
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
