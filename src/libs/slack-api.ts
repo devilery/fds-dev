@@ -30,6 +30,7 @@ export interface TeamInfoResult extends WebAPICallResult {
 	team: {
 		id: string
 		name: string
+		domain: string
 	}
 }
 

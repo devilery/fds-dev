@@ -40,6 +40,9 @@ router.get('/', async(req: any, res: any) => {
     if (userInfo.user.profile.image_512) {
       data['$avatar'] = userInfo.user.profile.image_512;
     }
+    if (teamInfo.team.domain) {
+      data['team_slack_name'] = teamInfo.team.domain;
+    }
     updateUser(user.id, data)
   }
 
