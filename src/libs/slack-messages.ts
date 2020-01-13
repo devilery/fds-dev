@@ -355,7 +355,7 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 	let notificationText = `🎉 *${reviewUsername}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`;
 
 	if (review.state === 'changes_requested') {
-		notificationText = `🚧 *${reviewUsername}* requested changes - <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+		notificationText = `🚧 *${reviewUsername}* requested changes on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
 	}
 
 	if (review.state === 'commented') {
