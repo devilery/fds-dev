@@ -191,7 +191,7 @@ app.use(async (req, res, next) => {
       }
     };
 
-    moesifMiddleware.updateUser(userProps/*, console.log*/);
+    moesifMiddleware.updateUser(userProps, () => {});
   }
 
   if (moesifMiddleware && team) {
@@ -224,7 +224,7 @@ app.use(async (req, res, next) => {
       }
     };
 
-    moesifMiddleware.updateCompany(companyProps/*, console.log*/);
+    moesifMiddleware.updateCompany(companyProps, () => {});
   }
 
   next(err)
