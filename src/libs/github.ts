@@ -237,6 +237,7 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       // send them oauth message to slack to authenticate
       // to populate the token column
       const newUser = await createUser(handle, team, null, false);
+      newUser.trackEvent('User created', {context: 'review_request'})
 
       let data: IRequestGithubReviewLogin = {
         user_id: newUser.id,
