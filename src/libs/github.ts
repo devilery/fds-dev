@@ -51,8 +51,14 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
 
   /// TEST REMOVE LATER!!!!!!!!!!
-  let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
-  await Promise.all(rebuilds);
+  // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
+  // await Promise.all(rebuilds);
+  // return;
+
+  for (let pr of pullRequests) {
+    await rebuildPullRequest(pr.id);
+  }
+
   return;
 
   // await createOrUpdateCommit(statusEvent.commit, pullRequests)
@@ -75,6 +81,7 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
 }
 
 export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
+
   const checkStatus = normalizeCheckState(checkRunEvent.check_run.conclusion ?? checkRunEvent.check_run.status)
   const { repository } = checkRunEvent;
 
@@ -85,8 +92,14 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
 
   /// TEST REMOVE LATER!!!!!!!!!!
-  let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
-  await Promise.all(rebuilds);
+  // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
+  // await Promise.all(rebuilds);
+  // return;
+
+  for (let pr of pullRequests) {
+    rebuildPullRequest(pr.id)
+  }
+
   return;
 
   // const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)

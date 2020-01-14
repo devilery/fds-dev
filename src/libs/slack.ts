@@ -6,12 +6,13 @@ import { IMessageData, getPrMessage, getChecksSuccessMessage, getCheckErrorMessa
 
 export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitCheck[]) {
 	assert(pr.slackThreadId, 'PR is missing slack thread id')
+	const user = await pr.relation('user');
 	// const client = pr.user.team.getSlackClient()
 	const team = httpContext.get('team');
 	const client = team.getSlackClient()
 	const messageData = await getPrMessage(pr, prCommitChecks)
 
-	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, ts: pr.slackThreadId})
 }
 
 export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: CommitCheck[], check: CommitCheck) {

@@ -150,7 +150,13 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
+const prChecksUpdate = async function (pr_id: number) {
+	const pr = await PullRequest.findOneOrFail(pr_id);
+	await pr.updateMainMessage()
+}
 
+prChecksUpdate.eventType = 'pr.checks.updated'
+ 
 const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent) {
 	const pr = await PullRequest.findOneOrFail({ where: { id: reviewEvent.pull_request_id }, relations: ['user', 'user.team'] })
 	const user = pr.user
@@ -244,4 +250,4 @@ const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPul
 
 pullRequestReviewRequestRemove.eventType = 'pr.review.request.remove'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove]
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove, prChecksUpdate]
