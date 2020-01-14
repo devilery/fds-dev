@@ -6,7 +6,7 @@ import httpContext from 'express-http-context'
 
 import { emmit } from './event';
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
-import { createOrUpdatePr } from './pr';
+import { createOrUpdatePr, rebuildPullRequest } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
