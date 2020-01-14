@@ -63,7 +63,6 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 			},
 			"url": pr.websiteUrl,
 			"style": finalStateColor,
-			"value": "null"
 		}
 	}
 }
@@ -164,24 +163,26 @@ function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], 
 
 		let ciLines = `${messages[ciStatus][1]} <${pipeline.url}|CI Pipeline> ${messages[ciStatus][0]}`
 
-		const filter: string[] = []
-		if (ciStatus == 'success') {
-			filter.push('waiting_for_manual_action')
-		}
-		if (ciStatus == 'failed') {
-			filter.push('waiting_for_manual_action')
-			filter.push('failure')
-		}
-		if (ciStatus == 'running') {
-			filter.push('in_progress')
-			filter.push('waiting_for_manual_action')
-			filter.push('success')
-			filter.push('failure')
-		}
+		if (ciStatus !== 'success' && !checks.filter(item => (item.type == 'ci-circleci')).every(check => { check.status == 'success' })) {
+			const filter: string[] = []
+			if (ciStatus == 'success') {
+				filter.push('waiting_for_manual_action')
+			}
+			if (ciStatus == 'failed') {
+				filter.push('waiting_for_manual_action')
+				filter.push('failure')
+			}
+			if (ciStatus == 'running') {
+				filter.push('in_progress')
+				filter.push('waiting_for_manual_action')
+				filter.push('success')
+				filter.push('failure')
+			}
 
-		checks.filter(item => (item.type == 'ci-circleci')).forEach(item => {
-			ciLines += `\n        ` + getCheckLine(item, pipeline)
-		})
+			checks.filter(item => (item.type == 'ci-circleci')).forEach(item => {
+				ciLines += `\n        ` + getCheckLine(item, pipeline)
+			})
+		}
 
 		blocks.push({
 			"type": "section",
