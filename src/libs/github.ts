@@ -51,15 +51,8 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   /// TEST REMOVE LATER!!!!!!!!!!
-  // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
-  // await Promise.all(rebuilds);
-  // return;
+  await Promise.all(pullRequests.map(async (pr) => await rebuildPullRequest(pr.id)))
 
-  for (let pr of pullRequests) {
-    await rebuildPullRequest(pr.id);
-  }
-
-  return;
 
   // await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
@@ -93,15 +86,7 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
   /// TEST REMOVE LATER!!!!!!!!!!
-  // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
-  // await Promise.all(rebuilds);
-  // return;
-
-  for (let pr of pullRequests) {
-    rebuildPullRequest(pr.id)
-  }
-
-  return;
+  await Promise.all(pullRequests.map(async (pr) => await rebuildPullRequest(pr.id)))
 
   // const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
   // await createOrUpdateCommit(commitInfo, pullRequests)
