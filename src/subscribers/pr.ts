@@ -26,7 +26,7 @@ const opened = async function (data: IPullRequestEvent) {
 	await pr.reload('user')
 
 	// update main msg with checks etc...
-	await rebuildPullRequest(pr.id);
+	await rebuildPullRequest(pr);
 	await pr.updateMainMessage();	
 
 	trackEvent('PR opened', {pr_id: pr.id})
