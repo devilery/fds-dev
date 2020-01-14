@@ -83,8 +83,6 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	if (isCircleCheck(check)) {
 		check.type = 'ci-circleci';
 
-		await updatePipeline(pr, commit, check)
-
 		// TODO:
 		// check.ci_data = {
 		// 	estimate_ms: circleCiData.estimate_ms,

@@ -5,9 +5,7 @@ const CIRCLE_TOKEN = process.env.CIRCLE_TOKEN;
 
 const session = axios.create()
 
-session.interceptors.response.use(function (response) {
-	return response;
-}, function (error) {
+session.interceptors.response.use(response => response, (error) => {
 	const apiError = new CircleCiApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
 	return Promise.reject(apiError);
 });
@@ -55,7 +53,7 @@ export async function jobDetails({jobUrl, token}) {
 }
 
 export async function workflowDetails({ workflowId, token }) {
-	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${token}`
+	const wurl = `${CIRCLE_BASE_v2}/workflow/${workflowId}/job?circle-token=${token}`;
 	const wres = await session.get(wurl)
 
 	const output = {};

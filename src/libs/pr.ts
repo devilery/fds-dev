@@ -36,48 +36,44 @@ export async function createOrUpdatePr(pullRequest: any) {
 export async function rebuildPullRequest(pr: PullRequest) {
   const repo = await pr.relation('repository');
   const owner = await repo.relation('owner');
-  const headCommit = await Commit.findOne({ where: { sha: pr.headSha } });
 
-  if (!headCommit) {
-    const commitInfo = await getCommitInfo(owner.login, repo.name, pr.headSha, owner.githubAccessToken)
-    const commit = await createOrUpdateCommit(commitInfo, [pr])
-    const statusResponse: any = await getCommitStatuses(owner.login, repo.name, commit.sha, owner.githubAccessToken)
-    const checkRunsResponse = await getCommitCheckRuns(owner.login, repo.name, commit.sha, owner.githubAccessToken)
+  const commitInfo = await getCommitInfo(owner.login, repo.name, pr.headSha, owner.githubAccessToken)
+  const commit = await createOrUpdateCommit(commitInfo, [pr])
+  const statusResponse: any = await getCommitStatuses(owner.login, repo.name, commit.sha, owner.githubAccessToken)
+  const checkRunsResponse = await getCommitCheckRuns(owner.login, repo.name, commit.sha, owner.githubAccessToken)
 
-    let statuses: Octokit.ReposListStatusesForRefResponse = statusResponse.statuses;
-    let circleCiStatuses = statuses.filter(item => item.context.includes('ci/circleci: '))
+  let statuses: Octokit.ReposListStatusesForRefResponse = statusResponse.statuses;
+  let circleCiStatuses = statuses.filter(item => item.context.includes('ci/circleci: '))
 
-    statuses = statuses.filter(item => !item.context.includes('ci/circleci: '))
-    for (let status of statuses) {
-      await createCommitCheckFromStatus(status, commit)
+  statuses = statuses.filter(item => !item.context.includes('ci/circleci: '))
+  for (let status of statuses) {
+    await createCommitCheckFromStatus(status, commit)
+  }
+
+  const checkRuns = checkRunsResponse.check_runs
+  for (let checkRun of checkRuns) {
+    await createCommitCheckFromCheckRun(checkRun, commit)
+  }
+
+  for (let circleCheck of circleCiStatuses) {
+
+    let data: ICommitCheck = {
+      status: normalizeCheckState(circleCheck.state) as any,
+      type: 'ci-circleci',
+      from: 'github',
+      id: circleCheck.id,
+      commit_sha: commit.sha,
+      name: circleCheck.context,
+      target_url: circleCheck.target_url,
+      description: circleCheck.description,
+      pull_request_id: pr.id,
+      raw_data: circleCheck,
+      ci_data: {}
     }
 
-    const checkRuns = checkRunsResponse.check_runs
-    for (let checkRun of checkRuns) {
-      await createCommitCheckFromCheckRun(checkRun, commit)
-    }
-
-    for (let circleCheck of circleCiStatuses) {
-
-      let data: ICommitCheck = {
-        status: normalizeCheckState(circleCheck.state) as any,
-        type: 'ci-circleci',
-        from: 'github',
-        id: circleCheck.id,
-        commit_sha: commit.sha,
-        name: circleCheck.context,
-        target_url: circleCheck.target_url,
-        description: circleCheck.description,
-        pull_request_id: pr.id,
-        raw_data: circleCheck,
-        ci_data: {}
-      }
-
-      await updatePipeline(pr, commit, data)
-    }
+    await updatePipeline(pr, commit, data)
   }
 }
-
 
 export async function isHeadCommitCheck(sha: string, pullRequestId: number) {
   const pullRequest = await PullRequest.findOneOrFail({ where: { id: pullRequestId } })

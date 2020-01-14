@@ -19,8 +19,8 @@ async function emmit(eventName, data) {
 		callbacks = []
 	}
 
-	Promise.resolve(callbacks.map(async callback => {
-		await callback(data);
+	await Promise.all(callbacks.map(async callback => {
+		callback(data);
 	}))
 };
 
