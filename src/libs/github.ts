@@ -68,7 +68,7 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
 }
 
 export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
-  const checkStatus = normalizeCheckState(checkRunEvent.check_run.status)
+  const checkStatus = normalizeCheckState(checkRunEvent.check_run.conclusion ?? checkRunEvent.check_run.status)
   const { repository } = checkRunEvent;
 
   const owner = httpContext.get('owner') as GithubOwner;
@@ -323,7 +323,8 @@ const avaibleStates: { [key: string]: string; }  = {
   'cancelled': 'error',
   'timed_out': 'error',
   'created': 'pending',
-  'queued': 'pending'
+  'queued': 'pending',
+  'action_required': 'waiting_for_manual_action'
 }
 
 export function normalizeCheckState(status: string) {

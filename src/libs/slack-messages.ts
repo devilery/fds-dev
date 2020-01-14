@@ -305,8 +305,8 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && showChecks && getChecksBlocks(pipeline, checks, ciStatus),
-		open && showChecks && getDivider(),
+		open && getChecksBlocks(pipeline, checks, ciStatus),
+		open && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, user, team),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)

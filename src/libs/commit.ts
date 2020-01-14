@@ -20,7 +20,7 @@ export async function createCommitCheckFromCheckRun(checkRun: Octokit.ChecksList
   const check = CommitCheck.updateOrCreate({name: checkRun.name, commit: commit}, {
     githubId: checkRun.id,
     name: checkRun.name,
-    status: normalizeCheckState(checkRun.status) as any,
+    status: normalizeCheckState(checkRun.conclusion ?? checkRun.status) as any,
     description: checkRun.output.text,
     targetUrl: checkRun.details_url,
     type: 'standard',
