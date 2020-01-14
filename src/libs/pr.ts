@@ -33,7 +33,8 @@ export async function createOrUpdatePr(pullRequest: any) {
   return pr
 }
 
-export async function rebuildPullRequest(pr: PullRequest) {
+export async function rebuildPullRequest(prId: number) {
+  const pr = await PullRequest.findOneOrFail(prId);
   const repo = await pr.relation('repository');
   const owner = await repo.relation('owner');
 
@@ -73,6 +74,8 @@ export async function rebuildPullRequest(pr: PullRequest) {
 
     await updatePipeline(pr, commit, data)
   }
+
+  await pr.updateMainMessage();
 }
 
 export async function isHeadCommitCheck(sha: string, pullRequestId: number) {
