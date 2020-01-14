@@ -1,5 +1,12 @@
-
 require('dotenv').config();
+
+if (process.env.HONEYCOMB_KEY && process.env.HONEYCOMB_DATASET) {
+  require("honeycomb-beeline")({
+      writeKey: process.env.HONEYCOMB_KEY,
+      dataset: process.env.HONEYCOMB_DATASET,
+      // ... additional optional configuration ...
+  });
+}
 
 if (process.env.NODE_ENV === 'development') {
   console.log('Turning on pretty errors')
