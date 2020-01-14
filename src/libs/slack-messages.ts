@@ -69,7 +69,7 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 }
 
 function isFeatureFlagEnabled(user, team, flagName) {
-	return Boolean((team && team.featureFlags[flagName]) || (user && user.featureFlags[flagName]));
+	return Boolean(team?.featureFlags[flagName] || user?.featureFlags[flagName]);
 }
 
 function getActionBlocks(pr: PullRequest, user: User, team: Team): IMessgeBlock {
