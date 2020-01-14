@@ -69,7 +69,7 @@ function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
 }
 
 function isFeatureFlagEnabled(user, team, flagName) {
-	return Boolean(team && team.featureFlags[flagName] || user && user.featureFlags[flagName]);
+	return Boolean((team && team.featureFlags[flagName]) || (user && user.featureFlags[flagName]));
 }
 
 function getActionBlocks(pr: PullRequest, user: User, team: Team): IMessgeBlock {
@@ -305,8 +305,8 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && getChecksBlocks(pipeline, checks, ciStatus),
-		open && getDivider(),
+		open && showChecks && getChecksBlocks(pipeline, checks, ciStatus),
+		open && showChecks && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, user, team),
 		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
