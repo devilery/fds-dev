@@ -34,8 +34,7 @@ export async function createOrUpdatePr(pullRequest: any) {
   return pr
 }
 
-export async function rebuildPullRequest(prId: number) {
-  const pr = await PullRequest.findOneOrFail(prId);
+export async function rebuildPullRequest(pr: PullRequest) {
   const repo = await pr.relation('repository');
   const owner = await repo.relation('owner');
 

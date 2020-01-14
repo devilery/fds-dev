@@ -6,7 +6,7 @@ import httpContext from 'express-http-context'
 
 import { emmit } from './event';
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
-import { createOrUpdatePr, rebuildPullRequest } from './pr';
+import { createOrUpdatePr } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
@@ -47,8 +47,8 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
   const owner = httpContext.get('owner') as GithubOwner;
 
   const commitPullRequests = await getPullRequestsForCommit(repository.owner.login, repository.name, statusEvent.sha, owner.githubAccessToken);
-
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
   /// TEST REMOVE LATER!!!!!!!!!!
   // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
@@ -90,6 +90,7 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
 
   const commitPullRequests = await getPullRequestsForCommit(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken);
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
+  const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
   /// TEST REMOVE LATER!!!!!!!!!!
   // let rebuilds = pullRequests.map(async (pr) => rebuildPullRequest(pr.id));
