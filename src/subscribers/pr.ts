@@ -26,7 +26,7 @@ const opened = async function (data: IPullRequestEvent) {
 	await pr.reload('user')
 
 	// update main msg with checks etc...
-	await rebuildPullRequest(pr);
+	await rebuildPullRequest(pr.id);
 	await pr.updateMainMessage();	
 
 	trackEvent('PR opened', {pr_id: pr.id})
@@ -150,8 +150,8 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
-const prChecksUpdate = async function (pr_id: number) {
-	const pr = await PullRequest.findOneOrFail(pr_id);
+const prChecksUpdate = async function (data: { pr_id: number }) {
+	const pr = await PullRequest.findOneOrFail(data.pr_id);
 	await pr.updateMainMessage()
 }
 
@@ -219,7 +219,7 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 		request = await PullRequestReviewRequest.create({ pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username })
 		await request.save();
 	}
-
+ 
 	await pr.updateMainMessage()
 
 	if (assigneeUser && !request.notified) {
