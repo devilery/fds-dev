@@ -4,6 +4,7 @@ import { createOrUpdateCommit, normalizeCheckState } from './github';
 import { createCommitCheckFromStatus, createCommitCheckFromCheckRun } from "./commit";
 import { ICommitCheck } from "../events/types";
 import { updatePipeline } from "./circleci";
+import { emmit } from "./event";
 
 export async function createOrUpdatePr(pullRequest: any) {
   let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}, relations: ['user', 'user.team']})
@@ -33,7 +34,8 @@ export async function createOrUpdatePr(pullRequest: any) {
   return pr
 }
 
-export async function rebuildPullRequest(pr: PullRequest) {
+export async function rebuildPullRequest(pr_id: number) {
+  const pr = await PullRequest.findOneOrFail(pr_id);
   const repo = await pr.relation('repository');
   const owner = await repo.relation('owner');
 
@@ -73,6 +75,8 @@ export async function rebuildPullRequest(pr: PullRequest) {
 
     await updatePipeline(pr, commit, data)
   }
+
+  emmit('pr.checks.updated', { pr_id: pr.id })
 }
 
 export async function isHeadCommitCheck(sha: string, pullRequestId: number) {

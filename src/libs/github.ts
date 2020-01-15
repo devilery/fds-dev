@@ -6,7 +6,7 @@ import httpContext from 'express-http-context'
 
 import { emmit } from './event';
 import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
-import { createOrUpdatePr } from './pr';
+import { createOrUpdatePr, rebuildPullRequest } from './pr';
 import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
@@ -50,24 +50,31 @@ export async function processCommitStatus(statusEvent: Webhooks.WebhookPayloadSt
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
   await createOrUpdateCommit(statusEvent.commit, pullRequests)
 
-  for (let pull of pullRequests) {
-    const statusData = {
-      status: normalizeCheckState(statusEvent.state),
-      type: 'standard',
-      from: 'github',
-      commit_sha: statusEvent.sha,
-      name: statusEvent.context,
-      target_url: statusEvent.target_url,
-      description: statusEvent.description,
-      pull_request_id: pull.id,
-      raw_data: statusEvent
-    }
+  /// TEST REMOVE LATER!!!!!!!!!!
+  await Promise.all(pullRequests.map(async (pr) => await rebuildPullRequest(pr.id)))
 
-    emmit('pr.check.update', statusData)
-  }
+
+  // await createOrUpdateCommit(statusEvent.commit, pullRequests)
+
+  // for (let pull of pullRequests) {
+  //   const statusData = {
+  //     status: normalizeCheckState(statusEvent.state),
+  //     type: 'standard',
+  //     from: 'github',
+  //     commit_sha: statusEvent.sha,
+  //     name: statusEvent.context,
+  //     target_url: statusEvent.target_url,
+  //     description: statusEvent.description,
+  //     pull_request_id: pull.id,
+  //     raw_data: statusEvent
+  //   }
+
+  //   emmit('pr.check.update', statusData)
+  // }
 }
 
 export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadCheckRun) {
+
   const checkStatus = normalizeCheckState(checkRunEvent.check_run.conclusion ?? checkRunEvent.check_run.status)
   const { repository } = checkRunEvent;
 
@@ -78,23 +85,27 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
   const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
-  await createOrUpdateCommit(commitInfo, pullRequests)
+  /// TEST REMOVE LATER!!!!!!!!!!
+  await Promise.all(pullRequests.map(async (pr) => await rebuildPullRequest(pr.id)))
 
-  for (let pull of pullRequests) {
-    const statusData = {
-      status: checkStatus,
-      type: 'standard',
-      from: 'github',
-      id: checkRun.id,
-      commit_sha: checkRun.head_sha,
-      name: checkRun.name,
-      target_url: checkRun.details_url,
-      pull_request_id: pull.id,
-      raw_data: checkRun
-    }
+  // const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
+  // await createOrUpdateCommit(commitInfo, pullRequests)
 
-    emmit('pr.check.update', statusData)
-  }
+  // for (let pull of pullRequests) {
+  //   const statusData = {
+  //     status: checkStatus,
+  //     type: 'standard',
+  //     from: 'github',
+  //     id: checkRun.id,
+  //     commit_sha: checkRun.head_sha,
+  //     name: checkRun.name,
+  //     target_url: checkRun.details_url,
+  //     pull_request_id: pull.id,
+  //     raw_data: checkRun
+  //   }
+
+  //   emmit('pr.check.update', statusData)
+  // }
 }
 
 export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayloadPullRequestReview) {
