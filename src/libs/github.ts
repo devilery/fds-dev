@@ -85,7 +85,6 @@ export async function processCheckRun(checkRunEvent: Webhooks.WebhookPayloadChec
   const pullRequests = await findAndUpdatePRsById(commitPullRequests)
   const commitInfo = await getCommitInfo(owner.login, repository.name, checkRun.head_sha, owner.githubAccessToken)
 
-  console.log(pullRequests);
   /// TEST REMOVE LATER!!!!!!!!!!
   await Promise.all(pullRequests.map(async (pr) => await rebuildPullRequest(pr.id)))
 
