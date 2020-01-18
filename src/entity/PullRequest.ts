@@ -61,6 +61,9 @@ export default class PullRequest extends CustomEntity {
   @OneToMany(type => Pipeline, p => p.pullRequest)
   pipelines: Pipeline[];
 
+  @Column('varchar', { nullable: true })
+  lastCheckShaNotification: string | null;
+
   async getHeadCommit() {
     return Commit.findOneOrFail({where: {sha: this.headSha}});
   }

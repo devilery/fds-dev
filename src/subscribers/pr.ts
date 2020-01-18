@@ -7,7 +7,7 @@ import { ChatPostMessageResult } from '../libs/slack-api'
 
 import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
 import { createOrUpdatePr, isHeadCommitCheck, rebuildPullRequest } from '../libs/pr';
-import { updatePrMessage, sendPipelineNotifiation } from '../libs/slack'
+import { updatePrMessage, sendPipelineNotifiation, sendChecksNotification } from '../libs/slack'
 import { updatePipeline, isCircleCheck } from '../libs/circleci'
 const { sleep } = require('../libs/util');
 import { trackEvent } from '../libs/analytics'
@@ -150,12 +150,13 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 }
 commitCheckUpdate.eventType = 'pr.check.update'
 
-const prChecksUpdate = async function (data: { pr_id: number }) {
+const prRebuilded = async function (data: { pr_id: number }) {
 	const pr = await PullRequest.findOneOrFail(data.pr_id);
 	await pr.updateMainMessage()
+	await sendChecksNotification(pr);
 }
 
-prChecksUpdate.eventType = 'pr.checks.updated'
+prRebuilded.eventType = 'pr.rebuilded'
  
 const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent) {
 	const pr = await PullRequest.findOneOrFail({ where: { id: reviewEvent.pull_request_id }, relations: ['user', 'user.team'] })
@@ -250,4 +251,4 @@ const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPul
 
 pullRequestReviewRequestRemove.eventType = 'pr.review.request.remove'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove, prChecksUpdate]
+module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove, prRebuilded]

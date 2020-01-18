@@ -5,6 +5,7 @@ import { createCommitCheckFromStatus, createCommitCheckFromCheckRun } from "./co
 import { ICommitCheck } from "../events/types";
 import { updatePipeline } from "./circleci";
 import { emmit } from "./event";
+import { debounce } from './util';
 
 export async function createOrUpdatePr(pullRequest: any) {
   let pr = await PullRequest.findOne({where: {githubId: pullRequest.id}, relations: ['user', 'user.team']})
@@ -76,8 +77,10 @@ export async function rebuildPullRequest(pr_id: number) {
     await updatePipeline(pr, commit, data)
   }
 
-  emmit('pr.checks.updated', { pr_id: pr.id })
+  emmit('pr.rebuilded', { pr_id: pr.id })
 }
+
+export const debouceRebuildPr = debounce(rebuildPullRequest, 5000)
 
 export async function isHeadCommitCheck(sha: string, pullRequestId: number) {
   const pullRequest = await PullRequest.findOneOrFail({ where: { id: pullRequestId } })

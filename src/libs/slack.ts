@@ -15,6 +15,38 @@ export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitChe
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, ts: pr.slackThreadId})
 }
 
+export async function sendChecksNotification(pr: PullRequest) {
+	if (pr.lastCheckShaNotification === pr.headSha) {
+		return;
+	}
+
+	const user = httpContext.get('team') as User;
+	const team = httpContext.get('team') as Team;
+
+	if (team && team.featureFlags && !team.featureFlags.ci_checks) return;
+	if (user && user.featureFlags && !user.featureFlags.ci_checks) return;
+
+	const checks = await CommitCheck.find({ where: { commit: { sha: pr.headSha } } })
+	const allChecksPassed = checks.every(check => check.status === 'success')
+	const errors = checks.filter(check => ['failure', 'error'].includes(check.status))
+
+	let notification: IMessageData | undefined;
+
+	if (errors.length > 0) {
+		notification = getCheckErrorMessage(errors[0]);
+	} else if (allChecksPassed) {
+		notification = getChecksSuccessMessage(checks);
+	}
+
+	if (!notification) {
+		return;
+	}
+
+	pr.lastCheckShaNotification = pr.headSha;
+	await pr.save();
+	await attachPrMessageUpdate(pr, notification)
+}
+
 export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: CommitCheck[], check: CommitCheck) {
 	const user = httpContext.get('team') as User;
 	const team = httpContext.get('team') as Team;
@@ -39,7 +71,8 @@ export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: C
 
 async function attachPrMessageUpdate(pr: PullRequest, messageData: {text?: string, blocks?: Array<{}>}) {
 	const team = httpContext.get('team');
+	const user = await pr.relation('user');
 	const client = team.getSlackClient();
 
-	await client.chat.postMessage({...messageData, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+	await client.chat.postMessage({...messageData, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
 }
