@@ -109,7 +109,6 @@ export async function removePullRequestReview(owner: string, repo: string, pr_nu
 
 // https://developer.github.com/v3/pulls/#merge-a-pull-request-merge-button
 export async function mergePR(owner: string, repo: string, prNumber: number, token: string) {
-  console.log('Log message', arguments);
   // TODO: consider merge_method parameter to support all merge modes
   const res = await session.put(`/repos/${owner}/${repo}/pulls/${prNumber.toString()}/merge`, {},
     { headers: { 'Authorization': `token ${token}` }}

@@ -13,10 +13,7 @@ session.interceptors.response.use(response => response, (error) => {
 export async function retryBuild({vcs, username, project, build_num}) {
 	const url = `${CIRCLE_BASE}/${vcs}/${username}/${project}/${build_num}/retry?circle-token=${CIRCLE_TOKEN}`
 	let res = await session.post(url)
-	// console.log(res);
-    // let data = await res.json()
-    // console.log(data);
-    return res;
+  return res;
 }
 
 // https://circleci.com/gh/feature-delivery/fds-dev/86?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link
@@ -60,7 +57,6 @@ export async function workflowDetails({ workflowId, token }) {
 
 	if (wres.data) {
 		output.raw_workflow_job_data = wres.data;
-		wres.data.items.forEach(i => console.log(i.name, i.status))
 		const allOnHold = wres.data.items.filter(i => i.status == 'on_hold');
 		output.jobs_on_hold = allOnHold;
 	}

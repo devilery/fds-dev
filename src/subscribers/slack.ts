@@ -9,14 +9,12 @@ import { trackEvent } from '../libs/analytics'
 
 
 const actionMerge = async function(data: {pr_id: number, team: Team}) {
-	console.log('event action Merge', data);
-	console.log('Merge PR number', data['pr_id']);
 	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations:['user', 'user.githubUser'] });
 	// const user = await User.findOneOrFail(pr.user.id, {relations:['githubUser']});
-	console.log(pr.user.githubUser);
 	assert(pr.user.githubUser, 'Github User for PR not found')
 	mergePR(pr.rawData.repository.owner.login, pr.rawData.repository.name, pr.prNumber, pr.user.githubUser!.githubAccessToken)
 }
+
 actionMerge.eventType = 'slack.action.merge'
 
 const actionReviewAssign = async function (data: { pr_id: number, team: Team, eventData: { selected_user: string }}) {

@@ -68,7 +68,6 @@ async function updateCommitChecks(commit: Commit, pipelineRaw: any, check: IComm
 			await CommitCheck.update(commitCheck.id, {status: statusMap[pipelineCheck.status]})
 		}
 
-		console.log(fullCheckName, 'vs', check.name)
 		// if (check && fullCheckName === check.name) {
 		if(check && isSameCheck(commitCheck, check)) {
 			commitCheck.rawData = check.raw_data;
@@ -94,7 +93,6 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 	// TODO: race conditions?; add transaction???
 	// TODO: race condition when we receive another check webhook?
 	if (!prPipeline) {
-		console.log('downloading pipeline')
 		const pipeline = await loadPipeline(pr, check.target_url)
 
 		await updateCommitChecks(commit, pipeline.rawData, check);
@@ -104,7 +102,6 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 
 	// if we already have pipeline data, use the webhook check data to update the single check
 	} else {
-		console.log('updating check')
 		// const singleCheck = await CommitCheck.updateOrCreate({commit, type: 'ci-circleci', name: check.name}, {status: check.status, rawData: check.raw_data});
 
 		const singleCheck = await CommitCheck.findOne({commit, type: 'ci-circleci', name: check.name})
@@ -112,11 +109,9 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 		// approval steps will not be found
 		if (!singleCheck) {
 			// refresh pipeline
-			console.log('missing check', check.name, check.target_url, /*check*/)
 			// use target url to parse out workflow ID
 			// download workflow and save new pipeline data
 			const m = check.target_url.match(/\/workflow-run\/([a-f0-9-]+)/)
-			console.log('m', m)
 
 			assert(m && m[1], 'Check URL does not contain workflow')
 
@@ -150,7 +145,6 @@ export async function updatePipeline(pr: PullRequest, commit: Commit, check: ICo
 
 	// then run the pipeline final status check
 	const finalStatus = await detectPipelineMasterStatus(pr);
-	console.log('final status', finalStatus)
 
 
 	// 	// TODO: we prolly don't need this anymore
@@ -177,7 +171,6 @@ export async function detectPipelineMasterStatus(pr: PullRequest): Promise<['run
 	const checks = await CommitCheck.find({where: { commit }})
 	// console.log(pr, pipeline, commit, checks)
 	assert(checks.length > 0, 'PRs last commit is missing checks')
-	console.log('pipe states', checks.map(ch => ch.status))
 
 	const inProgress = checks.some(ch => ch.status === 'in_progress' || ch.status === 'pending');
 	const failed = !inProgress && checks.some(ch => ch.status === 'failure');

@@ -22,24 +22,13 @@ function httpDebug(proto) {
         var request = http.__request.apply(http, arguments);
 
         if (!!(http.debug)) {
-            // debug messaging for initial request
             console.log('[outgoing]', `${options.method.toUpperCase()} ${proto}://${options.hostname || options.host}${options.path}`)
-            // console.error(util.inspect(options));
 
-            // handle debug messaging for request methods
             request.__write = request.write;
             request.write   = function httpDebugWrite(data) {
                 console.dir(data);
                 return request.__write.apply(request, arguments);
             };
-
-            // request.__end = request.end;
-            // request.end   = function httpDebugEnd(data) {
-            //     if (data) {
-            //         console.dir(data.toString('utf8'));
-            //     }
-            //     return request.__end.apply(request, arguments);
-            // };
         }
 
         return request;

@@ -110,8 +110,6 @@ app.use(httpContext.middleware)
 
 // TODO: unify with analytics middlware
 app.use(async (req, res, next) => {
-  // console.log(req.url, req.headers['x-github-event'], req.body);
-
   // installation: {
   //   id: 5874996,
   //   node_id: 'MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNTg3NDk5Ng=='
@@ -119,7 +117,7 @@ app.use(async (req, res, next) => {
   let err, user: User | undefined, team: Team | undefined;
   try {
     if (req.headers['x-github-event']) {
-      console.log('[github]', req.headers['x-github-event'])
+      console.log(`Github event: [${req.headers['x-github-event']}]`)
       const { body } = req;
       if (body.sender.id) {
         const ghOwner = await GithubOwner.findOne({where: {installationId: req.body.installation.id}, relations: ['team']})
@@ -137,6 +135,8 @@ app.use(async (req, res, next) => {
             scope.setTag('origin', 'github_event')
             scope.setTag('event_name', req.headers['x-github-event'] as any)
           });
+
+          console.log(`Github event Sender: [${githubUser?.githubUsername}]`)
         } else {
           res.status(404).send('owner not found')
           return;
@@ -144,6 +144,7 @@ app.use(async (req, res, next) => {
       }
     }
     else if (req.headers['x-slack-signature']) {
+      console.log(`Slack event: [${req.headers['x-github-event']}]`)
       if (!req.body || !req.body.payload) {
         // slack sends empty messages when we dont have necessary permission
         // and other edge cases

@@ -27,7 +27,7 @@ export async function sendChecksNotification(pr: PullRequest) {
 	if (user && user.featureFlags && !user.featureFlags.ci_checks) return;
 
 	const checks = await CommitCheck.find({ where: { commit: { sha: pr.headSha } } })
-	const allChecksPassed = checks.every(check => check.status === 'success')
+	const allChecksPassed = checks.every(check => check.status === 'success') && checks.length > 0
 	const errors = checks.filter(check => ['failure', 'error'].includes(check.status))
 
 	let notification: IMessageData | undefined;

@@ -71,7 +71,6 @@ const commitCheckUpdate = async function (check: ICommitCheck) {
 	//   raw_data: {
 	// console.log('check', check)
 	let commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
-	console.log('commit ID', commit.id, 'check', check.name, check.status)
 	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id }, relations: ['user', 'user.team', 'repository'] })
 	const { user } = pr
 	const { team } = user

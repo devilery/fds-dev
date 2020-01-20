@@ -80,7 +80,7 @@ export async function rebuildPullRequest(pr_id: number) {
   emmit('pr.rebuilded', { pr_id: pr.id })
 }
 
-export const debouceRebuildPr = debounce(rebuildPullRequest, 5000)
+export const debouceRebuildPr = debounce(rebuildPullRequest, 3000)
 
 export async function isHeadCommitCheck(sha: string, pullRequestId: number) {
   const pullRequest = await PullRequest.findOneOrFail({ where: { id: pullRequestId } })
