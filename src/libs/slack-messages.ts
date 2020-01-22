@@ -140,6 +140,24 @@ function getCheckLine(check: CommitCheck, pipeline: Pipeline | null): string {
 }
 
 function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
+	const sorting = {
+		'success': 1,
+		'failure': 2,
+		'blocked': 3,
+		'waiting_for_manual_action': 4,
+		'pending': 5,
+		'in_progress': 6,
+	}
+
+	checks = checks.sort((a, b) => {
+		if (sorting[a.status] > sorting[b.status]) {
+			return -1
+		} else if (sorting[a.status] < sorting[b.status]) {
+			return 1
+		}
+		return a.name.localeCompare(b.name, 'en', {sensitivity: 'base'})
+ 	});
+
 	const blocks: IMessgeBlock[] = []
 
 	// All checks passed, show just "All check were successful" message
@@ -289,10 +307,14 @@ async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestRevie
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
 	const user = httpContext.get('user');
 	const team = httpContext.get('team');
-	const open = pr.state == 'open'
-	const showChecks = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
-	const merged = !!pr.rawData.raw_data.merged_at
 	const repo = await pr.relation('repository')
+
+	
+	const open = pr.state == 'open'
+	const merged = !!pr.rawData.raw_data.merged_at
+
+	const showChecks = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
+	const showMerge = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
 
 	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: 'ASC'}})
 	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
@@ -310,7 +332,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 		open && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, user, team),
-		merged && getMergedBlock(pr.rawData.raw_data.merged_at)
+		showMerge && !merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
 		"text": "Pull Request opened",
