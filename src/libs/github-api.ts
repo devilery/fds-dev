@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
 import { GithubOwner } from '../entity'
 const GITHUB_API_URL = 'https://api.github.com'
+import httpContext from 'express-http-context';
 
 const session = axios.create({
   baseURL: GITHUB_API_URL
@@ -25,26 +26,17 @@ const refreshAuthLogic = async (failedRequest: any) => {
   }
   const acessToken = await createInstallationToken(owner.installationId)
 
+  owner.oldAcessTokens.push(owner.githubAccessToken);
   owner.githubAccessToken = acessToken.token;
-  owner.oldAcessTokens.push(acessToken.token);
   await owner.save()
 
   failedRequest.config.headers.Authorization = `token ${acessToken.token}`
   return Promise.resolve()
 };
 
+
 createAuthRefreshInterceptor(session, refreshAuthLogic);
 
-session.interceptors.response.use(function (response) {
-  return response;
-}, function (error) {
-  if (error.message.match(/Request failed with status code 40[134]/i)) {
-    return Promise.reject();
-  }
-
-  const apiError = new GithubApiError(`Api error: ${error.message} on url: ${error.request?.path}`, error)
-  return Promise.reject(apiError);
-});
 
 // https://developer.github.com/v3/repos/commits/#list-pull-requests-associated-with-commit
 export async function getPullRequestsForCommit(owner: string, repo: string, commit_sha: string, token: string) {
