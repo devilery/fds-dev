@@ -5,14 +5,17 @@ import jwt from 'jsonwebtoken';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
 import { GithubOwner } from '../entity'
 const GITHUB_API_URL = 'https://api.github.com'
-import httpContext from 'express-http-context';
 
 const session = axios.create({
   baseURL: GITHUB_API_URL
 })
 
 const refreshAuthLogic = async (failedRequest: any) => {
-  const token = failedRequest.config.headers.Authorization.split(' ', 2)[1]
+  const token: string = failedRequest.config.headers.Authorization.split(' ', 2)[1]
+
+  if (token.length === 40) {
+    throw new GithubApiError(`User token: ${token} throwed 401. Cannot autorefresh.`)
+  }
 
   var owner = await GithubOwner
     .createQueryBuilder('owner')
