@@ -33,7 +33,7 @@ export default async function setup(req: any, res: any) {
 
     assert(repos.length > 0, 'Installation has no repos!')
 
-    const owner = GithubOwner.create({
+    const owner = await GithubOwner.updateOrCreate({ login: repos[0].owner.login }, {
       githubAccessToken: data.token,
       login: repos[0].owner.login,
       installationId: installation_id,
@@ -41,10 +41,8 @@ export default async function setup(req: any, res: any) {
       githubAccessTokenRaw: data as any
     })
 
-    await owner.save()
-
     for (let repo of repos) {
-      const repository = Repository.create({
+      await Repository.updateOrCreate({ githubId: repo.id }, {
         githubId: repo.id,
         name: repo.name,
         rawData: repo as any,
@@ -52,7 +50,6 @@ export default async function setup(req: any, res: any) {
         owner: owner
       })
 
-      await repository.save()
     }
     emmit('team.gh.connected', team)
   }
