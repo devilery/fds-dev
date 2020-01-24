@@ -25,7 +25,7 @@ router.post('/', async(req, res) => {
       }
       break;
     case 'status':
-      await processCommitStatus(body)
+      processCommitStatus(body)
       break;
     case 'check_run':
       processCheckRun(body)
