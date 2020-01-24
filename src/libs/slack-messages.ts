@@ -2,7 +2,6 @@ import httpContext from 'express-http-context'
 import { ICommitCheck } from '../events/types';
 import { User, PullRequest, CommitCheck, PullRequestReview, PullRequestReviewRequest, Repository, ReviewInvite, Pipeline, Team } from '../entity'
 import { detectPipelineMasterStatus } from './circleci';
-import { pseudoRandomBytes } from 'crypto';
 
 export interface IMessageData {
 	text: string
