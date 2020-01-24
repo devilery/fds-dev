@@ -313,7 +313,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 	const merged = !!pr.rawData.raw_data.merged_at
 
 	const showChecks = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
-	const showMerge = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'ci_checks');
+	const showMerge = team && user && checks.length > 0 && isFeatureFlagEnabled(user, team, 'merge_button');
 
 	const reviews = await PullRequestReview.find({where: {pullRequest: pr}, relations: ['reviewRequest'], order: {createdAt: 'ASC'}})
 	const requests = await PullRequestReviewRequest.find({where: {pullRequest: pr}, relations: ['reviews']})
@@ -327,7 +327,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 	let blocks = [
 		getBaseBlock(pr, repo),
-		open && getChecksBlocks(pipeline, checks, ciStatus),
+		showChecks && open && getChecksBlocks(pipeline, checks, ciStatus),
 		open && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, user, team),
