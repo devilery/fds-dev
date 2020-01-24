@@ -22,9 +22,6 @@ export default async function setup(req: any, res: any) {
   }
 
   if (setup_action === 'install') {
-    team.githubConnected = true
-    await team.save()
-
     const data = await createInstallationToken(installation_id)
 
     // https://developer.github.com/v3/apps/installations/#list-repositories
@@ -37,9 +34,12 @@ export default async function setup(req: any, res: any) {
       githubAccessToken: data.token,
       login: repos[0].owner.login,
       installationId: installation_id,
-      team: team,
       githubAccessTokenRaw: data as any
     })
+
+    team.githubOwner = owner
+    team.githubConnected = true
+    await team.save()
 
     for (let repo of repos) {
       await Repository.updateOrCreate({ githubId: repo.id }, {
