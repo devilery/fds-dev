@@ -25,16 +25,16 @@ function encodeAction(actionName: string, actionData: {}) {
 export function getWelcomeMessage(user: User): IMessageData {
 	if (user.team.githubConnected){
 		let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
-		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the Devilery.` }
+		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the HappyShip.` }
 	} else {
 		let authLink = process.env.GH_APP_INSTAL_URL + `?state=${user.team.id}`
-		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the Devilery. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` }
+		return { text: `Welcome :raised_hand_with_fingers_splayed:, please install our <${authLink}|GitHub app> to use the HappyShip. P.S. admin rights are needed, if you don’t have them, please ping you admin. See you soon!` }
 	}
 }
 
 export function getReviewRegisterMessage(user: User, authorSlackUsername: string): IMessageData {
 	let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
-	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with Devilery.` }
+	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with HappyShip.` }
 }
 
 function getBaseBlock(pr: PullRequest, repo: Repository): IMessgeBlock {
@@ -275,7 +275,7 @@ async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestRevie
 
 	requests.forEach(item => {
 		if (item.reviews.length === 0) {
-			assigneeBlocks[item.reviewUsername] = buildBlock('⏳ _waiting..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
+			assigneeBlocks[item.reviewUsername] = buildBlock('⏳ _Waiting for the review..._', item.reviewUsername, item.reviewUsername, pr.websiteUrl, {pr_id: pr.id, user: item.reviewUsername})
 		}
 	})
 
@@ -286,7 +286,7 @@ async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestRevie
 			"type": "section",
 			"text": {
 				"type": "mrkdwn",
-				"text": `@${username} ⏳ _waiting..._`
+				"text": `@${username} ⏳ _Invitation to connect GitHub with HappyShip sent_`
 			},
 		}
 	}
