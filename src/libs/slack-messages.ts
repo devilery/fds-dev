@@ -22,7 +22,7 @@ function encodeAction(actionName: string, actionData: {}) {
 }
 
 export function getWelcomeMessage(user: User): IMessageData {
-	if (user.team.githubConnected){
+	if (user.team.githubConnected) {
 		let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
 		return { text: `Hi :wave:, please connect your <${authLink}|GitHub account> to use the HappyShip.` }
 	} else {
