@@ -9,7 +9,7 @@ export default class GithubOwner extends CustomEntity {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column({ default: 'Company' })
+  @Column({ unique: true })
   login: string;
 
   @Column()
