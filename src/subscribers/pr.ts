@@ -1,33 +1,33 @@
-import httpContext from 'express-http-context'
-const { Base64 } = require('js-base64');
-
-import { Commit, CommitCheck, PullRequest, User, Team, PullRequestReview, GithubUser, PullRequestReviewRequest, Repository, Pipeline } from '../entity';
-import { ICommitCheck, IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest, IPullRequestReviewRequestRemove } from '../events/types';
+import { PullRequest, User, PullRequestReview, GithubUser, PullRequestReviewRequest } from '../entity';
+import { IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest, IPullRequestReviewRequestRemove } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
-import { getPrMessage, IMessageData, getChecksSuccessMessage, getCheckErrorMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
-import { createOrUpdatePr, isHeadCommitCheck, rebuildPullRequest } from '../libs/pr';
-import { updatePrMessage, sendPipelineNotifiation, sendChecksNotification } from '../libs/slack'
-import { updatePipeline, isCircleCheck } from '../libs/circleci'
-const { sleep } = require('../libs/util');
+import { getPrMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
+import { createOrUpdatePr, rebuildPullRequest } from '../libs/pr';
+import { sendChecksNotification } from '../libs/slack'
 import { trackEvent } from '../libs/analytics'
 import assert from '../libs/assert'
 
-const CI_SLEEP = typeof process.env.CI_SLEEP !== 'undefined' ? parseInt(process.env.CI_SLEEP, 10) : 7000;
-
 const opened = async function (data: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(data);
-	const client = pr.user.team.getSlackClient();
+	const user = await pr.relation('user')
 	const messageData = await getPrMessage(pr);
 
-	const res = await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId}) as ChatPostMessageResult
-	pr.slackThreadId = res.message.ts
+	// Create main PR message and store it's ts value so we can send messages to it's thread
+	const botClient = pr.user.team.getSlackClient();
+	const mainMsgRes = await botClient.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId}) as ChatPostMessageResult
+	pr.slackThreadId = mainMsgRes.message.ts
 	await pr.save()
-	await pr.reload('user')
 
-	// update main msg with checks etc...
+	// HACK: Send a dummy message to the thread so a user will get nottifications for new messages in this thread
+	const userClient = pr.user.getSlackClient();
+	if (userClient) {
+		const dummyMsgRes = await userClient.chat.postMessage({text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, ts: pr.slackThreadId}) as ChatPostMessageResult
+		userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
+	}
+
+	// Rebuild the PR, this will emmit pr.rebuilded event and the message will get updated with latest data
 	await rebuildPullRequest(pr.id);
-	await pr.updateMainMessage();	
 
 	trackEvent('PR opened', {pr_id: pr.id})
 };
@@ -36,17 +36,18 @@ opened.eventType = 'pr.opened';
 
 async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	const pr = await createOrUpdatePr(reviewRequest)
-	const team = httpContext.get('team')
+	const user = await pr.relation('user')
+	const team = await user.relation('team')
 	const text = pr.state === 'merged' ? '✅ PR has been merged' : '🗑 PR has been closed';
 	assert(pr.user, 'PR doesnt have user relation')
 	assert(pr.slackThreadId, 'PR does not have slack thread id')
 
 	const client = team.getSlackClient()
-	await client.chat.postMessage({ text, channel: pr.user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true })
+	await client.chat.postMessage({ text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true })
 
 	const messageData = await getPrMessage(pr)
 
-	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: pr.user.slackImChannelId, ts: pr.slackThreadId})
+	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, ts: pr.slackThreadId})
 
 	trackEvent(
 		pr.state === 'merged' ? 'PR merged' : 'PR closed',
@@ -55,99 +56,6 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 }
 
 pullRequestClosed.eventType = 'pr.closed'
-
-const commitCheckUpdate = async function (check: ICommitCheck) {
-	// {
-	//   status: 'success',
-	//   type: 'standard',
-	//   from: 'github',
-	//   id: 8461715742,
-	//   commit_sha: '89bc4f598f8628f12f540057ca8d45f5fe2224c2',
-	//   name: 'ci/circleci: some-deployment',
-	//   target_url: 'https://circleci.com/gh/devilery/fds-dev/873?utm_campaign=vcs-integration-link&utm_medium=referral&utm_source=github-build-link',
-	//   context: 'ci/circleci: some-deployment',
-	//   description: 'Your tests passed on CircleCI!',
-	//   pull_request_id: 23,
-	//   raw_data: {
-	// console.log('check', check)
-	let commit = await Commit.findOneOrFail({ where: { sha: check.commit_sha }, relations: ['checks'] })
-	const pr = await PullRequest.findOneOrFail({ where: { id: check.pull_request_id }, relations: ['user', 'user.team', 'repository'] })
-	const { user } = pr
-	const { team } = user
-
-	httpContext.set('pr', pr);
-
-	// TODO: handle commit pipeline re-run (PR's pipelines status gets reset as new commits arrive)
-	// TODO: maybe move circle logic to status webook handler??
-	if (isCircleCheck(check)) {
-		check.type = 'ci-circleci';
-
-		// TODO:
-		// check.ci_data = {
-		// 	estimate_ms: circleCiData.estimate_ms,
-		// 	jobs_on_hold: circleCiData.workflow.jobs_on_hold
-		// }
-
-	// if the check is not circle, let's ignore downloading pipelines and just debounce the final status check
-	} else {
-
-		// TODO: we are picking up the new set status value
-		let dbCheck = await CommitCheck.findOne({ where: { commit, type: check.type, name: check.name }})
-
-		// console.log(dbCheck.status, check.status)
-		if (dbCheck) {
-			// if changed to done then wait. This way other pending events can activate and entire check flow will not return done
-			if (dbCheck.status === 'pending' && check.status === 'success') {
-				await sleep(CI_SLEEP) // wait for other events to start if exists
-			}
-
-			if (dbCheck.status === check.status) {
-				console.log('exiting function (status equals)')
-				return;
-			}
-
-		} else {
-			// TODO: compact layer for normal VS circle code path
-			dbCheck = new CommitCheck()
-		}
-
-		// upsert info
-		dbCheck.githubId = check.id;
-		dbCheck.targetUrl = check.target_url;
-		dbCheck.rawData = check
-
-		dbCheck.name = check.name;
-		dbCheck.status = check.status;
-		dbCheck.type = check.type as any;
-		dbCheck.commit = commit
-
-		await dbCheck.save()
-		await dbCheck.reload()
-	}
-
-	// TODO: backfill the check from the current webhook data
-
-
-	let isHeadCommit = await isHeadCommitCheck(check.commit_sha, check.pull_request_id)
-
-	if (!isHeadCommit) {
-		return
-	}
-
-	// commit.reload does not reload relations
-	const finalChecks = await CommitCheck.find({where: {commit}})
-
-	await pr.updateMainMessage();
-
-	// TODO: fails with circle approval jobs
-	// if (check.status === 'pending' && check.target_url.includes('/workflow-run/') && check.description.includes('job is on hold'))
-	const finalSingleCheck = await CommitCheck.findOne({ where: {commit, type: check.type, name: check.name}})
-
-	assert(finalSingleCheck, 'Final check was not found')
-
-	await sendPipelineNotifiation(pr, finalChecks, finalSingleCheck)
-}
-commitCheckUpdate.eventType = 'pr.check.update'
 
 const prRebuilded = async function (data: { pr_id: number }) {
 	const pr = await PullRequest.findOneOrFail(data.pr_id);
@@ -250,4 +158,4 @@ const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPul
 
 pullRequestReviewRequestRemove.eventType = 'pr.review.request.remove'
 
-module.exports = [opened, commitCheckUpdate, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove, prRebuilded]
+module.exports = [opened, pullRequestReviewed, pullRequestReviewRequest, pullRequestClosed, pullRequestReviewRequestRemove, prRebuilded]

@@ -198,9 +198,13 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
       }
     } else {
       // create new user without github token and
-      // send them oauth message to slack to authenticate
+      // send them oauth message to slack to authenticate theri Github account
       // to populate the token column
-      const newUser = await createUser(handle, team, null, false);
+      // mind that the slackUserToken is null sice the user didn't came through Slack oAuth
+      // because of this we won't be able to send messages on his behlaf to e.g. send dummy
+      // message to subscribe the user to a message thread's notiffications
+      // TODO: we need to fix this ^
+      const newUser = await createUser(handle, team, null, null, false);
       newUser.trackEvent('User created', {context: 'review_request'})
 
       let data: IRequestGithubReviewLogin = {

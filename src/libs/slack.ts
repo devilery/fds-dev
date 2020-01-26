@@ -1,17 +1,19 @@
 import assert from './assert';
 import httpContext from 'express-http-context'
 
-import { PullRequest, CommitCheck, Team, User } from '../entity'
+import { PullRequest, CommitCheck, Commit } from '../entity'
 import { IMessageData, getPrMessage, getChecksSuccessMessage, getCheckErrorMessage } from './slack-messages'
+import isFeatureFlagEnabled from './featureFlasg'
 
 export async function updatePrMessage(pr: PullRequest, prCommitChecks: CommitCheck[]) {
-	assert(pr.slackThreadId, 'PR is missing slack thread id')
-	const user = await pr.relation('user');
-	// const client = pr.user.team.getSlackClient()
-	const team = httpContext.get('team');
-	const client = team.getSlackClient()
-	const messageData = await getPrMessage(pr, prCommitChecks)
+	assert(pr.slackThreadId, 'PR is missing slack thread id');
 
+	const user = await pr.relation('user');
+	const team = await user.relation('team');
+
+	const messageData = await getPrMessage(pr, prCommitChecks);
+	
+	const client = team.getSlackClient();
 	await client.chat.update({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, ts: pr.slackThreadId})
 }
 
@@ -20,14 +22,16 @@ export async function sendChecksNotification(pr: PullRequest) {
 		return;
 	}
 
-	const user = httpContext.get('team') as User;
-	const team = httpContext.get('team') as Team;
+	const user = await pr.relation('user');
+	const team = await user.relation('team');
 
-	if (team && team.featureFlags && !team.featureFlags.ci_checks) return;
-	if (user && user.featureFlags && !user.featureFlags.ci_checks) return;
+	if (!isFeatureFlagEnabled(user, team, 'ci_checks')) {
+		return false;
+	}
 
-	const checks = await CommitCheck.find({ where: { commit: { sha: pr.headSha } } })
-	const allChecksPassed = checks.every(check => check.status === 'success') && checks.length > 0
+	const commit = await Commit.findOneOrFail({ where: { sha: pr.headSha } })
+
+	const allChecksPassed = checks.length > 0 && checks.every(check => ['success', 'waiting_for_manual_action', 'blocked'].includes(check.status))
 	const errors = checks.filter(check => ['failure', 'error'].includes(check.status))
 
 	let notification: IMessageData | undefined;
@@ -47,32 +51,12 @@ export async function sendChecksNotification(pr: PullRequest) {
 	await attachPrMessageUpdate(pr, notification)
 }
 
-export async function sendPipelineNotifiation(pr: PullRequest, prCommitChecks: CommitCheck[], check: CommitCheck) {
-	const user = httpContext.get('team') as User;
-	const team = httpContext.get('team') as Team;
-
-	if (team && team.featureFlags && !team.featureFlags.ci_checks) return;
-	if (user && user.featureFlags && !user.featureFlags.ci_checks) return;
-
-	const allChecksPassed = prCommitChecks.every(check => check.status === 'success')
-
-	const notificationMessage = allChecksPassed
-		? getChecksSuccessMessage(prCommitChecks)
-		: ['failure', 'error'].includes(check.status)
-			? getCheckErrorMessage(check)
-			: null;
-
-	if (!notificationMessage) {
-		return;
-	}
-
-	await attachPrMessageUpdate(pr, notificationMessage)
-}
-
-async function attachPrMessageUpdate(pr: PullRequest, messageData: {text?: string, blocks?: Array<{}>}) {
-	const team = httpContext.get('team');
+async function attachPrMessageUpdate(pr: PullRequest, messageData: IMessageData) {
 	const user = await pr.relation('user');
-	const client = team.getSlackClient();
+	const team = await user.relation('team');
 
-	await client.chat.postMessage({...messageData, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+	if (pr.slackThreadId) {
+		const client = team.getSlackClient();
+		await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+	}
 }

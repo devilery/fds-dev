@@ -189,7 +189,7 @@ app.use(async (req, res, next) => {
         slackId: user.slackId,
         // firstName: 'John',
         // lastName: 'Doe',
-        name: user.name,
+        name: user.slackFullName,
         // title: 'Software Engineer',
         // salesInfo: {
         //     stage: 'Customer',

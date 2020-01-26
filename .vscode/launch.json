@@ -18,8 +18,8 @@
                 "./src/index.ts"
             ],
             "skipFiles": [
-                "${workspaceFolder}/node_modules/**/*.js",
-                "<node_internals>/**/*.js"
+                // "${workspaceFolder}/node_modules/**/*.js",
+                // "<node_internals>/**/*.js"
             ],
             "restart": true
         }

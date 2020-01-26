@@ -27,12 +27,20 @@ router.get('/', async(req: any, res: any) => {
   const client = new WebClient(authInfo.bot.bot_access_token)
   const teamInfo = await client.team.info() as TeamInfoResult
 
-  const [team, created] = await Team.findOrCreate({ slackId: teamInfo.team.id }, { slackId: teamInfo.team.id, slackBotAccessToken: authInfo.bot.bot_access_token  })
+  const [team, created] = await Team.findOrCreate(
+    { slackId: teamInfo.team.id },
+    {
+      slackId: teamInfo.team.id, 
+      slackName: teamInfo.team.name,
+      slackDomain: teamInfo.team.domain,
+      slackBotAccessToken: authInfo.bot.bot_access_token,
+    }
+  )
 
   let user = await User.findOne({ where: { slackId: authInfo.user_id } })
   if (!user) {
-    user = await createUser(authInfo.user_id, team)
-    user.trackEvent('User created')
+    user = await createUser(authInfo.user_id, team, authInfo.access_token)
+    user.trackEvent('User created')  // TS bug, user can't be undefined here
   }
 
   const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult

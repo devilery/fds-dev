@@ -22,6 +22,7 @@ export default class GithubUser extends CustomEntity {
   @Column('jsonb')
   rawGithubUserData: any;
 
+  // One GithubUser can be in multiple teams! (e.g. lezuse belongs to Productboard and to HappyShip teams)
   @OneToMany(type => User, user => user.githubUser)
   users: User[]
 }

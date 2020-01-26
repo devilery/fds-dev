@@ -24,7 +24,7 @@ async function testDb() {
   const user = new User();
   user.team = team;
   user.slackId = 'adfasdfasd';
-  user.name = 'name'
+  user.slackFullName = 'name'
   user.slackImChannelId = 'name'
   await user.save();
 

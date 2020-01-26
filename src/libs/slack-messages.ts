@@ -117,7 +117,7 @@ function getActionBlocks(pr: PullRequest, user: User, team: Team): IMessgeBlock 
 
 function getCheckLine(check: CommitCheck, pipeline: Pipeline | null): string {
 	let mapping = {
-		'pending': ['is pending...', '⏳'],
+		'pending': ['is running...', '⚙️'], // hack: GH shows pending checks as running so do we not to confuse users 
 		'blocked': ['is blocked...', '🚧'],
 		'in_progress': ['is running...', '⚙️'],
 		'waiting_for_manual_action': [`requires your action  👈`, '👉'],
@@ -139,19 +139,19 @@ function getCheckLine(check: CommitCheck, pipeline: Pipeline | null): string {
 }
 
 function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], ciStatus: 'running' | 'failed' | 'success' | null): IMessgeBlock[] {
-	const sorting = {
-		'success': 1,
-		'failure': 2,
-		'blocked': 3,
-		'waiting_for_manual_action': 4,
-		'pending': 5,
-		'in_progress': 6,
-	}
+	const sorting = [
+		'failure',
+		'success',
+		'in_progress',
+		'pending',
+		'waiting_for_manual_action',
+		'blocked',
+	]
 
 	checks = checks.sort((a, b) => {
-		if (sorting[a.status] > sorting[b.status]) {
+		if (sorting.indexOf(a.status) < sorting.indexOf(b.status)) {
 			return -1
-		} else if (sorting[a.status] < sorting[b.status]) {
+		} else if (sorting.indexOf(a.status) > sorting.indexOf(b.status)) {
 			return 1
 		}
 		return a.name.localeCompare(b.name, 'en', {sensitivity: 'base'})
@@ -180,7 +180,7 @@ function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], 
 
 		let ciLines = `${messages[ciStatus][1]} <${pipeline.url}|CI Pipeline> ${messages[ciStatus][0]}`
 
-		if (ciStatus !== 'success' && !checks.filter(item => (item.type == 'ci-circleci')).every(check => { check.status == 'success' })) {
+		if (!checks.filter(item => (item.type == 'ci-circleci')).every(check => { check.status == 'success' })) {
 			const filter: string[] = []
 			if (ciStatus == 'success') {
 				filter.push('waiting_for_manual_action')
@@ -210,7 +210,7 @@ function getChecksBlocks(pipeline: Pipeline | undefined, checks: CommitCheck[], 
 		})
 	}
 
-	// write out ther (non CI) checks
+	// write out regular (non CI) checks
 	checks.filter(item => (item.type != 'ci-circleci')).forEach(item => {
 		blocks.push({
 			"type": "section",
@@ -304,11 +304,11 @@ async function getReviewsStatusBlock(pr: PullRequest, requests: PullRequestRevie
 }
 
 export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []): Promise<IMessageData> {
-	const user = httpContext.get('user');
-	const team = httpContext.get('team');
+	await pr.reload('user', 'user.team')
+	const user = pr.user
+	const team = pr.user.team
 	const repo = await pr.relation('repository')
 
-	
 	const open = pr.state == 'open'
 	const merged = !!pr.rawData.raw_data.merged_at
 
@@ -331,7 +331,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 		open && getDivider(),
 		open && (reviews.length || requests.length || invites.length) && await getReviewsStatusBlock(pr, requests, reviews, invites),
 		open && getActionBlocks(pr, user, team),
-		showMerge && !merged && getMergedBlock(pr.rawData.raw_data.merged_at)
+		showMerge && merged && getMergedBlock(pr.rawData.raw_data.merged_at)
 	]
 	return {
 		"text": "Pull Request opened",

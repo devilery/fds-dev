@@ -3,6 +3,7 @@ import User from './User'
 import GithubOwner from './GithubOwner';
 import { WebClient } from '@slack/web-api'
 import CustomEntity from "./CustomEntity";
+import { IFeatureFlags } from '../libs/featureFlasg';
 
 
 @Entity()
@@ -17,6 +18,12 @@ export default class Team extends CustomEntity {
   @Column()
   slackId: string;
 
+  @Column({nullable: true})
+  slackName: string;
+
+  @Column({nullable: true})
+  slackDomain: string;
+
   @Column()
   slackBotAccessToken: string;
 
@@ -30,8 +37,8 @@ export default class Team extends CustomEntity {
   @JoinColumn()
   githubOwner: GithubOwner | null;
 
-  @Column('jsonb', {default: {}})
-  featureFlags: {ci_checks?: boolean, merge_button?: boolean};
+  @Column('jsonb', {default: {ci_checks: true, ci_checks_notifications: true}})
+  featureFlags: IFeatureFlags;
 
   getSlackClient(): WebClient {
     return new WebClient(this.slackBotAccessToken)
