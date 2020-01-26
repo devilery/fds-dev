@@ -106,23 +106,30 @@ export async function processPullRequestReview(reviewEvent: Webhooks.WebhookPayl
 // no type for this webhook :/
 export async function processPullRequestReviewRequest(requestReviewEvent: any) {
   if (!requestReviewEvent.requested_reviewer) {
-    console.log('team review request', requestReviewEvent);
     return;
   }
 
   const assignedGithubUser = await GithubUser.findOne({ where: { githubId: requestReviewEvent.requested_reviewer.id } })
   const team = httpContext.get('team') as Team;
   const assignedUser = await User.findOne({ where: { githubUser: assignedGithubUser, team: team } })
-  const pr = await findPRByGithubId(requestReviewEvent.pull_request.id)
+  let pr = await findPRByGithubId(requestReviewEvent.pull_request.id)
 
   if (pr) {
     let reviewRequest: IPullRequestReviewRequest = {
       pull_request_id: pr.id,
-      assignee_user_id: assignedUser ? assignedUser.id : undefined,
+      assignee_user_id: assignedUser?.id,
       review_username: requestReviewEvent.requested_reviewer.login
     }
 
     emmit('pr.review.request', reviewRequest)
+  } else if (!pr && assignedUser) {
+    emmit('review.request.notification', {
+      assignee_user_id: assignedUser.id,
+      pr_number: requestReviewEvent.pull_request.number,
+      pr_link: requestReviewEvent.pull_request.html_url,
+      title: requestReviewEvent.pull_request.title,
+      requester_username: requestReviewEvent.sender.login
+    })
   }
 }
 
@@ -299,7 +306,7 @@ export function normalizeCheckState(status: string) {
   return avaibleStates[status]
 }
 
-function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem, userId: number) {
+function transformPRevent(pull_request: Webhooks.WebhookPayloadPullRequestPullRequest | Octokit.ReposListPullRequestsAssociatedWithCommitResponseItem, userId?: number) {
   let state = pull_request.state;
   if (pull_request.merged_at) {
     state = 'merged';

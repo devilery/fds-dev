@@ -1,5 +1,5 @@
 import { PullRequest, User, PullRequestReview, GithubUser, PullRequestReviewRequest } from '../entity';
-import { IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest, IPullRequestReviewRequestRemove } from '../events/types';
+import { IPullRequestEvent, IPullRequestReviewEvent, IPullRequestReviewRequest, IPullRequestReviewRequestRemove, IReviewRequestNotification } from '../events/types';
 import { ChatPostMessageResult } from '../libs/slack-api'
 
 import { getPrMessage, getReviewMessage, getReviewRequestNotification } from '../libs/slack-messages'
@@ -108,12 +108,12 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 pullRequestReviewed.eventType = 'pr.reviewed'
 
 const pullRequestReviewRequest = async function (reviewRequest: IPullRequestReviewRequest) {
-	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
 	let assigneeUser: User | null = null;
 	if (reviewRequest.assignee_user_id) {
 		assigneeUser = await User.findOneOrFail(reviewRequest.assignee_user_id, { relations: ['team'] })
 	}
 
+	const pr = await PullRequest.findOneOrFail(reviewRequest.pull_request_id, { relations: ['user'] })
 	const requests = await PullRequestReviewRequest.find({ where: { pullRequest: pr, assigneeUser, reviewUsername: reviewRequest.review_username }, order: { id: 'ASC' }, relations: ['reviews'] })
 	const noReviews = requests.filter(item => item.reviews.length === 0)
 	let request = noReviews.pop();
@@ -133,7 +133,7 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 	if (assigneeUser && !request.notified) {
 		await request.reload()
 		const requesterUsername = await pr.user.getSlackUsername()
-		const notification = getReviewRequestNotification(request, requesterUsername, false)
+		const notification = getReviewRequestNotification(pr.websiteUrl, pr.prNumber, pr.title, requesterUsername)
 		const client = assigneeUser.team.getSlackClient()
 		await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true })
 		request.notified = true;
@@ -142,6 +142,15 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 }
 
 pullRequestReviewRequest.eventType = 'pr.review.request'
+
+const reviewRequestNotification = async function (notificationEvent: IReviewRequestNotification) {
+	const assigneeUser = await User.findOneOrFail(notificationEvent.assignee_user_id, { relations: ['team'] })
+	const notification = getReviewRequestNotification(notificationEvent.pr_link, notificationEvent.pr_number, notificationEvent.title, notificationEvent.requester_username)
+	const client = assigneeUser.team.getSlackClient()
+	await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true })
+}
+
+reviewRequestNotification.eventType = 'review.request.notification'
 
 const pullRequestReviewRequestRemove = async function (reviewRequestRemove: IPullRequestReviewRequestRemove) {
 	const pr = await PullRequest.findOneOrFail(reviewRequestRemove.pull_request_id, { relations: ['user'] })

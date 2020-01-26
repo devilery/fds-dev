@@ -55,6 +55,14 @@ export interface IPullRequestReviewRequest {
   review_username: string;
 }
 
+export interface IReviewRequestNotification {
+  assignee_user_id: number;
+  pr_number: number;
+  pr_link: string;
+  title: string;
+  requester_username: string;
+}
+
 export interface IPullRequestReviewRequestRemove {
   pull_request_id: number;
   assignee_user_id: number | undefined;

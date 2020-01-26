@@ -72,7 +72,7 @@ export async function getCommitStatuses(owner: string, repo: string, commit_sha:
   const error = new GithubApiError();
 
   try {
-    let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/statusas`, { headers: { 'Authorization': `token ${token}` } })
+    let res = await session.get(`/repos/${owner}/${repo}/commits/${commit_sha}/status`, { headers: { 'Authorization': `token ${token}` } })
     return res.data as any
   } catch (e) {
     error.message = e.message;

@@ -389,15 +389,15 @@ export function getReviewMessage(review: PullRequestReview, reviewUsername: stri
 	}
 }
 
-export function getReviewRequestNotification(reviewRequest: PullRequestReviewRequest, requesterUsername: string, existing: boolean): IMessageData {
+export function getReviewRequestNotification(websiteUrl: string, prNumber: number, title: string, requesterUsername: string): IMessageData {
 	return {
-		"text": `@${requesterUsername} requested review on PR <${reviewRequest.pullRequest.websiteUrl}|#${reviewRequest.pullRequest.prNumber}>`,
+		"text": `@${requesterUsername} requested review on PR <${websiteUrl}|#${prNumber}>`,
 		"blocks": [
 			{
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": `👋 @${requesterUsername} requested review on *PR #${reviewRequest.pullRequest.prNumber} <${reviewRequest.pullRequest.websiteUrl}| ${reviewRequest.pullRequest.title}> *`
+					"text": `👋 @${requesterUsername} requested review on *PR #${prNumber} <${websiteUrl}| ${title}> *`
 				}
 			},
 			{
@@ -410,7 +410,7 @@ export function getReviewRequestNotification(reviewRequest: PullRequestReviewReq
 							"text": "🔍  Review",
 							"emoji": true
 						},
-						"url": reviewRequest.pullRequest.websiteUrl
+						"url": websiteUrl
 					}
 				]
 			}
