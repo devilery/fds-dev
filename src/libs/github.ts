@@ -1,13 +1,12 @@
 //@ts-ignore
 import { strict as assert } from 'assert'
 import { In } from 'typeorm';
-import { WebClient } from '@slack/web-api'
 import httpContext from 'express-http-context'
 
 import { emmit } from './event';
-import { getPullRequestsForCommit, getCommitStatus, getCommitInfo, requestPullRequestReview } from './github-api';
-import { createOrUpdatePr, rebuildPullRequest, debouceRebuildPr } from './pr';
-import { Commit, Repository, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
+import { getPullRequestsForCommit, requestPullRequestReview } from './github-api';
+import { createOrUpdatePr, debouceRebuildPr } from './pr';
+import { Commit, PullRequest, GithubUser, User, Team, GithubOwner } from '../entity'
 import { sleep } from './util';
 import { createUser } from '../libs/users'
 import { IPullRequestReviewEvent, IPullRequestReviewRequest, IRequestGithubReviewLogin, IPullRequestReviewRequestRemove } from '../events/types';

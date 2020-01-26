@@ -1,7 +1,9 @@
 import { BaseEntity, CreateDateColumn, UpdateDateColumn, ObjectType, FindConditions, DeepPartial } from "typeorm";
+import { DecorateAsyncMethods } from './util';
 
 type KeysOfType<T, TProp> = { [P in keyof T]: T[P] extends TProp ? P : never }[keyof T];
 
+@DecorateAsyncMethods
 export default class CustomEntity extends BaseEntity {
   @CreateDateColumn({ type: "timestamp", default: () => "timezone('utc', now())" })
   createdAt: Date;

@@ -166,7 +166,7 @@ app.use(async (req, res, next) => {
       });
       // console.log(team)
       httpContext.set('team', team)
-    }
+    }3
   } catch(e) {
     console.error(e)
     err = e;
@@ -204,7 +204,7 @@ app.use(async (req, res, next) => {
 
   if (moesifMiddleware && team) {
     req.team = team
-
+3
     // Only companyId is required.
     // Campaign object is optional, but useful if you want to track ROI of acquisition channels
     // See https://www.moesif.com/docs/api#update-a-company for campaign schema
