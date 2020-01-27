@@ -2,7 +2,7 @@
 import assert from '../../../libs/assert';
 import url from 'url';
 import { Team, GithubOwner, Repository } from '../../../entity'
-import { createInstallationToken } from '../../../libs/github-api';
+import { createInstallationToken, getOrgRepos } from '../../../libs/github-api';
 import axios from 'axios';
 import config from '../../../config';
 const { emmit } = require('../../../libs/event.js');
@@ -28,7 +28,6 @@ export default async function setup(req: any, res: any) {
     let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` } })
     let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
 
-    assert(repos.length > 0, 'Installation has no repos!')
 
     const owner = await GithubOwner.updateOrCreate({ login: repos[0].owner.login }, {
       githubAccessToken: data.token,
@@ -49,8 +48,20 @@ export default async function setup(req: any, res: any) {
         websiteUrl: repo.html_url,
         owner: owner
       })
-
     }
+
+    // use second endpoint to get repos. Not all of them will be in first response.........
+    let orgRepos = await getOrgRepos(owner.login, owner.githubAccessToken)
+    for (let repo of orgRepos) {
+      await Repository.updateOrCreate({ githubId: repo.id }, {
+        githubId: repo.id,
+        name: repo.name,
+        rawData: repo as any,
+        websiteUrl: repo.html_url,
+        owner: owner
+      })
+    }
+
     emmit('team.gh.connected', team)
   }
 
