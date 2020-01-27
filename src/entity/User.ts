@@ -63,7 +63,7 @@ export default class User extends CustomEntity {
 
   getSlackClient(): WebClient | null {
     if (this.slackUserToken) {
-      return new WebClient();
+      return new WebClient(this.slackUserToken);
     }
     return null;
   }
