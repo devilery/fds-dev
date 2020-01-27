@@ -31,6 +31,7 @@ export async function sendChecksNotification(pr: PullRequest) {
 
 	const commit = await Commit.findOneOrFail({ where: { sha: pr.headSha } })
 	const checks = await commit.relation('checks');
+
 	const allChecksPassed = checks.length > 0 && checks.every(check => ['success', 'waiting_for_manual_action', 'blocked'].includes(check.status))
 	const errors = checks.filter(check => ['failure', 'error'].includes(check.status))
 
