@@ -341,13 +341,13 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
 	return {
-		"text": "✅ All checks were sucessfull",
+		"text": "✅ All checks were sucessful",
 		"blocks": [
 			{
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": "✅ All checks were sucessfull"
+					"text": "✅ All checks were sucessful"
 				}
 			}
 		]
