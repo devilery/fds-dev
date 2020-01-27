@@ -38,7 +38,10 @@ router.get('/', async(req: any, res: any) => {
   )
 
   let user = await User.findOne({ where: { slackId: authInfo.user_id } })
-  if (!user) {
+  if (user) {
+    user.slackUserToken = authInfo.access_token
+    await user.save()
+  } {
     user = await createUser(authInfo.user_id, team, authInfo.access_token)
     user.trackEvent('User created')  // TS bug, user can't be undefined here
   }
