@@ -19,7 +19,8 @@ export async function createUser(userSlackId: string, team: Team, slackUserToken
 		slackId: userInfo.user.id,
 		slackFullName: userInfo.user.real_name,
 		team: team,
-		slackImChannelId: imInfo.channel.id
+		slackImChannelId: imInfo.channel.id,
+		featureFlags: {'ci_checks': true}
 	})
 
 	if (metadata)
