@@ -93,6 +93,18 @@ export async function getCommitCheckRuns(owner: string, repo: string, commit_sha
   }
 }
 
+export async function getOrgRepos(owner: string, token: string) {
+  const error = new GithubApiError();
+
+  try {
+    let res = await session.get(`/orgs/${owner}/repos`, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.nebula-preview+json' } })
+    return res.data as Octokit.ReposListForOrgResponse
+  } catch (e) {
+    error.message = e.message;
+    throw error;
+  }
+}
+
 // https://developer.github.com/v3/apps/#create-a-new-installation-token
 export async function createInstallationToken(installation_id: string) {
 

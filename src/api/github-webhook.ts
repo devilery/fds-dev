@@ -33,6 +33,8 @@ router.post('/', async(req, res) => {
     case 'pull_request_review':
       processPullRequestReview(body)
       break;
+    case 'installation_repositories':
+      break
     default:
       break;
   }
