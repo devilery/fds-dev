@@ -370,7 +370,7 @@ export async function getPrMessage(pr: PullRequest, checks: CommitCheck[] = []):
 
 export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
 	return {
-		"text": "✅ All checks were sucessful",
+		"text": "All checks were sucessful",
 		"blocks": [
 			{
 				"type": "section",
@@ -386,16 +386,14 @@ export function getChecksSuccessMessage(checks: CommitCheck[]): IMessageData {
 export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 	let linkOrName = check.targetUrl ? `<${check.targetUrl}|${check.rawData.context}>` : check.rawData.context;
 
-	let errorText = `⛔️ *There was an error in the ${linkOrName}.*`;
-
 	return {
-		"text": errorText,
+		"text": `*There was an error in the ${linkOrName}.*`,
 		"blocks": [
 			{
 				"type": "section",
 				"text": {
 					"type": "mrkdwn",
-					"text": errorText
+					"text": `⛔️ *There was an error in the ${linkOrName}.*`
 				}
 			}
 		]
