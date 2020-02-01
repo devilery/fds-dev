@@ -185,14 +185,6 @@ export async function requestSlackUsersToReview(handles: string[], prNumber: num
         const pr = await PullRequest.findOneOrFail({ where: { prNumber: prNumber }, relations: ['repository', 'repository.owner']})
         const repo = pr.repository;
         await requestPullRequestReview(repo.owner.login, repo.name, prNumber, { reviewers: [githubUser.githubUsername] }, author.githubUser!.githubAccessToken)
-
-        let reviewRequest: IPullRequestReviewRequest = {
-          pull_request_id: pr.id,
-          assignee_user_id: user.id,
-          review_username: githubUser.githubUsername
-        }
-
-        emmit('pr.review.request', reviewRequest)
       } else {
         let data: IRequestGithubReviewLogin = {
           user_id: user.id,
