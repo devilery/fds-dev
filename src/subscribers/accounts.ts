@@ -14,7 +14,7 @@ teamGhConnected.eventType = 'team.gh.connected'
 
 
 const githubOAuthDone = async function(user_id: number) {
-  assert(!user_id, 'User id must be in event args...')
+  assert(!!user_id, 'User id must be in event args...')
 
   const user = await User.findOneOrFail(user_id);
   const team = await user.relation('team');
@@ -52,4 +52,4 @@ const requestGithubReviewLogin = async function(event: IRequestGithubReviewLogin
 requestGithubReviewLogin.eventType = 'github.user.create.request.review'
 
 
-module.exports = [teamGhConnected, userCreated, requestGithubReviewLogin]
+module.exports = [teamGhConnected, userCreated, requestGithubReviewLogin, githubOAuthDone]
