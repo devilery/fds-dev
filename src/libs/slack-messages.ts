@@ -31,6 +31,35 @@ export function getWelcomeMessage(user: User): IMessageData {
 	}
 }
 
+export function getTutorialMessage(): IMessageData {
+	return {
+		text: '️HappyShip is set up and ready to sail! We are happy to have you on board.',
+		blocks: [
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: ":boat:️ HappyShip is set up and ready to sail! We are happy to have you on board.",
+				}
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: "*As soon as you open a new PR we will send you a private message with the status build and ability to assign review.*"
+				}
+			},
+			{
+				type: "section",
+				text: {
+					type: "mrkdwn",
+					text: ":email: If you have any question don’t hesitate to ask us at team@happyship.app"
+				}
+			}
+		]
+	}
+}
+
 export function getReviewRegisterMessage(user: User, authorSlackUsername: string): IMessageData {
 	let authLink = process.env.GH_OAUTH_URL + `?userId=${user.id}`
 	return { text: `Hi :wave:, @${authorSlackUsername} request a review on his pull request. Please connect your <${authLink}|GitHub account> to get started with HappyShip.` }

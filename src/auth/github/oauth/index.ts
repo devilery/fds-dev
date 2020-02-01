@@ -7,6 +7,7 @@ import config from '../../../config';
 import { GithubUser, User, PullRequest } from '../../../entity';
 import { requestPullRequestReview } from '../../../libs/github-api';
 import { updateUser } from '../../../libs/analytics'
+import { emmit } from '../../../libs/event';
 
 function oAuth(this: any, opts: any) {
   if (!opts.callbackURI) opts.callbackURI = '/github/callback'
@@ -103,6 +104,8 @@ function oAuth(this: any, opts: any) {
       resp.setHeader('location', config.authRedirectUrls.githubOAuthDone)
       resp.end()
     }
+
+    emmit('github.oauth.done', appUser.id)
   }
 
   this.login = login
