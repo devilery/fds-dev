@@ -1,6 +1,5 @@
 import express from 'express'
 import config from '../config';
-import { emmit } from '../libs/event'
 import { Team, User } from '../entity';
 import { WebClient } from '@slack/web-api';
 import { OauthAccessResult, TeamInfoResult, UsersInfoResult } from '../libs/slack-api';
@@ -39,7 +38,7 @@ router.get('/', async(req: any, res: any) => {
 
   let user = await User.findOne({ where: { slackId: authInfo.user_id } })
   if (user) {
-    user.slackUserToken = authInfo.access_token
+    user.slackUserToken = authInfo.authed_user.access_token
     await user.save()
   } else {
     user = await createUser(authInfo.authed_user.id, team, authInfo.authed_user.access_token)
