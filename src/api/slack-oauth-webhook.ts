@@ -36,7 +36,7 @@ router.get('/', async(req: any, res: any) => {
     }
   )
 
-  let user = await User.findOne({ where: { slackId: authInfo.user_id } })
+  let user = await User.findOne({ where: { slackId: authInfo.authed_user.id } })
   if (user) {
     user.slackUserToken = authInfo.authed_user.access_token
     await user.save()
