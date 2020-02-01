@@ -23,7 +23,9 @@ const opened = async function (data: IPullRequestEvent) {
 	const userClient = pr.user.getSlackClient();
 	if (userClient) {
 		const dummyMsgRes = await userClient.chat.postMessage({text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, ts: pr.slackThreadId, as_user: true}) as ChatPostMessageResult
-		userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
+		setTimeout(() => {
+			userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
+		}, 1000);
 	}
 
 	// Rebuild the PR, this will emmit pr.rebuilded event and the message will get updated with latest data
