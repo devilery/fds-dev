@@ -401,18 +401,27 @@ export function getCheckErrorMessage(check: CommitCheck): IMessageData {
 }
 
 export function getReviewMessage(review: PullRequestReview, reviewUsername: string): IMessageData {
-	let notificationText = `🎉 *${reviewUsername}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`;
+	let notificationText = ['🎉', `*${reviewUsername}* approved your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`];
 
 	if (review.state === 'changes_requested') {
-		notificationText = `🚧 *${reviewUsername}* requested changes on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+		notificationText = ['🚧', `*${reviewUsername}* requested changes on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`]
 	}
 
 	if (review.state === 'commented') {
-		notificationText = `🧐 *${reviewUsername}* commented on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`
+		notificationText = ['🧐', `*${reviewUsername}* commented on your PR <${review.pullRequest.websiteUrl}|#${review.pullRequest.prNumber}>`]
 	}
 
 	return {
-		'text': notificationText
+		"text": notificationText[1],
+		"blocks": [
+			{
+				"type": "section",
+				"text": {
+					"type": "mrkdwn",
+					"text": notificationText[0] + ' ' + notificationText[1]
+				}
+			}
+		]
 	}
 }
 
