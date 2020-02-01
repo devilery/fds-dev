@@ -22,10 +22,10 @@ const opened = async function (data: IPullRequestEvent) {
 	// HACK: Send a dummy message to the thread so a user will get nottifications for new messages in this thread
 	const userClient = pr.user.getSlackClient();
 	if (userClient) {
-		const dummyMsgRes = await userClient.chat.postMessage({text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, ts: pr.slackThreadId, as_user: true}) as ChatPostMessageResult
-		setTimeout(() => {
-			userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
-		}, 1000);
+		const dummyMsgRes = await userClient.chat.postMessage(
+			{text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, thread_ts: mainMsgRes.message.ts, as_user: true}
+		) as ChatPostMessageResult
+		userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
 	}
 
 	// Rebuild the PR, this will emmit pr.rebuilded event and the message will get updated with latest data
