@@ -23,8 +23,3 @@ Unfortunately you have to **use port 444** on this domain (e.g. https://vestri.s
 - `heroku git:remote -a fds-dev` # add heroku remote
 - `git push heroku master`
 
-ddd
-sadfasdf
-By Johan - ~~remember this contribution~~ <>
-sd
-gsd
