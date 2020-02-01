@@ -13,7 +13,7 @@ const router = express.Router()
 
 router.get('/', async(req: any, res: any) => {
   try {
-    var authInfo = await (new WebClient()).oauth.access({
+    var authInfo = await (new WebClient()).oauth.v2.access({
       client_id: process.env.SLACK_CLIENT_ID,
       client_secret: process.env.SLACK_CLIENT_SECRET,
       redirect_uri: process.env.SLACK_OAUTH_REDIRECT_URI,
