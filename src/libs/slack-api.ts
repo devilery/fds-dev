@@ -3,11 +3,12 @@ import {WebAPICallResult} from '@slack/web-api'
 
 // https://api.slack.com/methods/oauth.access
 export interface OauthAccessResult extends WebAPICallResult {
-	user_id: string
 	access_token: string
-	bot: {
-		bot_access_token: string
+	authed_user: {
+		id: string
+		access_token: string
 	}
+
 }
 
 // https://api.slack.com/methods/users.info

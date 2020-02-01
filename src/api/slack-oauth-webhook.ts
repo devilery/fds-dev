@@ -24,7 +24,7 @@ router.get('/', async(req: any, res: any) => {
     throw e
   }
 
-  const client = new WebClient(authInfo.bot.bot_access_token)
+  const client = new WebClient(authInfo.access_token)
   const teamInfo = await client.team.info() as TeamInfoResult
 
   const [team, created] = await Team.findOrCreate(
@@ -33,7 +33,7 @@ router.get('/', async(req: any, res: any) => {
       slackId: teamInfo.team.id, 
       slackName: teamInfo.team.name,
       slackDomain: teamInfo.team.domain,
-      slackBotAccessToken: authInfo.bot.bot_access_token,
+      slackBotAccessToken: authInfo.access_token,
     }
   )
 
@@ -42,11 +42,11 @@ router.get('/', async(req: any, res: any) => {
     user.slackUserToken = authInfo.access_token
     await user.save()
   } else {
-    user = await createUser(authInfo.user_id, team, authInfo.access_token)
+    user = await createUser(authInfo.authed_user.id, team, authInfo.authed_user.access_token)
     user.trackEvent('User created')  // TS bug, user can't be undefined here
   }
 
-  const userInfo = await client.users.info({user: authInfo.user_id}) as UsersInfoResult
+  const userInfo = await client.users.info({user: authInfo.authed_user.id}) as UsersInfoResult
 
   if (userInfo && userInfo.user) {
     const data = {}
