@@ -40,6 +40,7 @@ export async function rebuildPullRequest(pr_id: number) {
 
   const repo = await pr.relation('repository');
   const owner = await repo.relation('owner');
+  const team = await owner.relation('team')
 
   const commitInfo = await getCommitInfo(owner.login, repo.name, pr.headSha, owner.githubAccessToken)
   const commit = await createOrUpdateCommit(commitInfo, [pr])
@@ -60,22 +61,24 @@ export async function rebuildPullRequest(pr_id: number) {
   }
 
   for (let circleCheck of circleCiStatuses) {
-
-    let data: ICommitCheck = {
-      status: normalizeCheckState(circleCheck.state) as any,
-      type: 'ci-circleci',
-      from: 'github',
-      id: circleCheck.id,
-      commit_sha: commit.sha,
-      name: circleCheck.context,
-      target_url: circleCheck.target_url,
-      description: circleCheck.description,
-      pull_request_id: pr.id,
-      raw_data: circleCheck,
-      ci_data: {}
+    if (team.circlePersonalToken) {
+      let data: ICommitCheck = {
+        status: normalizeCheckState(circleCheck.state) as any,
+        type: 'ci-circleci',
+        from: 'github',
+        id: circleCheck.id,
+        commit_sha: commit.sha,
+        name: circleCheck.context,
+        target_url: circleCheck.target_url,
+        description: circleCheck.description,
+        pull_request_id: pr.id,
+        raw_data: circleCheck,
+        ci_data: {}
+      }
+      await updatePipeline(pr, commit, data)
+    } else {
+      await createCommitCheckFromStatus(circleCheck, commit)
     }
-
-    await updatePipeline(pr, commit, data)
   }
 
   emmit('pr.rebuilded', { pr_id: pr.id })

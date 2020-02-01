@@ -3,8 +3,6 @@ import assert from '../libs/assert';
 import { Team, PullRequest, User } from '../entity'
 import { mergePR, requestPullRequestReview } from '../libs/github-api'
 import { requestSlackUsersToReview } from '../libs/github'
-import { IPullRequestReviewRequest } from '../events/types';
-import { emmit } from '../libs/event';
 import { trackEvent } from '../libs/analytics'
 
 
@@ -45,21 +43,7 @@ const activeReviewReassign = async function (data: { pr_id: number, team: Team, 
 	const pr = await PullRequest.findOneOrFail(data.pr_id, { relations: ['user', 'user.githubUser', 'repository', 'repository.owner'] })
 	const user = pr.user;
 	const repo = pr.repository;
-
 	await requestPullRequestReview(repo.owner.login, repo.name, pr.prNumber, { reviewers: [data.user] }, user.githubUser!.githubAccessToken)
-
-	const assigneUser = await User.findOne({ where: { githubUser: { githubUsername: data.user }, team: team } })
-
-	if (assigneUser) {
-		let reviewRequest: IPullRequestReviewRequest = {
-			pull_request_id: pr.id,
-			assignee_user_id: user.id,
-			review_username: data.user
-		}
-
-		emmit('pr.review.request', reviewRequest)
-	}
-
 	trackEvent('PR review rerequested', {pr_id: pr.id})
 }
 
