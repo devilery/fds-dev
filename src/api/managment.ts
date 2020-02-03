@@ -22,9 +22,13 @@ const authValidator = function (req: any, res: any, next: any) {
 router.use(authValidator)
 
 router.post('/refresh-install-token/', async (req, res) => {
-  
   const installId = req.body.installationId
+  const owner = await GithubOwner.findOneOrFail({ where: { installationId: installId } })
   await createInstallationToken(installId)
+  const acessToken = await createInstallationToken(owner.installationId)
+  owner.oldAcessTokens.push(owner.githubAccessToken);
+  owner.githubAccessToken = acessToken.token;
+  await owner.save()
   res.sendStatus(200)
 })
 
