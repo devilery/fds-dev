@@ -46,6 +46,8 @@ router.post('/reload-owner-repos/', async (req, res) => {
       owner: owner
     })
   }
+
+  res.sendStatus(200)
 })
 
 export default router;
