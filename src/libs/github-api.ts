@@ -2,6 +2,7 @@
 import { strict as assert } from 'assert'
 import axios from 'axios';
 import jwt from 'jsonwebtoken';
+import Sentry from '@sentry/node';
 import createAuthRefreshInterceptor from 'axios-auth-refresh';
 import { GithubOwner } from '../entity'
 const GITHUB_API_URL = 'https://api.github.com'
@@ -93,15 +94,28 @@ export async function getCommitCheckRuns(owner: string, repo: string, commit_sha
   }
 }
 
-export async function getOrgRepos(owner: string, token: string) {
-  const error = new GithubApiError();
+export async function getInstallationRepos(token: string) {
 
   try {
-    let res = await session.get(`/orgs/${owner}/repos`, { headers: { 'Authorization': `token ${token}`, 'Accept': 'application/vnd.github.nebula-preview+json' } })
-    return res.data as Octokit.ReposListForOrgResponse
-  } catch (e) {
-    error.message = e.message;
+    let data = await fetchPage()
+    return data;
+  } catch (error) {
+    Sentry.captureException(error)
+    console.error(error)
     throw error;
+  }
+
+  async function fetchPage(nextPage?: string) { 
+    let url = nextPage ? nextPage : 'https://api.github.com/installation/repositories'
+    let response = await session.get(url, { params: { per_page: 100 }, headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${token}` } })
+    const linkHeader = response.headers.link;
+    const parsedHeader = parseLinkHeader(linkHeader);
+    let nextPageData: any[] = []
+    if (parsedHeader?.next) {
+      nextPageData = await fetchPage(parsedHeader.next);
+    }
+    const pageData = response.data.repositories;
+    return pageData.concat(nextPageData);
   }
 }
 
@@ -121,6 +135,26 @@ export async function createInstallationToken(installation_id: string) {
   try {
     var res = await axios.post(`https://api.github.com/app/installations/${installation_id}/access_tokens`, {}, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
     return res.data as Octokit.AppsCreateInstallationTokenResponse 
+  } catch (e) {
+    error.message = e.message
+    throw error
+  }
+}
+
+export async function getInstallationInfo(installation_id: string) {
+  let privateKey = JSON.parse(process.env.GITHUB_PRIVATE_KEY)
+
+  const jwtToken = jwt.sign({
+    exp: Math.floor(Date.now() / 1000) + (5 * 60),
+    iat: Math.floor(Date.now() / 1000),
+    iss: process.env.APP_ID
+  }, privateKey.key, { algorithm: 'RS256' });
+
+  const error = new GithubApiError();
+
+  try {
+    var res = await axios.get(`https://api.github.com/app/installations/${installation_id}`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `Bearer ${jwtToken}` } })
+    return res.data as Octokit.AppsGetInstallationResponse
   } catch (e) {
     error.message = e.message
     throw error
@@ -183,4 +217,24 @@ class GithubApiError extends Error {
     this.name = 'GithubApiError';
     (this as any).code = code
   }
+}
+
+function parseLinkHeader(data: any) {
+  if (!data) {
+    return;
+  }
+
+  let arrData = data.split("link:")
+  data = arrData.length == 2 ? arrData[1] : data;
+  let parsed_data: any = {}
+
+  arrData = data.split(",")
+
+  for (let d of arrData) {
+    let linkInfo: any = /<([^>]+)>;\s+rel="([^"]+)"/ig.exec(d)
+
+    parsed_data[linkInfo[2]] = linkInfo[1]
+  }
+
+  return parsed_data;
 }

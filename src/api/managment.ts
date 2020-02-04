@@ -1,5 +1,5 @@
 import express from 'express'
-import { createInstallationToken, getOrgRepos } from '../libs/github-api';
+import { createInstallationToken, getInstallationRepos } from '../libs/github-api';
 import { GithubOwner, Repository } from '../entity';
 const router = express.Router();
 
@@ -36,8 +36,8 @@ router.post('/reload-owner-repos/', async (req, res) => {
   const installId = req.body.installationId
   const owner = await GithubOwner.findOneOrFail({ where: { installationId: installId } })
 
-  let orgRepos = await getOrgRepos(owner.login, owner.githubAccessToken)
-  for (let repo of orgRepos) {
+  let repos = await getInstallationRepos(owner.githubAccessToken)
+  for (let repo of repos) {
     await Repository.updateOrCreate({ githubId: repo.id }, {
       githubId: repo.id,
       name: repo.name,

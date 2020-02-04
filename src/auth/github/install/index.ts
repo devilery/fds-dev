@@ -2,7 +2,7 @@
 import assert from '../../../libs/assert';
 import url from 'url';
 import { Team, GithubOwner, Repository } from '../../../entity'
-import { createInstallationToken, getOrgRepos } from '../../../libs/github-api';
+import { createInstallationToken, getInstallationRepos, getInstallationInfo } from '../../../libs/github-api';
 import axios from 'axios';
 import config from '../../../config';
 const { emmit } = require('../../../libs/event.js');
@@ -23,15 +23,11 @@ export default async function setup(req: any, res: any) {
 
   if (setup_action === 'install') {
     const data = await createInstallationToken(installation_id)
+    let installInfo = await getInstallationInfo(installation_id)
 
-    // https://developer.github.com/v3/apps/installations/#list-repositories
-    let resRepos = await axios.get(`https://api.github.com/installation/repositories`, { headers: { 'Accept': 'application/vnd.github.machine-man-preview+json', 'Authorization': `token ${data.token}` } })
-    let repos = (resRepos.data as Octokit.AppsListInstallationReposForAuthenticatedUserResponse).repositories
-
-
-    const owner = await GithubOwner.updateOrCreate({ login: repos[0].owner.login }, {
+    const owner = await GithubOwner.updateOrCreate({ login: installInfo.account.login }, {
       githubAccessToken: data.token,
-      login: repos[0].owner.login,
+      login: installInfo.account.login,
       installationId: installation_id,
       githubAccessTokenRaw: data as any
     })
@@ -40,6 +36,14 @@ export default async function setup(req: any, res: any) {
     team.githubConnected = true
     await team.save()
 
+    res.statusCode = 302
+    res.setHeader('location', `${config.authRedirectUrls.githubInstall}`)
+    res.end()
+
+    emmit('team.gh.connected', team)
+
+    // use second endpoint to get repos. Not all of them will be in first response.........
+    let repos = await getInstallationRepos(owner.githubAccessToken)
     for (let repo of repos) {
       await Repository.updateOrCreate({ githubId: repo.id }, {
         githubId: repo.id,
@@ -50,22 +54,9 @@ export default async function setup(req: any, res: any) {
       })
     }
 
-    // use second endpoint to get repos. Not all of them will be in first response.........
-    let orgRepos = await getOrgRepos(owner.login, owner.githubAccessToken)
-    for (let repo of orgRepos) {
-      await Repository.updateOrCreate({ githubId: repo.id }, {
-        githubId: repo.id,
-        name: repo.name,
-        rawData: repo as any,
-        websiteUrl: repo.html_url,
-        owner: owner
-      })
-    }
-
-    emmit('team.gh.connected', team)
+  } else {
+    res.statusCode = 302
+    res.setHeader('location', `${config.authRedirectUrls.githubInstall}`)
+    res.end()
   }
-
-  res.statusCode = 302
-  res.setHeader('location', `${config.authRedirectUrls.githubInstall}`)
-  res.end()
 }
