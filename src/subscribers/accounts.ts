@@ -7,7 +7,7 @@ import assert from '../libs/assert'
 const teamGhConnected = async function(team: Team) {
   (await User.find({where: {team: team}, relations: ['team']})).forEach(user => {
     const message = getWelcomeMessage(user)
-    team.getSlackClient().chat.postMessage({channel: user.slackImChannelId, text: message.text})
+    team.getSlackClient().chat.postMessage({channel: user.slackImChannelId, text: message.text, unfurl_links: false})
   })
 }
 teamGhConnected.eventType = 'team.gh.connected'
@@ -19,14 +19,14 @@ const githubOAuthDone = async function(user_id: number) {
   const user = await User.findOneOrFail(user_id);
   const team = await user.relation('team');
   const message = getTutorialMessage();
-  team.getSlackClient().chat.postMessage({ channel: user.slackImChannelId, blocks: message.blocks, text: message.text  })
+  team.getSlackClient().chat.postMessage({ channel: user.slackImChannelId, blocks: message.blocks, text: message.text, unfurl_links: false })
 }
 
 githubOAuthDone.eventType = 'github.oauth.done'
 
 const userCreated = async function(user: User) {
   const message = getWelcomeMessage(user)
-  user.team.getSlackClient().chat.postMessage({channel: user.slackImChannelId, text: message.text})
+  user.team.getSlackClient().chat.postMessage({channel: user.slackImChannelId, text: message.text, unfurl_links: false})
 }
 userCreated.eventType = 'user.created'
 
@@ -44,7 +44,7 @@ const requestGithubReviewLogin = async function(event: IRequestGithubReviewLogin
   user.metadata = { reviewPR: event.pr_number, prAuthor: event.author_user_id } as any
   await user.save()
 
-  await client.chat.postMessage({ channel: user.slackImChannelId, text: message.text, link_names: true })
+  await client.chat.postMessage({ channel: user.slackImChannelId, text: message.text, link_names: true, unfurl_links: false })
 
   await ReviewInvite.findOrCreate({ user: user, pullRequest: pr })
   await pr.updateMainMessage()

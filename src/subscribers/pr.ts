@@ -15,7 +15,7 @@ const opened = async function (data: IPullRequestEvent) {
 
 	// Create main PR message and store it's ts value so we can send messages to it's thread
 	const botClient = pr.user.team.getSlackClient();
-	const mainMsgRes = await botClient.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId}) as ChatPostMessageResult
+	const mainMsgRes = await botClient.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, unfurl_links: false}) as ChatPostMessageResult
 	pr.slackThreadId = mainMsgRes.message.ts
 	await pr.save()
 
@@ -23,7 +23,7 @@ const opened = async function (data: IPullRequestEvent) {
 	const userClient = pr.user.getSlackClient();
 	if (userClient) {
 		const dummyMsgRes = await userClient.chat.postMessage(
-			{text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, thread_ts: mainMsgRes.message.ts, as_user: true}
+			{text: "🧐 I'm watching this thread...", channel: user.slackImChannelId, thread_ts: mainMsgRes.message.ts, as_user: true, unfurl_links: false}
 		) as ChatPostMessageResult
 		setTimeout(async () => {
 			userClient.chat.delete({channel: user.slackImChannelId, ts: dummyMsgRes.message.ts})
@@ -47,7 +47,7 @@ async function pullRequestClosed(reviewRequest: IPullRequestEvent) {
 	assert(pr.slackThreadId, 'PR does not have slack thread id')
 
 	const client = team.getSlackClient()
-	await client.chat.postMessage({ text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true })
+	await client.chat.postMessage({ text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true, unfurl_links: false})
 
 	const messageData = await getPrMessage(pr)
 
@@ -104,7 +104,7 @@ const pullRequestReviewed = async function (reviewEvent: IPullRequestReviewEvent
 	await pr.updateMainMessage()
 
 	const notification = getReviewMessage(review, username);
-	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true })
+	client.chat.postMessage({ text: notification.text, channel: user.slackImChannelId, thread_ts: pr.slackThreadId ? pr.slackThreadId : undefined, link_names: true, unfurl_links: false })
 
 	trackEvent('PR reviewed', {pr_id: pr.id})
 }
@@ -139,7 +139,7 @@ const pullRequestReviewRequest = async function (reviewRequest: IPullRequestRevi
 		const requesterUsername = await pr.user.getSlackUsername()
 		const notification = getReviewRequestNotification(pr.websiteUrl, pr.prNumber, pr.title, requesterUsername)
 		const client = assigneeUser.team.getSlackClient()
-		await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true })
+		await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true, unfurl_links: false })
 		request.notified = true;
 		await request.save()
 	}
@@ -151,7 +151,7 @@ const reviewRequestNotification = async function (notificationEvent: IReviewRequ
 	const assigneeUser = await User.findOneOrFail(notificationEvent.assignee_user_id, { relations: ['team'] })
 	const notification = getReviewRequestNotification(notificationEvent.pr_link, notificationEvent.pr_number, notificationEvent.title, notificationEvent.requester_username)
 	const client = assigneeUser.team.getSlackClient()
-	await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true })
+	await client.chat.postMessage({ text: notification.text, blocks: notification.blocks, channel: assigneeUser.slackImChannelId, link_names: true, unfurl_links: false })
 }
 
 reviewRequestNotification.eventType = 'review.request.notification'

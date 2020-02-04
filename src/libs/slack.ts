@@ -58,6 +58,6 @@ async function attachPrMessageUpdate(pr: PullRequest, messageData: IMessageData)
 
 	if (pr.slackThreadId) {
 		const client = team.getSlackClient();
-		await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, link_names: true})
+		await client.chat.postMessage({text: messageData.text, blocks: messageData.blocks, channel: user.slackImChannelId, thread_ts: pr.slackThreadId, unfurl_links: false, link_names: true})
 	}
 }
