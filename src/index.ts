@@ -64,6 +64,7 @@ const { handleCommands } = require('./libs/slack-commands')
 const { eventMiddleware } = require('./libs/slack-events')
 
 // if (process.env.LOG_THAT_HTTP_BODY || process.env.LOG_THAT_HTTP_HEADERS) {
+ if (process.env.LOG_THAT_HTTP)
   require('log-that-http')
 // } else {
 //   require('./libs/http-debug')
@@ -171,6 +172,9 @@ app.use(async (req, res, next) => {
     console.error(e)
     err = e;
   }
+
+  if (!user) console.error('❌ user not found', req.body.sender)
+  if (!team) console.error('❌ team not found', /*req.body*/)
 
   if (moesifMiddleware && user) {
     req.user = user;
